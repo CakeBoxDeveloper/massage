@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SENSO — Студия массажа</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -10,6 +10,16 @@
   <style>
     /* ─── RESET ─────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* no tap highlight, no text selection on interactive elements */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+    .service-card, .contact-card {
+      -webkit-user-select: none;
+      user-select: none;
+    }
 
     :root {
       --bg:       #e8e3dc;
@@ -350,8 +360,8 @@
       top: 0; left: 0; right: 0;
       height: 100%;
       pointer-events: none;
-      z-index: 2; /* above bg, below cards */
-      overflow: hidden;
+      z-index: 2;
+      overflow: visible;
     }
 
     .bg-asset {
@@ -390,7 +400,7 @@
       width: 230px;
       top: 46%;
       left: calc(50% - 380px);
-      transform: rotate(-90deg) scaleX(-1);
+      transform: rotate(90deg) scaleX(-1);
     }
     /* Salt — чуть ниже, чуть меньше */
     .bg-asset-4 {
@@ -407,8 +417,22 @@
       transform: rotate(5deg);
     }
 
-    @media (max-width: 700px) {
-      /* assets visible on mobile too — they scroll with the page */
+    /* ─── CONTACTS mobile fix ───────────────────────────────────── */
+    @media (max-width: 480px) {
+      .cards-pile {
+        gap: 8px;
+      }
+      .contact-card {
+        padding: 10px 12px 8px;
+        border-radius: 8px;
+      }
+      .card-logo {
+        width: 22px;
+        height: 22px;
+      }
+      .card-handle {
+        font-size: 13px;
+      }
     }
     .fade-in {
       opacity: 0;
