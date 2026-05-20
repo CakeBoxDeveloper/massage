@@ -12,19 +12,25 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* LIGHT palette — inverted from dark */
-      --bg:        #e8e3dc;
-      --bg-card:   #e2ddd6;
-      --shadow-d:  #c9c4be;
-      --shadow-l:  #f5f0e9;
-      --text:      #2a2520;
-      --text-dim:  #8a8078;
-      --accent:    #6b4f35;
-      --accent2:   #9c7a5a;
-      --radius:    16px;
+      --bg:       #e8e3dc;
+      --bg-card:  #ede9e3;
+      --shadow-d: #d4cfc9;
+      --shadow-l: #faf7f2;
+      --text:     #2a2520;
+      --text-dim: #8a8078;
+      --accent:   #6b4f35;
+      --accent2:  #9c7a5a;
+      --radius:   14px;
     }
 
     html { scroll-behavior: smooth; }
+
+    /* hide scrollbar globally */
+    html, body {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    ::-webkit-scrollbar { display: none; }
 
     body {
       background: var(--bg);
@@ -36,15 +42,29 @@
       overflow-x: hidden;
     }
 
-    /* ─── NOISE TEXTURE ─────────────────────────────────────────── */
     body::before {
       content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+      position: fixed; inset: 0;
+      /* grain: fine fractalNoise tile, 200×200px */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      background-repeat: repeat;
       pointer-events: none;
-      z-index: 999;
-      opacity: 0.5;
+      z-index: 998;
+      opacity: 0.28;
+      mix-blend-mode: multiply;
+    }
+
+    /* second coarser grain layer */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='g2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23g2)' opacity='1'/%3E%3C/svg%3E");
+      background-size: 120px 120px;
+      background-repeat: repeat;
+      pointer-events: none;
+      z-index: 997;
+      opacity: 0.12;
       mix-blend-mode: multiply;
     }
 
@@ -59,19 +79,10 @@
     section { padding: 64px 0; }
 
     /* ─── HEADER ────────────────────────────────────────────────── */
-    header {
-      min-height: 100svh;
-    }
+    header { min-height: 100svh; }
+    header .page-wrap { min-height: 100svh; }
 
-    header .page-wrap {
-      min-height: 100svh;
-      padding-top: 0;
-      padding-bottom: 0;
-    }
-
-    /* ─── SERVICES ──────────────────────────────────────────────── */
-    #services { padding: 64px 0 48px; }
-
+    /* ─── SECTION TITLE ─────────────────────────────────────────── */
     .section-title {
       font-family: 'Cormorant Garamond', serif;
       font-size: clamp(34px, 9vw, 50px);
@@ -82,26 +93,35 @@
       text-align: center;
     }
 
-    /* 3-column grid */
+    /* ═══════════════════════════════════════════════════════════
+       SERVICES GRID
+    ═══════════════════════════════════════════════════════════ */
+    #services { padding: 64px 0 48px; }
+
+    .services-viewport {
+      position: relative;
+    }
+
     .services-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 14px;
     }
 
-    /* Card: image top half, label bottom — tilted, flat on table */
     .service-card {
       border-radius: 12px;
       overflow: hidden;
       background: var(--bg-card);
-      /* flat paper on table: subtle drop shadow only, no neumorphic extrusion */
-      box-shadow: 2px 4px 12px rgba(0,0,0,0.13), 0 1px 2px rgba(0,0,0,0.07);
+      /* neumorphic — subtle */
+      box-shadow:
+        3px 3px 7px var(--shadow-d),
+        -2px -2px 5px var(--shadow-l);
       display: flex;
       flex-direction: column;
-      cursor: default;
+      cursor: pointer;
+      position: relative;
     }
 
-    /* Each card gets its own tilt — "lying on a table" */
     .service-card:nth-child(1) { transform: rotate(-2.5deg); }
     .service-card:nth-child(2) { transform: rotate(1.5deg);  }
     .service-card:nth-child(3) { transform: rotate(-1deg);   }
@@ -109,15 +129,6 @@
     .service-card:nth-child(5) { transform: rotate(-1.8deg); }
     .service-card:nth-child(6) { transform: rotate(1.2deg);  }
 
-    .service-img {
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      object-fit: cover;
-      display: block;
-      background: var(--shadow-d); /* placeholder colour */
-    }
-
-    /* emoji placeholder when no real image */
     .service-img-placeholder {
       width: 100%;
       aspect-ratio: 1 / 1;
@@ -126,18 +137,178 @@
       justify-content: center;
       font-size: 28px;
       background: var(--shadow-d);
+      flex-shrink: 0;
+    }
+
+    /* real PNG images */
+    .service-img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .service-footer {
+      padding: 7px 9px 9px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 4px;
+      flex-shrink: 0;
     }
 
     .service-label {
-      padding: 8px 10px 10px;
       font-family: 'Cormorant Garamond', serif;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 400;
       color: var(--text);
-      line-height: 1.3;
+      line-height: 1.2;
     }
 
-    /* ─── PRICE ─────────────────────────────────────────────────── */
+    .service-dur {
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* desc overlay inside card — hidden by default */
+    .service-desc-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(226,221,214,0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 10px;
+      opacity: 0;
+      pointer-events: none;
+      border-radius: 12px;
+      transition: opacity 0.2s ease;
+    }
+
+    .service-desc-text {
+      font-size: 6.5px;
+      line-height: 1.55;
+      color: var(--text);
+      font-weight: 300;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       ZOOM — flying card
+    ═══════════════════════════════════════════════════════════ */
+
+    /* dim backdrop */
+    .zoom-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(232,227,220,0.7);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      z-index: 100;
+    }
+    .zoom-backdrop.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* the flying clone */
+    .zoom-card {
+      position: fixed;
+      z-index: 101;
+      background: var(--bg-card);
+      border-radius: 12px;
+      box-shadow: 4px 8px 32px rgba(0,0,0,0.18);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      pointer-events: all;
+      /* transition applied via JS after first frame */
+    }
+
+    .zoom-card-img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+      background: var(--shadow-d);
+      flex-shrink: 0;
+    }
+
+    .zoom-card-img-real {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .zoom-card-body {
+      padding: 18px 20px 22px;
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .zoom-card-body::-webkit-scrollbar { display: none; }
+
+    .zoom-card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .zoom-card-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .zoom-card-dur {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .zoom-card-desc {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.75;
+      font-weight: 300;
+    }
+
+    .zoom-close-btn {
+      position: absolute;
+      top: 12px; right: 12px;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.08);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      color: var(--text);
+      z-index: 10;
+      transition: background 0.2s;
+    }
+    .zoom-close-btn:hover { background: rgba(0,0,0,0.15); }
+
+    /* ═══════════════════════════════════════════════════════════
+       PRICE TABLE
+    ═══════════════════════════════════════════════════════════ */
     #price { padding: 48px 0 64px; }
 
     .price-title {
@@ -146,8 +317,19 @@
       font-weight: 300;
       color: var(--text);
       line-height: 1.1;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
       text-align: center;
+    }
+
+    /* outer border wrapping the whole table */
+    .price-table-wrap {
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      overflow: hidden;
+      /* neumorphic — subtle */
+      box-shadow:
+        3px 3px 7px var(--shadow-d),
+        -2px -2px 5px var(--shadow-l);
     }
 
     .price-table {
@@ -155,28 +337,16 @@
       border-collapse: collapse;
     }
 
-    .price-table thead tr {
-      border-bottom: 1px solid rgba(0,0,0,0.12);
-    }
-
-    .price-table th {
-      font-size: 9px;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      padding: 0 0 12px;
-      text-align: left;
-      font-weight: 400;
-    }
-
-    .price-table th:last-child { text-align: right; }
-
     .price-table tbody tr {
-      border-bottom: 1px solid rgba(0,0,0,0.06);
+      border-bottom: 1px solid rgba(0,0,0,0.07);
+    }
+
+    .price-table tbody tr:last-child {
+      border-bottom: none;
     }
 
     .price-table td {
-      padding: 13px 0;
+      padding: 13px 16px;
       vertical-align: middle;
     }
 
@@ -210,40 +380,54 @@
       margin-left: 2px;
     }
 
-    /* ─── CONTACTS ──────────────────────────────────────────────── */
+    /* ═══════════════════════════════════════════════════════════
+       CONTACTS — 2×2 grid, credit-card proportions
+    ═══════════════════════════════════════════════════════════ */
     #contacts { padding: 48px 0 80px; }
 
-    /* Pile of cards — spread so each is readable, slight overlap */
     .cards-pile {
-      position: relative;
-      /* height calculated to show all 4 cards with small overlap */
-      height: 420px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 8px 0 16px;
     }
 
+    /* credit card ratio 85.6 / 54 ≈ 1.586 */
     .contact-card {
-      position: absolute;
-      width: 200px;
-      padding: 18px 20px 16px;
-      border-radius: 14px;
+      aspect-ratio: 85.6 / 54;
+      padding: 16px 18px 14px;
+      border-radius: 12px;
       background: var(--bg-card);
-      box-shadow: 3px 5px 16px rgba(0,0,0,0.14), 0 1px 3px rgba(0,0,0,0.08);
+      box-shadow:
+        3px 3px 7px var(--shadow-d),
+        -2px -2px 5px var(--shadow-l);
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 4px;
       text-decoration: none;
       transition: transform 0.28s ease, box-shadow 0.28s ease;
     }
 
     .contact-card:hover {
-      z-index: 20 !important;
-      transform: rotate(0deg) translateY(-10px) scale(1.03) !important;
-      box-shadow: 6px 12px 28px rgba(0,0,0,0.18);
+      transform: translateY(-4px) rotate(0deg) !important;
+      box-shadow:
+        5px 5px 14px var(--shadow-d),
+        -3px -3px 9px var(--shadow-l);
     }
 
-    .card-icon  { font-size: 20px; margin-bottom: 2px; }
+    /* subtle individual tilts */
+    .card-1 { transform: rotate(-1.5deg); }
+    .card-2 { transform: rotate(1deg);    }
+    .card-3 { transform: rotate(1.2deg);  }
+    .card-4 { transform: rotate(-0.8deg); }
+
+    .card-icon {
+      font-size: 20px;
+      margin-bottom: 2px;
+    }
 
     .card-platform {
-      font-size: 9px;
+      font-size: 8px;
       letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--text-dim);
@@ -251,29 +435,60 @@
 
     .card-handle {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 400;
       color: var(--accent);
       line-height: 1.2;
     }
 
     .card-desc {
-      font-size: 10px;
+      font-size: 9px;
       color: var(--text-dim);
-      line-height: 1.5;
+      line-height: 1.4;
+      margin-top: auto;
     }
 
-    /*
-      4 cards, spread vertically so content is visible.
-      Each card is ~90px tall. Overlap ~30px → step ~60px.
-      Horizontal offset alternates for natural pile feel.
-    */
-    .card-1 { top: 0px;   left: 10px;  transform: rotate(-4deg);  z-index: 1; }
-    .card-2 { top: 80px;  left: 50px;  transform: rotate(2.5deg); z-index: 2; }
-    .card-3 { top: 160px; left: 5px;   transform: rotate(-1.5deg);z-index: 3; }
-    .card-4 { top: 240px; left: 45px;  transform: rotate(3deg);   z-index: 4; }
+    /* ─── BACKGROUND PNG OBJECTS ───────────────────────────────── */
+    .bg-obj {
+      position: fixed;
+      pointer-events: none;
+      z-index: 0;
+      /* drop-shadow для PNG с прозрачностью — неоморфный эффект на фоне */
+      filter: drop-shadow(4px 8px 18px rgba(0,0,0,0.13))
+              drop-shadow(-2px -3px 8px rgba(255,255,255,0.55));
+      opacity: 0.82;
+      user-select: none;
+    }
 
-    /* ─── FADE-IN ────────────────────────────────────────────────── */
+    .bg-obj-1 {          /* SpaStones — левый верх */
+      width: clamp(140px, 22vw, 240px);
+      top: 6vh;
+      left: calc(50% - 280px);
+      transform: rotate(-12deg);
+    }
+    .bg-obj-2 {          /* Oil — правый верх */
+      width: clamp(100px, 16vw, 180px);
+      top: 18vh;
+      right: calc(50% - 290px);
+      transform: rotate(8deg);
+    }
+    .bg-obj-3 {          /* Candle1 — левый низ */
+      width: clamp(90px, 14vw, 160px);
+      bottom: 22vh;
+      left: calc(50% - 270px);
+      transform: rotate(6deg);
+    }
+    .bg-obj-4 {          /* Candle2 — правый низ */
+      width: clamp(110px, 17vw, 190px);
+      bottom: 10vh;
+      right: calc(50% - 285px);
+      transform: rotate(-9deg);
+    }
+
+    /* на мобиле прячем — там нет места по бокам */
+    @media (max-width: 600px) {
+      .bg-obj { display: none; }
+    }
     .fade-in {
       opacity: 0;
       transform: translateY(20px);
@@ -287,13 +502,17 @@
 </head>
 <body>
 
+  <!-- ─── BACKGROUND OBJECTS ──────────────────────────────────── -->
+  <img class="bg-obj bg-obj-1" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/SpaStones.png" alt="" aria-hidden="true" />
+  <img class="bg-obj bg-obj-2" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Oil.png"       alt="" aria-hidden="true" />
+  <img class="bg-obj bg-obj-3" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Candle1.png"   alt="" aria-hidden="true" />
+  <img class="bg-obj bg-obj-4" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Candle2.png"   alt="" aria-hidden="true" />
+
   <!-- ═══════════════════════════════════════════════════════════
-       HEADER — пустое место под будущий контент
+       HEADER — пустое место
   ═══════════════════════════════════════════════════════════ -->
   <header>
-    <div class="page-wrap">
-      <!-- место для хедера -->
-    </div>
+    <div class="page-wrap"></div>
   </header>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -302,40 +521,82 @@
   <section id="services">
     <div class="page-wrap">
 
-      <h2 class="section-title fade-in">Виды массажа</h2>
+      <div class="services-viewport">
+        <div class="services-grid fade-in">
 
-      <div class="services-grid fade-in">
+          <div class="service-card"
+               data-name="Стоун-масаж"
+               data-icon="🪨"
+               data-duration="90 хв"
+               data-desc="Гарячі базальтові камені кладуться вздовж хребта і опрацьовують глибокі м'язові шари. Тепло проникає в тканини, знімає хронічне напруження і покращує кровообіг. Ідеальний для тих, хто страждає від болів у спині та хронічної втоми.">
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/SpaStones.png" alt="Стоун-масаж" />
+            <div class="service-footer">
+              <span class="service-label">Стоун</span>
+              <span class="service-dur">90 хв</span>
+            </div>
+          </div>
 
-        <div class="service-card">
-          <div class="service-img-placeholder">🪨</div>
-          <span class="service-label">Стоун</span>
+          <div class="service-card"
+               data-name="СПА-програма"
+               data-icon="🌿"
+               data-duration="120 хв"
+               data-desc="Повне занурення у розслаблення: ароматичні олії, гаряче обгортання, пілінг і завершальний масаж. Шкіра стає м'якою, тіло — легким. Програма відновлює не лише тіло, а й емоційний баланс.">
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Oil.png" alt="СПА-програма" />
+            <div class="service-footer">
+              <span class="service-label">СПА</span>
+              <span class="service-dur">120 хв</span>
+            </div>
+          </div>
+
+          <div class="service-card"
+               data-name="Загальний масаж"
+               data-icon="🤲"
+               data-duration="60–90 хв"
+               data-desc="Класичний розслаблюючий масаж усього тіла. М'які погладжування і розминання знімають м'язове напруження, покращують лімфотік і дарують відчуття повного спокою. Підходить для регулярного відновлення.">
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Candle1.png" alt="Загальний масаж" />
+            <div class="service-footer">
+              <span class="service-label">Загальний</span>
+              <span class="service-dur">60–90 хв</span>
+            </div>
+          </div>
+
+          <div class="service-card"
+               data-name="Спортивний масаж"
+               data-icon="⚡"
+               data-duration="60 хв"
+               data-desc="Глибока опрацювання м'язів після фізичних навантажень. Усуває тригерні точки, прискорює відновлення, знижує ризик травм. Підходить як після тренувань, так і як підготовка до змагань.">
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Candle2.png" alt="Спортивний масаж" />
+            <div class="service-footer">
+              <span class="service-label">Спорт</span>
+              <span class="service-dur">60 хв</span>
+            </div>
+          </div>
+
+          <div class="service-card"
+               data-name="Масаж обличчя"
+               data-icon="✨"
+               data-duration="45 хв"
+               data-desc="Ліфтинг-масаж за авторською технікою: знімає набряклість, опрацьовує жувальні м'язи і м'язи шиї, покращує овал обличчя. Видимий результат вже після першого сеансу.">
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Oil.png" alt="Масаж обличчя" />
+            <div class="service-footer">
+              <span class="service-label">Обличчя</span>
+              <span class="service-dur">45 хв</span>
+            </div>
+          </div>
+
+          <div class="service-card"
+               data-name="Тайський масаж"
+               data-icon="🌙"
+               data-duration="90 хв"
+               data-desc="Традиційна техніка, що поєднує акупресуру, пасивну йогу і роботу з енергетичними лініями тіла. Відновлює гнучкість, знімає глибоке напруження і наповнює енергією.">
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/SpaStones.png" alt="Тайський масаж" />
+            <div class="service-footer">
+              <span class="service-label">Тайський</span>
+              <span class="service-dur">90 хв</span>
+            </div>
+          </div>
+
         </div>
-
-        <div class="service-card">
-          <div class="service-img-placeholder">🌿</div>
-          <span class="service-label">СПА</span>
-        </div>
-
-        <div class="service-card">
-          <div class="service-img-placeholder">🤲</div>
-          <span class="service-label">Общий</span>
-        </div>
-
-        <div class="service-card">
-          <div class="service-img-placeholder">⚡</div>
-          <span class="service-label">Спорт</span>
-        </div>
-
-        <div class="service-card">
-          <div class="service-img-placeholder">✨</div>
-          <span class="service-label">Лицо</span>
-        </div>
-
-        <div class="service-card">
-          <div class="service-img-placeholder">🌙</div>
-          <span class="service-label">Тайский</span>
-        </div>
-
       </div>
     </div>
   </section>
@@ -346,50 +607,44 @@
   <section id="price">
     <div class="page-wrap">
 
-      <h2 class="price-title fade-in">Прайс-лист</h2>
-
-      <table class="price-table fade-in">
-        <thead>
-          <tr>
-            <th>Услуга</th>
-            <th style="text-align:right">Цена</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="price-name">Общий массаж</span><span class="price-meta">60 мин</span></td>
-            <td>3 500<span class="price-currency">₽</span></td>
-          </tr>
-          <tr>
-            <td><span class="price-name">Общий массаж</span><span class="price-meta">90 мин</span></td>
-            <td>4 800<span class="price-currency">₽</span></td>
-          </tr>
-          <tr>
-            <td><span class="price-name">Стоун-массаж</span><span class="price-meta">90 мин</span></td>
-            <td>5 500<span class="price-currency">₽</span></td>
-          </tr>
-          <tr>
-            <td><span class="price-name">СПА-программа</span><span class="price-meta">120 мин</span></td>
-            <td>7 200<span class="price-currency">₽</span></td>
-          </tr>
-          <tr>
-            <td><span class="price-name">Спортивный</span><span class="price-meta">60 мин</span></td>
-            <td>4 200<span class="price-currency">₽</span></td>
-          </tr>
-          <tr>
-            <td><span class="price-name">Массаж лица</span><span class="price-meta">45 мин</span></td>
-            <td>2 800<span class="price-currency">₽</span></td>
-          </tr>
-          <tr>
-            <td><span class="price-name">Тайский массаж</span><span class="price-meta">90 мин</span></td>
-            <td>5 000<span class="price-currency">₽</span></td>
-          </tr>
-          <tr>
-            <td><span class="price-name">Абонемент × 5</span><span class="price-meta">любой вид, 60 мин</span></td>
-            <td>15 000<span class="price-currency">₽</span></td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="price-table-wrap fade-in">
+        <table class="price-table">
+          <tbody>
+            <tr>
+              <td><span class="price-name">Общий массаж</span><span class="price-meta">60 хв</span></td>
+              <td>3 500<span class="price-currency">₴</span></td>
+            </tr>
+            <tr>
+              <td><span class="price-name">Общий массаж</span><span class="price-meta">90 хв</span></td>
+              <td>4 800<span class="price-currency">₴</span></td>
+            </tr>
+            <tr>
+              <td><span class="price-name">Стоун-массаж</span><span class="price-meta">90 хв</span></td>
+              <td>5 500<span class="price-currency">₴</span></td>
+            </tr>
+            <tr>
+              <td><span class="price-name">СПА-програма</span><span class="price-meta">120 хв</span></td>
+              <td>7 200<span class="price-currency">₴</span></td>
+            </tr>
+            <tr>
+              <td><span class="price-name">Спортивний</span><span class="price-meta">60 хв</span></td>
+              <td>4 200<span class="price-currency">₴</span></td>
+            </tr>
+            <tr>
+              <td><span class="price-name">Масаж обличчя</span><span class="price-meta">45 хв</span></td>
+              <td>2 800<span class="price-currency">₴</span></td>
+            </tr>
+            <tr>
+              <td><span class="price-name">Тайський масаж</span><span class="price-meta">90 хв</span></td>
+              <td>5 000<span class="price-currency">₴</span></td>
+            </tr>
+            <tr>
+              <td><span class="price-name">Абонемент × 5</span><span class="price-meta">будь-який вид, 60 хв</span></td>
+              <td>15 000<span class="price-currency">₴</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
     </div>
   </section>
@@ -406,28 +661,28 @@
           <div class="card-icon">📸</div>
           <span class="card-platform">Instagram</span>
           <span class="card-handle">@senso.massage</span>
-          <span class="card-desc">Фото работ, акции</span>
+          <span class="card-desc">Фото, акції</span>
         </a>
 
         <a href="https://threads.net/@senso.massage" target="_blank" rel="noopener" class="contact-card card-2">
           <div class="card-icon">🧵</div>
           <span class="card-platform">Threads</span>
           <span class="card-handle">@senso.massage</span>
-          <span class="card-desc">Советы и статьи</span>
+          <span class="card-desc">Поради</span>
         </a>
 
         <a href="https://t.me/senso_massage" target="_blank" rel="noopener" class="contact-card card-3">
           <div class="card-icon">✈️</div>
           <span class="card-platform">Telegram</span>
           <span class="card-handle">@senso_massage</span>
-          <span class="card-desc">Запись онлайн</span>
+          <span class="card-desc">Запис онлайн</span>
         </a>
 
         <a href="https://wa.me/79001234567" target="_blank" rel="noopener" class="contact-card card-4">
           <div class="card-icon">💬</div>
           <span class="card-platform">WhatsApp</span>
-          <span class="card-handle">+7 900 123-45-67</span>
-          <span class="card-desc">Быстрый ответ</span>
+          <span class="card-handle">+380 00 000-00-00</span>
+          <span class="card-desc">Швидка відповідь</span>
         </a>
 
       </div>
@@ -435,8 +690,12 @@
     </div>
   </section>
 
-  <!-- ─── SCROLL OBSERVER ──────────────────────────────────────── -->
+  <!-- zoom backdrop -->
+  <div class="zoom-backdrop" id="zoomBackdrop"></div>
+
+  <!-- ─── SCRIPTS ──────────────────────────────────────────────── -->
   <script>
+    /* ── Scroll fade-in ── */
     const io = new IntersectionObserver(
       entries => entries.forEach(e => {
         if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
@@ -444,6 +703,136 @@
       { threshold: 0.1 }
     );
     document.querySelectorAll('.fade-in').forEach(el => io.observe(el));
+
+    /* ══════════════════════════════════════════════════════════
+       FLYING CARD ZOOM
+       1. On click: measure card rect, create a fixed clone at
+          exactly that position, then animate it to center.
+       2. On close: animate back to original rect, then remove.
+    ══════════════════════════════════════════════════════════ */
+    const backdrop = document.getElementById('zoomBackdrop');
+    let flyCard = null;
+    let originRect = null;
+    let isAnimating = false;
+
+    const EASING   = 'cubic-bezier(0.4, 0, 0.2, 1)';
+    const DURATION = 420; // ms
+
+    function buildFlyCard(card) {
+      const d = card.dataset;
+      // grab the src from the card's <img>
+      const imgEl  = card.querySelector('img.service-img');
+      const imgSrc = imgEl ? imgEl.src : '';
+      const el = document.createElement('div');
+      el.className = 'zoom-card';
+      el.innerHTML = `
+        <button class="zoom-close-btn" aria-label="Закрити">✕</button>
+        ${imgSrc
+          ? `<img class="zoom-card-img-real" src="${imgSrc}" alt="${d.name}" />`
+          : `<div class="zoom-card-img">${d.icon}</div>`
+        }
+        <div class="zoom-card-body">
+          <div class="zoom-card-header">
+            <span class="zoom-card-name">${d.name}</span>
+            <span class="zoom-card-dur">${d.duration}</span>
+          </div>
+          <p class="zoom-card-desc">${d.desc}</p>
+        </div>`;
+      return el;
+    }
+
+    function openZoom(card) {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      originRect = card.getBoundingClientRect();
+
+      flyCard = buildFlyCard(card);
+      document.body.appendChild(flyCard);
+
+      // ── Start: match card exactly ──
+      Object.assign(flyCard.style, {
+        transition: 'none',
+        top:          originRect.top  + 'px',
+        left:         originRect.left + 'px',
+        width:        originRect.width  + 'px',
+        height:       originRect.height + 'px',
+        borderRadius: '12px',
+      });
+
+      // ── Target: centred, 88vw wide, max 420px ──
+      const tw = Math.min(window.innerWidth * 0.88, 420);
+      const th = Math.min(window.innerHeight * 0.80, 580);
+      const tl = (window.innerWidth  - tw) / 2;
+      const tt = (window.innerHeight - th) / 2;
+
+      // Force reflow
+      flyCard.getBoundingClientRect();
+
+      flyCard.style.transition = [
+        `top ${DURATION}ms ${EASING}`,
+        `left ${DURATION}ms ${EASING}`,
+        `width ${DURATION}ms ${EASING}`,
+        `height ${DURATION}ms ${EASING}`,
+        `border-radius ${DURATION}ms ${EASING}`,
+      ].join(', ');
+
+      flyCard.style.top          = tt + 'px';
+      flyCard.style.left         = tl + 'px';
+      flyCard.style.width        = tw + 'px';
+      flyCard.style.height       = th + 'px';
+      flyCard.style.borderRadius = '20px';
+
+      backdrop.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      flyCard.querySelector('.zoom-close-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        closeZoom();
+      });
+
+      setTimeout(() => { isAnimating = false; }, DURATION);
+    }
+
+    function closeZoom() {
+      if (!flyCard || isAnimating) return;
+      isAnimating = true;
+
+      flyCard.style.transition = [
+        `top ${DURATION}ms ${EASING}`,
+        `left ${DURATION}ms ${EASING}`,
+        `width ${DURATION}ms ${EASING}`,
+        `height ${DURATION}ms ${EASING}`,
+        `border-radius ${DURATION}ms ${EASING}`,
+        `opacity 200ms ease ${DURATION - 100}ms`,
+      ].join(', ');
+
+      flyCard.style.top          = originRect.top  + 'px';
+      flyCard.style.left         = originRect.left + 'px';
+      flyCard.style.width        = originRect.width  + 'px';
+      flyCard.style.height       = originRect.height + 'px';
+      flyCard.style.borderRadius = '12px';
+      flyCard.style.opacity      = '0';
+
+      backdrop.classList.remove('active');
+      document.body.style.overflow = '';
+
+      setTimeout(() => {
+        flyCard.remove();
+        flyCard = null;
+        isAnimating = false;
+      }, DURATION + 120);
+    }
+
+    document.querySelectorAll('.service-card').forEach(card => {
+      card.addEventListener('click', () => openZoom(card));
+    });
+
+    backdrop.addEventListener('click', closeZoom);
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeZoom();
+    });
   </script>
 
 </body>
