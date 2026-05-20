@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SENSO — Студия массажа</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── RESET ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* LIGHT palette — inverted from dark */
+      --bg:        #e8e3dc;
+      --bg-card:   #e2ddd6;
+      --shadow-d:  #c9c4be;
+      --shadow-l:  #f5f0e9;
+      --text:      #2a2520;
+      --text-dim:  #8a8078;
+      --accent:    #6b4f35;
+      --accent2:   #9c7a5a;
+      --radius:    16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ─── NOISE TEXTURE ─────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0.5;
+      mix-blend-mode: multiply;
+    }
+
+    /* ─── LAYOUT ────────────────────────────────────────────────── */
+    .page-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+    }
+
+    section { padding: 64px 0; }
+
+    /* ─── HEADER ────────────────────────────────────────────────── */
+    header {
+      min-height: 100svh;
+    }
+
+    header .page-wrap {
+      min-height: 100svh;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
+    /* ─── SERVICES ──────────────────────────────────────────────── */
+    #services { padding: 64px 0 48px; }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(34px, 9vw, 50px);
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1.1;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    /* 3-column grid */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    /* Card: image top half, label bottom — tilted, flat on table */
+    .service-card {
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--bg-card);
+      /* flat paper on table: subtle drop shadow only, no neumorphic extrusion */
+      box-shadow: 2px 4px 12px rgba(0,0,0,0.13), 0 1px 2px rgba(0,0,0,0.07);
+      display: flex;
+      flex-direction: column;
+      cursor: default;
+    }
+
+    /* Each card gets its own tilt — "lying on a table" */
+    .service-card:nth-child(1) { transform: rotate(-2.5deg); }
+    .service-card:nth-child(2) { transform: rotate(1.5deg);  }
+    .service-card:nth-child(3) { transform: rotate(-1deg);   }
+    .service-card:nth-child(4) { transform: rotate(2deg);    }
+    .service-card:nth-child(5) { transform: rotate(-1.8deg); }
+    .service-card:nth-child(6) { transform: rotate(1.2deg);  }
+
+    .service-img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+      background: var(--shadow-d); /* placeholder colour */
+    }
+
+    /* emoji placeholder when no real image */
+    .service-img-placeholder {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      background: var(--shadow-d);
+    }
+
+    .service-label {
+      padding: 8px 10px 10px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    /* ─── PRICE ─────────────────────────────────────────────────── */
+    #price { padding: 48px 0 64px; }
+
+    .price-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(34px, 9vw, 50px);
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1.1;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .price-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .price-table thead tr {
+      border-bottom: 1px solid rgba(0,0,0,0.12);
+    }
+
+    .price-table th {
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 0 0 12px;
+      text-align: left;
+      font-weight: 400;
+    }
+
+    .price-table th:last-child { text-align: right; }
+
+    .price-table tbody tr {
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .price-table td {
+      padding: 13px 0;
+      vertical-align: middle;
+    }
+
+    .price-table td:last-child {
+      text-align: right;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 300;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .price-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 17px;
+      font-weight: 400;
+      color: var(--text);
+      display: block;
+      line-height: 1.2;
+    }
+
+    .price-meta {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+    }
+
+    .price-currency {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-left: 2px;
+    }
+
+    /* ─── CONTACTS ──────────────────────────────────────────────── */
+    #contacts { padding: 48px 0 80px; }
+
+    /* Pile of cards — spread so each is readable, slight overlap */
+    .cards-pile {
+      position: relative;
+      /* height calculated to show all 4 cards with small overlap */
+      height: 420px;
+    }
+
+    .contact-card {
+      position: absolute;
+      width: 200px;
+      padding: 18px 20px 16px;
+      border-radius: 14px;
+      background: var(--bg-card);
+      box-shadow: 3px 5px 16px rgba(0,0,0,0.14), 0 1px 3px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      text-decoration: none;
+      transition: transform 0.28s ease, box-shadow 0.28s ease;
+    }
+
+    .contact-card:hover {
+      z-index: 20 !important;
+      transform: rotate(0deg) translateY(-10px) scale(1.03) !important;
+      box-shadow: 6px 12px 28px rgba(0,0,0,0.18);
+    }
+
+    .card-icon  { font-size: 20px; margin-bottom: 2px; }
+
+    .card-platform {
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .card-handle {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 17px;
+      font-weight: 400;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+
+    .card-desc {
+      font-size: 10px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    /*
+      4 cards, spread vertically so content is visible.
+      Each card is ~90px tall. Overlap ~30px → step ~60px.
+      Horizontal offset alternates for natural pile feel.
+    */
+    .card-1 { top: 0px;   left: 10px;  transform: rotate(-4deg);  z-index: 1; }
+    .card-2 { top: 80px;  left: 50px;  transform: rotate(2.5deg); z-index: 2; }
+    .card-3 { top: 160px; left: 5px;   transform: rotate(-1.5deg);z-index: 3; }
+    .card-4 { top: 240px; left: 45px;  transform: rotate(3deg);   z-index: 4; }
+
+    /* ─── FADE-IN ────────────────────────────────────────────────── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HEADER — пустое место под будущий контент
+  ═══════════════════════════════════════════════════════════ -->
+  <header>
+    <div class="page-wrap">
+      <!-- место для хедера -->
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SERVICES
+  ═══════════════════════════════════════════════════════════ -->
+  <section id="services">
+    <div class="page-wrap">
+
+      <h2 class="section-title fade-in">Виды массажа</h2>
+
+      <div class="services-grid fade-in">
+
+        <div class="service-card">
+          <div class="service-img-placeholder">🪨</div>
+          <span class="service-label">Стоун</span>
+        </div>
+
+        <div class="service-card">
+          <div class="service-img-placeholder">🌿</div>
+          <span class="service-label">СПА</span>
+        </div>
+
+        <div class="service-card">
+          <div class="service-img-placeholder">🤲</div>
+          <span class="service-label">Общий</span>
+        </div>
+
+        <div class="service-card">
+          <div class="service-img-placeholder">⚡</div>
+          <span class="service-label">Спорт</span>
+        </div>
+
+        <div class="service-card">
+          <div class="service-img-placeholder">✨</div>
+          <span class="service-label">Лицо</span>
+        </div>
+
+        <div class="service-card">
+          <div class="service-img-placeholder">🌙</div>
+          <span class="service-label">Тайский</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       PRICE
+  ═══════════════════════════════════════════════════════════ -->
+  <section id="price">
+    <div class="page-wrap">
+
+      <h2 class="price-title fade-in">Прайс-лист</h2>
+
+      <table class="price-table fade-in">
+        <thead>
+          <tr>
+            <th>Услуга</th>
+            <th style="text-align:right">Цена</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="price-name">Общий массаж</span><span class="price-meta">60 мин</span></td>
+            <td>3 500<span class="price-currency">₽</span></td>
+          </tr>
+          <tr>
+            <td><span class="price-name">Общий массаж</span><span class="price-meta">90 мин</span></td>
+            <td>4 800<span class="price-currency">₽</span></td>
+          </tr>
+          <tr>
+            <td><span class="price-name">Стоун-массаж</span><span class="price-meta">90 мин</span></td>
+            <td>5 500<span class="price-currency">₽</span></td>
+          </tr>
+          <tr>
+            <td><span class="price-name">СПА-программа</span><span class="price-meta">120 мин</span></td>
+            <td>7 200<span class="price-currency">₽</span></td>
+          </tr>
+          <tr>
+            <td><span class="price-name">Спортивный</span><span class="price-meta">60 мин</span></td>
+            <td>4 200<span class="price-currency">₽</span></td>
+          </tr>
+          <tr>
+            <td><span class="price-name">Массаж лица</span><span class="price-meta">45 мин</span></td>
+            <td>2 800<span class="price-currency">₽</span></td>
+          </tr>
+          <tr>
+            <td><span class="price-name">Тайский массаж</span><span class="price-meta">90 мин</span></td>
+            <td>5 000<span class="price-currency">₽</span></td>
+          </tr>
+          <tr>
+            <td><span class="price-name">Абонемент × 5</span><span class="price-meta">любой вид, 60 мин</span></td>
+            <td>15 000<span class="price-currency">₽</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CONTACTS
+  ═══════════════════════════════════════════════════════════ -->
+  <section id="contacts">
+    <div class="page-wrap">
+
+      <div class="cards-pile fade-in">
+
+        <a href="https://instagram.com/senso.massage" target="_blank" rel="noopener" class="contact-card card-1">
+          <div class="card-icon">📸</div>
+          <span class="card-platform">Instagram</span>
+          <span class="card-handle">@senso.massage</span>
+          <span class="card-desc">Фото работ, акции</span>
+        </a>
+
+        <a href="https://threads.net/@senso.massage" target="_blank" rel="noopener" class="contact-card card-2">
+          <div class="card-icon">🧵</div>
+          <span class="card-platform">Threads</span>
+          <span class="card-handle">@senso.massage</span>
+          <span class="card-desc">Советы и статьи</span>
+        </a>
+
+        <a href="https://t.me/senso_massage" target="_blank" rel="noopener" class="contact-card card-3">
+          <div class="card-icon">✈️</div>
+          <span class="card-platform">Telegram</span>
+          <span class="card-handle">@senso_massage</span>
+          <span class="card-desc">Запись онлайн</span>
+        </a>
+
+        <a href="https://wa.me/79001234567" target="_blank" rel="noopener" class="contact-card card-4">
+          <div class="card-icon">💬</div>
+          <span class="card-platform">WhatsApp</span>
+          <span class="card-handle">+7 900 123-45-67</span>
+          <span class="card-desc">Быстрый ответ</span>
+        </a>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── SCROLL OBSERVER ──────────────────────────────────────── -->
+  <script>
+    const io = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+      }),
+      { threshold: 0.1 }
+    );
+    document.querySelectorAll('.fade-in').forEach(el => io.observe(el));
+  </script>
+
+</body>
+</html>
