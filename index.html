@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=480" />
   <title>SENSO — Студия массажа</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -400,8 +400,8 @@
     /* Candlebranch — чуть ниже */
     .bg-asset-1 {
       width: 190px;
-      top: 11%;
-      left: calc(50% - 355px);
+      top: 14%;
+      left: calc(50% - 340px);
       transform: rotate(-8deg);
     }
     /* Oil — медленное покачивание */
@@ -445,20 +445,6 @@
       }
       .card-logo { width: 22px; height: 22px; }
       .card-handle { font-size: 13px; }
-
-      /* скрываем глобальный слой ассетов на мобиле */
-      .bg-assets-layer { display: none; }
-
-      /* показываем встроенные мобильные ассеты */
-      .mobile-asset { display: block !important; }
-
-      /* overflow visible чтобы тени не обрезались */
-      #services, #services .page-wrap,
-      #price,
-      #contacts, #contacts .page-wrap,
-      header, header .page-wrap { overflow: visible !important; }
-
-      .services-grid { overflow: visible; }
     }
     .fade-in {
       opacity: 0;
