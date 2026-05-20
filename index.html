@@ -290,9 +290,14 @@
     .card-3 { transform: rotate(2.5deg) translate(-3px, -4px);z-index: 3; }
     .card-4 { transform: rotate(-1.5deg) translate(5px, 2px); z-index: 4; }
 
-    .card-icon {
-      font-size: 18px;
-      margin-bottom: 2px;
+    .card-logo {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      opacity: 0.7;
+      filter: grayscale(1);
+      margin-bottom: 4px;
+      flex-shrink: 0;
     }
 
     .card-platform {
@@ -308,6 +313,7 @@
       font-weight: 400;
       color: var(--accent);
       line-height: 1.2;
+      text-decoration: none;
     }
 
     .card-desc {
@@ -467,33 +473,33 @@
 
       <div class="cards-pile fade-in">
 
-        <a href="https://instagram.com/senso.massage" target="_blank" rel="noopener" class="contact-card card-1">
-          <div class="card-icon">📸</div>
+        <div class="contact-card card-1">
+          <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Inst.svg" alt="Instagram" />
           <span class="card-platform">Instagram</span>
-          <span class="card-handle">@senso.massage</span>
+          <a class="card-handle" href="https://instagram.com/senso.massage" target="_blank" rel="noopener">@senso.massage</a>
           <span class="card-desc">Фото, акції</span>
-        </a>
+        </div>
 
-        <a href="https://threads.net/@senso.massage" target="_blank" rel="noopener" class="contact-card card-2">
-          <div class="card-icon">🧵</div>
+        <div class="contact-card card-2">
+          <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Threads.svg" alt="Threads" />
           <span class="card-platform">Threads</span>
-          <span class="card-handle">@senso.massage</span>
+          <a class="card-handle" href="https://threads.net/@senso.massage" target="_blank" rel="noopener">@senso.massage</a>
           <span class="card-desc">Поради</span>
-        </a>
+        </div>
 
-        <a href="https://t.me/senso_massage" target="_blank" rel="noopener" class="contact-card card-3">
-          <div class="card-icon">✈️</div>
+        <div class="contact-card card-3">
+          <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Teleg.svg" alt="Telegram" />
           <span class="card-platform">Telegram</span>
-          <span class="card-handle">@senso_massage</span>
+          <a class="card-handle" href="https://t.me/senso_massage" target="_blank" rel="noopener">@senso_massage</a>
           <span class="card-desc">Запис онлайн</span>
-        </a>
+        </div>
 
-        <a href="https://wa.me/79001234567" target="_blank" rel="noopener" class="contact-card card-4">
-          <div class="card-icon">💬</div>
-          <span class="card-platform">WhatsApp</span>
-          <span class="card-handle">+380 00 000-00-00</span>
+        <div class="contact-card card-4">
+          <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Phone.svg" alt="Phone" />
+          <span class="card-platform">Телефон</span>
+          <a class="card-handle" href="tel:+380000000000">+380 00 000-00-00</a>
           <span class="card-desc">Швидка відповідь</span>
-        </a>
+        </div>
 
       </div><!-- /cards-pile -->
 
@@ -579,9 +585,27 @@
       });
     });
 
-    // tap outside cards while zoomed → zoom out
+    // contact cards — same zoom logic
+    document.querySelectorAll('.contact-card').forEach(card => {
+      card.addEventListener('click', e => {
+        // if click was on the link itself — let it navigate, don't zoom
+        if (e.target.closest('a.card-handle')) return;
+        if (!zoomed) {
+          zoomIn(card);
+        } else if (activeCard === card) {
+          zoomOut();
+        } else {
+          activeCard.classList.remove('zoom-target');
+          zoomIn(card);
+        }
+      });
+    });
+
+    // tap outside any zoomable card while zoomed → zoom out
     document.addEventListener('click', e => {
-      if (zoomed && !e.target.closest('.service-card')) zoomOut();
+      if (zoomed && !e.target.closest('.service-card') && !e.target.closest('.contact-card')) {
+        zoomOut();
+      }
     });
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') zoomOut(); });
