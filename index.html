@@ -446,38 +446,19 @@
       .card-logo { width: 22px; height: 22px; }
       .card-handle { font-size: 13px; }
 
-      /* assets on mobile — edge-anchored, same visual feel as desktop */
-      .bg-asset-1 {
-        width: 38vw;
-        left: -8vw;
-        right: auto;
-        top: 11%;
-      }
-      .bg-asset-2 {
-        width: 18vw;
-        right: -4vw;
-        left: auto;
-        top: 26%;
-        animation: sway 8s ease-in-out infinite;
-      }
-      .bg-asset-3 {
-        width: 70vw;
-        left: -18vw;
-        right: auto;
-        top: 42%;
-      }
-      .bg-asset-4 {
-        width: 42vw;
-        right: -8vw;
-        left: auto;
-        top: 77%;
-      }
-      .bg-asset-5 {
-        width: 46vw;
-        right: -6vw;
-        left: auto;
-        top: 1%;
-      }
+      /* скрываем глобальный слой ассетов на мобиле */
+      .bg-assets-layer { display: none; }
+
+      /* показываем встроенные мобильные ассеты */
+      .mobile-asset { display: block !important; }
+
+      /* overflow visible чтобы тени не обрезались */
+      #services, #services .page-wrap,
+      #price,
+      #contacts, #contacts .page-wrap,
+      header, header .page-wrap { overflow: visible !important; }
+
+      .services-grid { overflow: visible; }
     }
     .fade-in {
       opacity: 0;
@@ -506,6 +487,10 @@
   ═══════════════════════════════════════════════════════════ -->
   <header>
     <div class="page-wrap">
+      <!-- мобильный ассет: полотенце -->
+      <img class="mobile-asset" src="https://github.com/CakeBoxDeveloper/massage/blob/main/Tovel.png?raw=true" alt="" aria-hidden="true"
+        style="display:none; position:absolute; width:38vw; top:2%; right:-4vw; transform:rotate(5deg);
+               filter:drop-shadow(3px 6px 8px rgba(0,0,0,0.18)); pointer-events:none; z-index:3;" />
       <div class="header-placeholder" style="padding:0; overflow:hidden;">
         <video
           src="https://github.com/CakeBoxDeveloper/massage/blob/main/%D0%BB%D0%B5%D0%B3%D0%BA%D0%B0%D1%8F_%D1%81%D1%82%D0%B0%D1%82%D0%B8%D1%87%D0%BD%D0%B0%D1%8F_idle-%D0%B0%D0%BD%D0%B8%D0%BC%D0%B0%D1%86%D0%B8%D1%8F_202605202022.mp4?raw=true"
@@ -519,8 +504,16 @@
   <!-- ═══════════════════════════════════════════════════════════
        SERVICES
   ═══════════════════════════════════════════════════════════ -->
-  <section id="services">
-    <div class="page-wrap">
+  <section id="services" style="position:relative; overflow:visible;">
+    <div class="page-wrap" style="overflow:visible;">
+      <!-- мобильные ассеты -->
+      <img class="mobile-asset" src="https://github.com/CakeBoxDeveloper/massage/blob/main/Candlebranch.png?raw=true" alt="" aria-hidden="true"
+        style="display:none; position:absolute; width:40vw; top:0; left:-8vw; transform:rotate(-8deg);
+               filter:drop-shadow(4px 8px 8px rgba(0,0,0,0.18)); pointer-events:none; z-index:3;" />
+      <img class="mobile-asset" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Oil.png" alt="" aria-hidden="true"
+        style="display:none; position:absolute; width:16vw; top:18%; right:-4vw;
+               filter:drop-shadow(3px 5px 6px rgba(0,0,0,0.18)); pointer-events:none; z-index:3;
+               animation:sway 8s ease-in-out infinite;" />
 
       <div class="services-viewport" id="servicesViewport">
         <div class="services-grid" id="servicesGrid">
@@ -588,6 +581,10 @@
        PRICE
   ═══════════════════════════════════════════════════════════ -->
   <section id="price" style="padding:48px 0 160px; margin:0; overflow:visible; position:relative; display:flex; justify-content:center; align-items:center;">
+    <!-- мобильный ассет: лаванда -->
+    <img class="mobile-asset" src="https://github.com/CakeBoxDeveloper/massage/blob/main/image-removebg-preview%20(9).png?raw=true" alt="" aria-hidden="true"
+      style="display:none; position:absolute; width:65vw; top:38%; left:-16vw; transform:rotate(-75deg);
+             filter:drop-shadow(3px 6px 8px rgba(0,0,0,0.15)); pointer-events:none; z-index:3;" />
 
     <!-- векторная стопка листов -->
     <div aria-hidden="true" style="
@@ -745,13 +742,11 @@
     }
 
     document.querySelectorAll('.service-card').forEach(card => {
-      card.addEventListener('click', () => {
+      card.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (!zoomed) {
           zoomIn(card);
-        } else if (activeCard === card) {
-          zoomOut();
         } else {
-          // tap different card while zoomed → zoom out, don't switch
           zoomOut();
         }
       });
@@ -760,22 +755,21 @@
     // contact cards — same logic
     document.querySelectorAll('.contact-card').forEach(card => {
       card.addEventListener('click', e => {
-        if (e.target.closest('a.card-handle')) return; // let link work when zoomed
+        if (e.target.closest('a')) return; // let links work
+        e.stopPropagation();
         if (!zoomed) {
           zoomIn(card);
-        } else if (activeCard === card) {
-          // already zoomed on this card — do nothing, links are clickable
         } else {
           zoomOut();
         }
       });
     });
 
-    // tap outside any card while zoomed → zoom out
+    // любой клик вне карточки в зуме → zoom out
     document.addEventListener('click', e => {
-      if (zoomed && !e.target.closest('.service-card') && !e.target.closest('.contact-card')) {
-        zoomOut();
-      }
+      if (!zoomed) return;
+      if (e.target.closest('a')) return;
+      zoomOut();
     });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') zoomOut(); });
 
