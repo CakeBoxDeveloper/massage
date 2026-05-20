@@ -13,9 +13,9 @@
 
     :root {
       --bg:       #e8e3dc;
-      --bg-card:  #ede9e3;
-      --shadow-d: #d4cfc9;
-      --shadow-l: #faf7f2;
+      --bg-card:  #e4dfd8;
+      --shadow-d: #d8d3cc;
+      --shadow-l: #eeebe6;
       --text:     #2a2520;
       --text-dim: #8a8078;
       --accent:   #6b4f35;
@@ -40,6 +40,7 @@
       font-size: 15px;
       line-height: 1.6;
       overflow-x: hidden;
+      position: relative;
     }
 
     body::before { display: none; }
@@ -56,8 +57,35 @@
     section { padding: 64px 0; }
 
     /* ─── HEADER ────────────────────────────────────────────────── */
-    header { min-height: 100svh; }
-    header .page-wrap { min-height: 100svh; }
+    header {
+      min-height: 50svh;
+    }
+    header .page-wrap {
+      min-height: 50svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* placeholder block — shows available header space */
+    .header-placeholder {
+      width: 100%;
+      height: 100%;
+      min-height: calc(50svh - 48px);
+      border-radius: 16px;
+      background: var(--bg-card);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-placeholder-label {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
 
     /* ─── SECTION TITLE ─────────────────────────────────────────── */
     .section-title {
@@ -73,7 +101,7 @@
     /* ═══════════════════════════════════════════════════════════
        SERVICES GRID
     ═══════════════════════════════════════════════════════════ */
-    #services { padding: 64px 0 48px; }
+    #services { padding: 32px 0 24px; }
 
     .services-viewport { /* no special styles needed */ }
 
@@ -87,9 +115,7 @@
       border-radius: 14px;
       overflow: hidden;
       background: var(--bg-card);
-      box-shadow:
-        3px 3px 7px var(--shadow-d),
-        -2px -2px 5px var(--shadow-l);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.10);
       display: flex;
       flex-direction: column;
       cursor: pointer;
@@ -171,7 +197,6 @@
     /* ═══════════════════════════════════════════════════════════
        PRICE TABLE
     ═══════════════════════════════════════════════════════════ */
-    #price { padding: 48px 0 64px; }
 
     .price-title {
       font-family: 'Cormorant Garamond', serif;
@@ -186,7 +211,7 @@
     /* ═══════════════════════════════════════════════════════════
        PRICE TABLE — kraft paper sheet, tilted
     ═══════════════════════════════════════════════════════════ */
-    #price { padding: 48px 0 64px; }
+    #price { padding: 24px 0 32px; }
 
     /* outer border wrapping the whole table */
     .price-table-wrap {
@@ -201,9 +226,7 @@
       /* tilted sheet */
       transform: rotate(-1.5deg);
       transform-origin: center top;
-      box-shadow:
-        3px 5px 14px rgba(0,0,0,0.12),
-        -1px -1px 6px rgba(255,255,255,0.35);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
       margin: 8px 2px 28px;
     }
 
@@ -258,7 +281,7 @@
     /* ═══════════════════════════════════════════════════════════
        CONTACTS — 2×2 grid, full width, slight tilt + overlap
     ═══════════════════════════════════════════════════════════ */
-    #contacts { padding: 48px 0 100px; }
+    #contacts { padding: 24px 0 50px; }
 
     .cards-pile {
       display: grid;
@@ -275,9 +298,7 @@
       padding: 14px 16px 12px;
       border-radius: 10px;
       background: var(--bg-card);
-      box-shadow:
-        3px 3px 7px var(--shadow-d),
-        -2px -2px 5px var(--shadow-l);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.10);
       display: flex;
       flex-direction: column;
       gap: 4px;
@@ -323,11 +344,70 @@
       margin-top: auto;
     }
 
-    /* ─── BACKGROUND PNG OBJECTS — убраны, расставим позже ──── */
+    /* ─── SCROLLING BACKGROUND ASSETS ──────────────────────────── */
+    .bg-assets-layer {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2; /* above bg, below cards */
+      overflow: hidden;
+    }
 
-    /* wrapper for sections that need relative positioning */
-    #services, #price, #contacts {
-      position: relative;
+    .bg-asset {
+      position: absolute;
+      pointer-events: none;
+      filter:
+        drop-shadow(8px 12px 10px rgba(0,0,0,0.22))
+        drop-shadow(3px 5px 4px rgba(0,0,0,0.12));
+    }
+
+    /* ─── SWAY ANIMATION for Oil ───────────────────────────────── */
+    @keyframes sway {
+      0%   { transform: rotate(6deg) translateX(0px); }
+      30%  { transform: rotate(8deg) translateX(2px); }
+      60%  { transform: rotate(4deg) translateX(-2px); }
+      100% { transform: rotate(6deg) translateX(0px); }
+    }
+
+    /* Candlebranch — чуть меньше и выше */
+    .bg-asset-1 {
+      width: 190px;
+      top: 8%;
+      left: calc(50% - 355px);
+      transform: rotate(-8deg);
+    }
+    /* Oil — sway анимация */
+    .bg-asset-2 {
+      width: 88px;
+      top: 26%;
+      right: calc(50% - 295px);
+      animation: sway 4s ease-in-out infinite;
+    }
+    /* Purple — вместо свечи, левый низ между карточками и прайсом */
+    .bg-asset-3 {
+      width: 130px;
+      top: 52%;
+      left: calc(50% - 345px);
+      transform: rotate(-5deg);
+    }
+    /* Salt — правый низ, у нижнего края прайса / начало визиток */
+    .bg-asset-4 {
+      width: 160px;
+      top: 78%;
+      right: calc(50% - 340px);
+      transform: rotate(-6deg);
+    }
+    /* Tovel — правый верх хедера */
+    .bg-asset-5 {
+      width: 180px;
+      top: 1%;
+      right: calc(50% - 340px);
+      transform: rotate(5deg);
+    }
+
+    @media (max-width: 700px) {
+      .bg-asset { display: none; }
     }
     .fade-in {
       opacity: 0;
@@ -342,11 +422,24 @@
 </head>
 <body>
 
+  <!-- ─── SCROLLING BACKGROUND ASSETS ────────────────────────── -->
+  <div class="bg-assets-layer">
+    <img class="bg-asset bg-asset-1" src="https://github.com/CakeBoxDeveloper/massage/blob/main/Candlebranch.png?raw=true" alt="" aria-hidden="true" />
+    <img class="bg-asset bg-asset-2" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Oil.png" alt="" aria-hidden="true" />
+    <img class="bg-asset bg-asset-3" src="https://github.com/CakeBoxDeveloper/massage/blob/main/Purple.png?raw=true" alt="" aria-hidden="true" />
+    <img class="bg-asset bg-asset-4" src="https://github.com/CakeBoxDeveloper/massage/blob/main/Salt.png?raw=true" alt="" aria-hidden="true" />
+    <img class="bg-asset bg-asset-5" src="https://github.com/CakeBoxDeveloper/massage/blob/main/Tovel.png?raw=true" alt="" aria-hidden="true" />
+  </div>
+
   <!-- ═══════════════════════════════════════════════════════════
        HEADER — пустое место
   ═══════════════════════════════════════════════════════════ -->
   <header>
-    <div class="page-wrap"></div>
+    <div class="page-wrap">
+      <div class="header-placeholder">
+        <span class="header-placeholder-label">Header</span>
+      </div>
+    </div>
   </header>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -586,15 +679,19 @@
     });
 
     // contact cards — same zoom logic
+    // links inside are only clickable when card is already zoomed
     document.querySelectorAll('.contact-card').forEach(card => {
       card.addEventListener('click', e => {
-        // if click was on the link itself — let it navigate, don't zoom
-        if (e.target.closest('a.card-handle')) return;
         if (!zoomed) {
+          // not zoomed → always zoom, block link navigation
+          e.preventDefault();
           zoomIn(card);
         } else if (activeCard === card) {
-          zoomOut();
+          // already zoomed on this card → let links work, don't zoom out on card click
+          // zoom out only happens via outside click (handled below)
         } else {
+          // zoomed on different card → switch zoom
+          e.preventDefault();
           activeCard.classList.remove('zoom-target');
           zoomIn(card);
         }
@@ -607,7 +704,6 @@
         zoomOut();
       }
     });
-
     document.addEventListener('keydown', e => { if (e.key === 'Escape') zoomOut(); });
   </script>
 
