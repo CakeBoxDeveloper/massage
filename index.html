@@ -49,7 +49,7 @@
       font-weight: 300;
       font-size: 15px;
       line-height: 1.6;
-      overflow-x: hidden;
+      overflow-x: clip;
       position: relative;
     }
 
@@ -123,13 +123,18 @@
 
     .service-card {
       border-radius: 14px;
-      overflow: hidden;
+      overflow: visible;
       background: var(--bg-card);
       box-shadow: 0 2px 6px rgba(0,0,0,0.10);
       display: flex;
       flex-direction: column;
       cursor: pointer;
       position: relative;
+    }
+
+    /* clip image to card radius without clipping the shadow */
+    .service-img {
+      border-radius: 14px 14px 0 0;
     }
 
     .service-card:nth-child(1) { transform: rotate(-2.5deg); }
@@ -234,20 +239,23 @@
 
     .price-sheet-wrap {
       margin: 8px 0 28px;
+      transform: scale(1.1);
+      transform-origin: center top;
     }
 
     .price-table-wrap {
       position: relative;
-      background: #faf8f5;
+      background: var(--bg-card);
       border: none;
-      border-radius: 0 0 2px 2px;
+      border-radius: 3px;
       box-shadow:
         2px 4px 16px rgba(0,0,0,0.13),
+        0 1px 4px rgba(0,0,0,0.06),
         1px 1px 0 rgba(0,0,0,0.04);
       padding: 28px 24px 36px;
       overflow: visible;
       clip-path: polygon(0 0, calc(100% - 56px) 0, 100% 56px, 100% 100%, 0 100%);
-      transform: rotate(-3deg);
+      transform: rotate(-1deg);
       transform-origin: center top;
     }
 
@@ -256,7 +264,7 @@
       position: absolute;
       top: 0; right: 0;
       width: 56px; height: 56px;
-      background: linear-gradient(225deg, #e8e3dc 50%, rgba(0,0,0,0.08) 50%);
+      background: linear-gradient(225deg, var(--bg) 50%, rgba(0,0,0,0.08) 50%);
       z-index: 2;
     }
 
