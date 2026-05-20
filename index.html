@@ -385,17 +385,17 @@
       right: calc(50% - 295px);
       animation: sway 8s ease-in-out infinite;
     }
-    /* Purple — крупнее, левее, у начала прайса */
+    /* Purple — лаванда, чуть ниже, отражена по горизонтали */
     .bg-asset-3 {
-      width: 160px;
-      top: 51%;
-      left: calc(50% - 370px);
-      transform: rotate(-5deg);
+      width: 230px;
+      top: 46%;
+      left: calc(50% - 380px);
+      transform: rotate(-90deg) scaleX(-1);
     }
-    /* Salt — крупнее, чуть выше */
+    /* Salt — чуть ниже, чуть меньше */
     .bg-asset-4 {
-      width: 195px;
-      top: 75%;
+      width: 170px;
+      top: 77%;
       right: calc(50% - 340px);
       transform: rotate(-6deg);
     }
@@ -408,7 +408,7 @@
     }
 
     @media (max-width: 700px) {
-      .bg-asset { display: none; }
+      /* assets visible on mobile too — they scroll with the page */
     }
     .fade-in {
       opacity: 0;
