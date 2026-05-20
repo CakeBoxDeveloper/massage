@@ -42,31 +42,8 @@
       overflow-x: hidden;
     }
 
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      /* grain: fine fractalNoise tile, 200×200px */
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
-      background-size: 200px 200px;
-      background-repeat: repeat;
-      pointer-events: none;
-      z-index: 998;
-      opacity: 0.28;
-      mix-blend-mode: multiply;
-    }
-
-    /* second coarser grain layer */
-    body::after {
-      content: '';
-      position: fixed; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='g2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23g2)' opacity='1'/%3E%3C/svg%3E");
-      background-size: 120px 120px;
-      background-repeat: repeat;
-      pointer-events: none;
-      z-index: 997;
-      opacity: 0.12;
-      mix-blend-mode: multiply;
-    }
+    body::before { display: none; }
+    body::after  { display: none; }
 
     /* ─── LAYOUT ────────────────────────────────────────────────── */
     .page-wrap {
@@ -180,7 +157,7 @@
 
     /* ── WHOLE-PAGE ZOOM ──────────────────────────────────────── */
     body {
-      transition: transform 0.85s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
     body.is-zoomed {
       transform: var(--page-transform, none);
@@ -425,7 +402,6 @@
           </div>
 
         </div>
-        <p class="zoom-hint" id="zoomHint">торкніться ще раз, щоб повернутись</p>
       </div>
     </div>
   </section>
@@ -542,25 +518,32 @@
     function zoomIn(card) {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const scale = 2;
+      const scale = 2.5;
 
-      // Card centre in viewport coords (before any transform)
+      // Get the card's current rotation from its nth-child CSS
+      // by reading the computed transform matrix
+      const matrix = new DOMMatrix(getComputedStyle(card).transform);
+      // matrix.a = cos(θ), matrix.b = sin(θ)
+      const cardAngleDeg = Math.round(Math.atan2(matrix.b, matrix.a) * 180 / Math.PI);
+      // Counter-rotate the camera by the same angle
+      const rotateDeg = -cardAngleDeg;
+
+      // Card centre in viewport coords
       const r  = card.getBoundingClientRect();
       const cx = r.left + r.width  / 2;
       const cy = r.top  + r.height / 2;
 
-      // Set transform-origin to the card centre in PAGE coords.
-      // When we scale(2) around this origin, the card centre stays
-      // at (cx, cy) on screen. We then translate to move it to (vw/2, vh/2).
-      // The translate is in the scaled coordinate space, so divide by scale.
+      // transform-origin = card centre in document coords
       const originX = cx + window.scrollX;
       const originY = cy + window.scrollY;
+
+      // translate to bring card centre to viewport centre (in pre-scale space)
       const tx = (vw / 2 - cx) / scale;
       const ty = (vh / 2 - cy) / scale;
 
       document.body.style.transformOrigin = `${originX}px ${originY}px`;
       document.body.style.setProperty('--page-transform',
-        `scale(${scale}) translate(${tx}px, ${ty}px)`
+        `scale(${scale}) translate(${tx}px, ${ty}px) rotate(${rotateDeg}deg)`
       );
       document.body.classList.add('is-zoomed');
 
