@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
   <title>SENSO — Студия массажа</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -33,12 +33,16 @@
       --radius:   14px;
     }
 
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      overscroll-behavior: none;
+    }
 
-    /* hide scrollbar globally */
     html, body {
-      scrollbar-width: none;
-      -ms-overflow-style: none;
+      max-width: 100vw;
+      overflow-x: hidden;
+      touch-action: pan-y;
     }
     ::-webkit-scrollbar { display: none; }
 
@@ -111,7 +115,7 @@
     /* ═══════════════════════════════════════════════════════════
        SERVICES GRID
     ═══════════════════════════════════════════════════════════ */
-    #services { padding: 32px 0 24px; }
+    #services { padding: 16px 0 12px; }
 
     .services-viewport { /* no special styles needed */ }
 
@@ -226,7 +230,7 @@
     /* ═══════════════════════════════════════════════════════════
        PRICE TABLE — white paper sheet
     ═══════════════════════════════════════════════════════════ */
-    #price { padding: 24px 0 32px; }
+    #price { padding: 12px 0 16px; }
 
     .price-sheet-wrap {
       position: relative;
@@ -239,42 +243,27 @@
 
     .price-sheet-wrap {
       margin: 8px 0 28px;
-      transform: scale(1.1);
-      transform-origin: center top;
     }
 
     .price-table-wrap {
       position: relative;
-      background: var(--bg-card);
+      background: url("https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Massage_website_assets_pack_202605201701.png") center center / 100% 100% no-repeat;
       border: none;
       border-radius: 3px;
       box-shadow:
         2px 4px 16px rgba(0,0,0,0.13),
-        0 1px 4px rgba(0,0,0,0.06),
-        1px 1px 0 rgba(0,0,0,0.04);
-      padding: 28px 24px 36px;
+        0 1px 4px rgba(0,0,0,0.06);
+      /* top padding large — accounts for spiral binding in PNG */
+      padding: 60px 32px 48px 32px;
       overflow: visible;
-      clip-path: polygon(0 0, calc(100% - 56px) 0, 100% 56px, 100% 100%, 0 100%);
       transform: rotate(-1deg);
       transform-origin: center top;
     }
 
-    .price-table-wrap::before {
-      content: '';
-      position: absolute;
-      top: 0; right: 0;
-      width: 56px; height: 56px;
-      background: linear-gradient(225deg, var(--bg) 50%, rgba(0,0,0,0.08) 50%);
-      z-index: 2;
-    }
-
+    /* remove CSS corner — it's drawn in the PNG */
+    .price-table-wrap::before,
     .price-table-wrap::after {
-      content: '';
-      position: absolute;
-      top: 0; right: 0;
-      width: 56px; height: 56px;
-      background: linear-gradient(225deg, transparent 50%, rgba(0,0,0,0.07) 50%);
-      z-index: 1;
+      display: none;
     }
 
     .price-table {
@@ -412,9 +401,9 @@
     /* ─── SWAY ANIMATION for Oil ───────────────────────────────── */
     @keyframes sway {
       0%   { transform: rotate(6deg) translate(0px, 0px); }
-      25%  { transform: rotate(5.5deg) translate(-3px, 1px); }
-      50%  { transform: rotate(6.5deg) translate(3px, -1px); }
-      75%  { transform: rotate(5.8deg) translate(-2px, 0px); }
+      25%  { transform: rotate(5.8deg) translate(-1px, 0.5px); }
+      50%  { transform: rotate(6.2deg) translate(1px, -0.5px); }
+      75%  { transform: rotate(5.9deg) translate(-0.5px, 0px); }
       100% { transform: rotate(6deg) translate(0px, 0px); }
     }
 
@@ -432,18 +421,18 @@
       right: calc(50% - 295px);
       animation: sway 8s ease-in-out infinite;
     }
-    /* Purple — лаванда, чуть ниже, отражена по горизонтали */
+    /* Purple — лаванда, чуть ближе к тексту */
     .bg-asset-3 {
       width: 230px;
       top: 46%;
-      left: calc(50% - 380px);
+      left: calc(50% - 355px);
       transform: rotate(90deg) scaleX(-1);
     }
-    /* Salt — чуть ниже, чуть меньше */
+    /* Salt — чуть ниже, чуть левее */
     .bg-asset-4 {
-      width: 170px;
+      width: 204px;
       top: 77%;
-      right: calc(50% - 340px);
+      right: calc(50% - 330px);
       transform: rotate(-6deg);
     }
     /* Tovel — больше */
@@ -584,54 +573,12 @@
   <!-- ═══════════════════════════════════════════════════════════
        PRICE
   ═══════════════════════════════════════════════════════════ -->
-  <section id="price">
-    <div class="page-wrap">
-
-      <div class="price-sheet-wrap fade-in">
-        <img class="price-sheet-bg"
-             src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/%D1%81%D0%B4%D0%B5%D0%BB%D0%B0%D0%B9_%D0%B1%D0%B5%D0%BB%D1%8B%D0%B9_%D0%BB%D0%B8%D1%81%D1%82_%D0%B04_%D1%81_202605201538.png"
-             alt="" aria-hidden="true" />
-        <div class="price-table-wrap">
-        <table class="price-table">
-          <tbody>
-            <tr>
-              <td><span class="price-name">Общий массаж</span><span class="price-meta">60 хв</span></td>
-              <td>3 500<span class="price-currency">₴</span></td>
-            </tr>
-            <tr>
-              <td><span class="price-name">Общий массаж</span><span class="price-meta">90 хв</span></td>
-              <td>4 800<span class="price-currency">₴</span></td>
-            </tr>
-            <tr>
-              <td><span class="price-name">Стоун-массаж</span><span class="price-meta">90 хв</span></td>
-              <td>5 500<span class="price-currency">₴</span></td>
-            </tr>
-            <tr>
-              <td><span class="price-name">СПА-програма</span><span class="price-meta">120 хв</span></td>
-              <td>7 200<span class="price-currency">₴</span></td>
-            </tr>
-            <tr>
-              <td><span class="price-name">Спортивний</span><span class="price-meta">60 хв</span></td>
-              <td>4 200<span class="price-currency">₴</span></td>
-            </tr>
-            <tr>
-              <td><span class="price-name">Масаж обличчя</span><span class="price-meta">45 хв</span></td>
-              <td>2 800<span class="price-currency">₴</span></td>
-            </tr>
-            <tr>
-              <td><span class="price-name">Тайський масаж</span><span class="price-meta">90 хв</span></td>
-              <td>5 000<span class="price-currency">₴</span></td>
-            </tr>
-            <tr>
-              <td><span class="price-name">Абонемент × 5</span><span class="price-meta">будь-який вид, 60 хв</span></td>
-              <td>15 000<span class="price-currency">₴</span></td>
-            </tr>
-          </tbody>
-        </table>
-        </div><!-- /price-table-wrap -->
-      </div><!-- /price-sheet-wrap -->
-
-    </div>
+  <section id="price" style="padding:12px 0 16px;">
+    <img
+      src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Massage_website_assets_pack_202605201701.png"
+      alt="Прайс-лист"
+      style="width:85%; height:auto; display:block; margin:0 auto; transform:rotate(-1.5deg); transform-origin:center top;"
+    />
   </section>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -781,6 +728,24 @@
       }
     });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') zoomOut(); });
+
+    /* ── Block pinch-zoom and horizontal scroll ── */
+    document.addEventListener('touchmove', e => {
+      if (e.touches.length > 1) e.preventDefault(); // pinch
+    }, { passive: false });
+
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (e.touches.length === 1) {
+        const dx = Math.abs(e.touches[0].clientX - touchStartX);
+        const dy = Math.abs(e.touches[0].clientY - (e.touches[0].clientY));
+        if (dx > 10 && dx > dy) e.preventDefault(); // horizontal swipe
+      }
+    }, { passive: false });
   </script>
 
 </body>
