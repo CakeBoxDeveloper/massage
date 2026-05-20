@@ -103,13 +103,18 @@
     .service-card:nth-child(5) { transform: rotate(-1.8deg); }
     .service-card:nth-child(6) { transform: rotate(1.2deg);  }
 
-    /* real PNG images — square top */
+    /* real PNG/SVG images — contain, no crop */
     .service-img {
       width: 100%;
       aspect-ratio: 1 / 1;
-      object-fit: cover;
+      object-fit: contain;
       display: block;
       flex-shrink: 0;
+      padding: 20px;
+      background: var(--bg-card);
+      /* lighten the SVG lines to soft grey */
+      opacity: 0.72;
+      filter: grayscale(1);
     }
 
     .service-footer {
@@ -348,7 +353,7 @@
         <div class="services-grid" id="servicesGrid">
 
           <div class="service-card" data-name="Стоун-масаж" data-duration="90 хв" data-desc="Гарячі базальтові камені кладуться вздовж хребта і опрацьовують глибокі м'язові шари. Тепло проникає в тканини, знімає хронічне напруження і покращує кровообіг.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/SpaStones.png" alt="Стоун-масаж" />
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Stone.svg" alt="Стоун-масаж" />
             <div class="service-footer"><span class="service-label">Стоун</span><span class="service-dur">90 хв</span></div>
             <div class="service-info">
               <span class="service-info-name">Стоун-масаж · 90 хв</span>
@@ -357,7 +362,7 @@
           </div>
 
           <div class="service-card" data-name="СПА-програма" data-duration="120 хв" data-desc="Ароматичні олії, гаряче обгортання, пілінг і завершальний масаж. Шкіра стає м'якою, тіло — легким. Програма відновлює не лише тіло, а й емоційний баланс.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Oil.png" alt="СПА-програма" />
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Spa.svg" alt="СПА-програма" />
             <div class="service-footer"><span class="service-label">СПА</span><span class="service-dur">120 хв</span></div>
             <div class="service-info">
               <span class="service-info-name">СПА-програма · 120 хв</span>
@@ -366,7 +371,7 @@
           </div>
 
           <div class="service-card" data-name="Загальний масаж" data-duration="60–90 хв" data-desc="Класичний розслаблюючий масаж усього тіла. М'які погладжування і розминання знімають м'язове напруження, покращують лімфотік і дарують відчуття повного спокою.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Candle1.png" alt="Загальний масаж" />
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/All.svg" alt="Загальний масаж" />
             <div class="service-footer"><span class="service-label">Загальний</span><span class="service-dur">60–90 хв</span></div>
             <div class="service-info">
               <span class="service-info-name">Загальний масаж · 60–90 хв</span>
@@ -375,7 +380,7 @@
           </div>
 
           <div class="service-card" data-name="Спортивний масаж" data-duration="60 хв" data-desc="Глибока опрацювання м'язів після фізичних навантажень. Усуває тригерні точки, прискорює відновлення, знижує ризик травм.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Candle2.png" alt="Спортивний масаж" />
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Sport.svg" alt="Спортивний масаж" />
             <div class="service-footer"><span class="service-label">Спорт</span><span class="service-dur">60 хв</span></div>
             <div class="service-info">
               <span class="service-info-name">Спортивний масаж · 60 хв</span>
@@ -384,7 +389,7 @@
           </div>
 
           <div class="service-card" data-name="Масаж обличчя" data-duration="45 хв" data-desc="Ліфтинг-масаж за авторською технікою: знімає набряклість, опрацьовує жувальні м'язи і м'язи шиї, покращує овал обличчя.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Oil.png" alt="Масаж обличчя" />
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Face.svg" alt="Масаж обличчя" />
             <div class="service-footer"><span class="service-label">Обличчя</span><span class="service-dur">45 хв</span></div>
             <div class="service-info">
               <span class="service-info-name">Масаж обличчя · 45 хв</span>
@@ -393,7 +398,7 @@
           </div>
 
           <div class="service-card" data-name="Тайський масаж" data-duration="90 хв" data-desc="Традиційна техніка, що поєднує акупресуру, пасивну йогу і роботу з енергетичними лініями тіла. Відновлює гнучкість і наповнює енергією.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/SpaStones.png" alt="Тайський масаж" />
+            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/THai.svg" alt="Тайський масаж" />
             <div class="service-footer"><span class="service-label">Тайський</span><span class="service-dur">90 хв</span></div>
             <div class="service-info">
               <span class="service-info-name">Тайський масаж · 90 хв</span>
