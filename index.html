@@ -425,6 +425,8 @@
       .contact-card {
         padding: 10px 12px 8px;
         border-radius: 8px;
+        /* enforce credit card proportions explicitly on mobile */
+        min-height: 0;
       }
       .card-logo {
         width: 22px;
@@ -433,6 +435,13 @@
       .card-handle {
         font-size: 13px;
       }
+
+      /* assets on mobile — smaller, positioned relative to screen edges */
+      .bg-asset-1 { width: 130px; left: -30px;  right: auto; }
+      .bg-asset-2 { width: 60px;  right: -10px; left: auto; animation: sway 8s ease-in-out infinite; }
+      .bg-asset-3 { width: 160px; left: -40px;  right: auto; }
+      .bg-asset-4 { width: 120px; right: -20px; left: auto;  }
+      .bg-asset-5 { width: 150px; right: -20px; left: auto;  }
     }
     .fade-in {
       opacity: 0;
@@ -647,7 +656,7 @@
     function zoomIn(card) {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const scale = 2.5;
+      const scale = window.innerWidth < 600 ? 1.5 : 2.5;
 
       // Get the card's current rotation from its nth-child CSS
       // by reading the computed transform matrix
