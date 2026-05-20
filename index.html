@@ -364,43 +364,44 @@
 
     /* ─── SWAY ANIMATION for Oil ───────────────────────────────── */
     @keyframes sway {
-      0%   { transform: rotate(6deg) translateX(0px); }
-      30%  { transform: rotate(8deg) translateX(2px); }
-      60%  { transform: rotate(4deg) translateX(-2px); }
-      100% { transform: rotate(6deg) translateX(0px); }
+      0%   { transform: rotate(6deg) translate(0px, 0px); }
+      25%  { transform: rotate(5.5deg) translate(-3px, 1px); }
+      50%  { transform: rotate(6.5deg) translate(3px, -1px); }
+      75%  { transform: rotate(5.8deg) translate(-2px, 0px); }
+      100% { transform: rotate(6deg) translate(0px, 0px); }
     }
 
-    /* Candlebranch — чуть меньше и выше */
+    /* Candlebranch — чуть ниже */
     .bg-asset-1 {
       width: 190px;
-      top: 8%;
+      top: 11%;
       left: calc(50% - 355px);
       transform: rotate(-8deg);
     }
-    /* Oil — sway анимация */
+    /* Oil — медленное покачивание */
     .bg-asset-2 {
       width: 88px;
       top: 26%;
       right: calc(50% - 295px);
-      animation: sway 4s ease-in-out infinite;
+      animation: sway 8s ease-in-out infinite;
     }
-    /* Purple — вместо свечи, левый низ между карточками и прайсом */
+    /* Purple — крупнее, левее, у начала прайса */
     .bg-asset-3 {
-      width: 130px;
-      top: 52%;
-      left: calc(50% - 345px);
+      width: 160px;
+      top: 51%;
+      left: calc(50% - 370px);
       transform: rotate(-5deg);
     }
-    /* Salt — правый низ, у нижнего края прайса / начало визиток */
+    /* Salt — крупнее, чуть выше */
     .bg-asset-4 {
-      width: 160px;
-      top: 78%;
+      width: 195px;
+      top: 75%;
       right: calc(50% - 340px);
       transform: rotate(-6deg);
     }
-    /* Tovel — правый верх хедера */
+    /* Tovel — больше */
     .bg-asset-5 {
-      width: 180px;
+      width: 230px;
       top: 1%;
       right: calc(50% - 340px);
       transform: rotate(5deg);
