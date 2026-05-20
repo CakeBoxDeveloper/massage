@@ -219,25 +219,54 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
-       PRICE TABLE — kraft paper sheet, tilted
+       PRICE TABLE — white paper sheet
     ═══════════════════════════════════════════════════════════ */
     #price { padding: 24px 0 32px; }
 
-    /* outer border wrapping the whole table */
+    .price-sheet-wrap {
+      position: relative;
+    }
+
+    /* the paper PNG as background */
+    .price-sheet-bg {
+      display: none; /* using CSS background instead */
+    }
+
+    .price-sheet-wrap {
+      margin: 8px 0 28px;
+    }
+
     .price-table-wrap {
-      border: 1px solid rgba(0,0,0,0.07);
-      border-radius: 4px;
-      overflow: hidden;
-      /* kraft paper — subtle warm tint + light noise */
-      background-color: #dfc9a8;
-      background-image:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='k'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.3'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23k)' opacity='0.3'/%3E%3C/svg%3E");
-      background-size: 300px 300px;
-      /* tilted sheet */
-      transform: rotate(-1.5deg);
+      position: relative;
+      background: #faf8f5;
+      border: none;
+      border-radius: 0 0 2px 2px;
+      box-shadow:
+        2px 4px 16px rgba(0,0,0,0.13),
+        1px 1px 0 rgba(0,0,0,0.04);
+      padding: 28px 24px 36px;
+      overflow: visible;
+      clip-path: polygon(0 0, calc(100% - 56px) 0, 100% 56px, 100% 100%, 0 100%);
+      transform: rotate(-3deg);
       transform-origin: center top;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-      margin: 8px 2px 28px;
+    }
+
+    .price-table-wrap::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 56px; height: 56px;
+      background: linear-gradient(225deg, #e8e3dc 50%, rgba(0,0,0,0.08) 50%);
+      z-index: 2;
+    }
+
+    .price-table-wrap::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 56px; height: 56px;
+      background: linear-gradient(225deg, transparent 50%, rgba(0,0,0,0.07) 50%);
+      z-index: 1;
     }
 
     .price-table {
@@ -263,7 +292,7 @@
       font-family: 'Cormorant Garamond', serif;
       font-size: 20px;
       font-weight: 300;
-      color: #3a2510;
+      color: var(--accent);
       white-space: nowrap;
     }
 
@@ -271,20 +300,20 @@
       font-family: 'Cormorant Garamond', serif;
       font-size: 17px;
       font-weight: 400;
-      color: #2a1a08;
+      color: var(--text);
       display: block;
       line-height: 1.2;
     }
 
     .price-meta {
       font-size: 10px;
-      color: #7a5c3a;
+      color: var(--text-dim);
       letter-spacing: 0.08em;
     }
 
     .price-currency {
       font-size: 12px;
-      color: #7a5c3a;
+      color: var(--text-dim);
       margin-left: 2px;
     }
 
@@ -550,7 +579,11 @@
   <section id="price">
     <div class="page-wrap">
 
-      <div class="price-table-wrap fade-in">
+      <div class="price-sheet-wrap fade-in">
+        <img class="price-sheet-bg"
+             src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/%D1%81%D0%B4%D0%B5%D0%BB%D0%B0%D0%B9_%D0%B1%D0%B5%D0%BB%D1%8B%D0%B9_%D0%BB%D0%B8%D1%81%D1%82_%D0%B04_%D1%81_202605201538.png"
+             alt="" aria-hidden="true" />
+        <div class="price-table-wrap">
         <table class="price-table">
           <tbody>
             <tr>
@@ -587,7 +620,8 @@
             </tr>
           </tbody>
         </table>
-      </div>
+        </div><!-- /price-table-wrap -->
+      </div><!-- /price-sheet-wrap -->
 
     </div>
   </section>
