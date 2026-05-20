@@ -437,29 +437,47 @@
     }
     /* ─── CONTACTS mobile fix ───────────────────────────────────── */
     @media (max-width: 480px) {
-      .cards-pile {
-        gap: 8px;
-      }
+      .cards-pile { gap: 8px; }
       .contact-card {
         padding: 10px 12px 8px;
         border-radius: 8px;
-        /* enforce credit card proportions explicitly on mobile */
         min-height: 0;
       }
-      .card-logo {
-        width: 22px;
-        height: 22px;
-      }
-      .card-handle {
-        font-size: 13px;
-      }
+      .card-logo { width: 22px; height: 22px; }
+      .card-handle { font-size: 13px; }
 
-      /* assets on mobile — smaller, positioned relative to screen edges */
-      .bg-asset-1 { width: 130px; left: -30px;  right: auto; }
-      .bg-asset-2 { width: 60px;  right: -10px; left: auto; animation: sway 8s ease-in-out infinite; }
-      .bg-asset-3 { width: 160px; left: -40px;  right: auto; }
-      .bg-asset-4 { width: 120px; right: -20px; left: auto;  }
-      .bg-asset-5 { width: 150px; right: -20px; left: auto;  }
+      /* assets on mobile — edge-anchored, same visual feel as desktop */
+      .bg-asset-1 {
+        width: 38vw;
+        left: -8vw;
+        right: auto;
+        top: 11%;
+      }
+      .bg-asset-2 {
+        width: 18vw;
+        right: -4vw;
+        left: auto;
+        top: 26%;
+        animation: sway 8s ease-in-out infinite;
+      }
+      .bg-asset-3 {
+        width: 70vw;
+        left: -18vw;
+        right: auto;
+        top: 42%;
+      }
+      .bg-asset-4 {
+        width: 42vw;
+        right: -8vw;
+        left: auto;
+        top: 77%;
+      }
+      .bg-asset-5 {
+        width: 46vw;
+        right: -6vw;
+        left: auto;
+        top: 1%;
+      }
     }
     .fade-in {
       opacity: 0;
