@@ -1,544 +1,532 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
-  <title>SENSO — Студия массажа</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <title>SENSO — Студія масажу</title>
   <style>
-    @font-face {
-      font-family: 'MarckScript';
-      src: url('https://github.com/CakeBoxDeveloper/massage/blob/main/MarckScript-Regular.ttf?raw=true') format('truetype');
-      font-weight: normal;
-      font-style: normal;
-    }
-    /* ─── RESET ─────────────────────────────────────────────────── */
+    /* ─── RESET ─── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none; }
 
-    /* no tap highlight, no text selection on interactive elements */
-    * {
-      -webkit-tap-highlight-color: transparent;
-      -webkit-touch-callout: none;
-    }
-    .service-card, .contact-card {
-      -webkit-user-select: none;
-      user-select: none;
-    }
-
+    /* ─── VARIABLES ─── */
     :root {
-      --bg:       #e8e3dc;
-      --bg-card:  #e4dfd8;
-      --shadow-d: #d8d3cc;
-      --shadow-l: #eeebe6;
-      --text:     #2a2520;
-      --text-dim: #8a8078;
-      --accent:   #6b4f35;
-      --accent2:  #9c7a5a;
-      --radius:   14px;
+      --bg:      #e8e3dc;
+      --card:    #f2ede6;
+      --text:    #2a2520;
+      --dim:     #8a8078;
+      --accent:  #6b4f35;
+      --border:  #c8bfb5;
+      --font:    'Comic Sans MS', cursive, sans-serif;
+      --radius:  14px;
+      --max:     480px;
+      --pad:     16px;
     }
 
+    /* ─── BASE ─── */
     html {
       scroll-behavior: smooth;
       overflow-x: hidden;
       overscroll-behavior: none;
     }
-
-    html, body {
-      max-width: 100vw;
-      overflow-x: hidden;
-      touch-action: pan-y;
-    }
-    ::-webkit-scrollbar { display: none; }
-
     body {
-      background: var(--bg);
+      background-color: var(--bg);
       color: var(--text);
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-weight: 300;
+      font-family: var(--font);
       font-size: 15px;
-      line-height: 1.6;
-      overflow-x: clip;
+      line-height: 1.5;
+      overflow-x: hidden;
       position: relative;
+      min-height: 100vh;
+      /* Плавная трансформация вьюпорта при зуме */
+      transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      transform-origin: center center;
+    }
+    body.is-zoomed {
+      transform: var(--zoom-transform, none);
     }
 
-    body::before { display: none; }
-    body::after  { display: none; }
-
-    /* ─── LAYOUT ────────────────────────────────────────────────── */
-    .page-wrap {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 0 24px;
-      position: relative;
+    /* ─── BACKGROUND LAYER (Зумится вместе с body) ─── */
+    .bg-layer {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Layout3.png');
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      z-index: -1;
+      pointer-events: none;
     }
 
-    section { padding: 64px 0; }
-
-    /* ─── HEADER ────────────────────────────────────────────────── */
-    header {
-      padding: 24px 0 0;
-    }
-
-    /* placeholder block — shows available header space */
-    .header-placeholder {
+    /* ─── LAYOUT ─── */
+    .wrap {
       width: 100%;
-      height: 100%;
-      min-height: calc(68svh - 48px);
-      border-radius: 16px;
-      background: var(--bg-card);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.10);
-      display: flex;
-      align-items: stretch;
-      justify-content: center;
-      overflow: hidden;
-      padding: 0;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad);
     }
 
-    .header-placeholder-label {
-      font-size: 10px;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: var(--text-dim);
+    /* ─── HEADER (Увеличенное пустое место) ─── */
+    .site-header {
+      padding: var(--pad) var(--pad) 0;
+    }
+    .site-header > div {
+      max-width: var(--max);
+      margin: 0 auto;
+      width: 100%;
+      /* Сделали блок значительно выше, чтобы освободить больше места для фона */
+      aspect-ratio: 3 / 4;
+      border-radius: var(--radius);
+      background: transparent;
     }
 
-    /* ─── SECTION TITLE ─────────────────────────────────────────── */
-    .section-title {
-      font-family: 'Lora', serif;
-      font-size: clamp(34px, 9vw, 50px);
-      font-weight: 300;
-      color: var(--text);
-      line-height: 1.1;
-      margin-bottom: 40px;
-      text-align: center;
+    /* ─── SERVICES ─── */
+    .services {
+      padding: var(--pad);
+      position: relative;
     }
-
-    /* ═══════════════════════════════════════════════════════════
-       SERVICES GRID
-    ═══════════════════════════════════════════════════════════ */
-    #services { padding: 16px 0 0; margin-bottom: 0; }
-
-    .services-viewport { /* no special styles needed */ }
-
     .services-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      align-items: start;
+      gap: 8px;
     }
-
     .service-card {
-      border-radius: 14px;
+      background: var(--card);
+      border-radius: var(--radius);
       overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+      cursor: pointer;
       display: flex;
       flex-direction: column;
-      cursor: pointer;
-      position: relative;
-      width: 100%;
+      -webkit-user-select: none;
+      user-select: none;
+      transition: opacity 0.3s, transform 0.3s;
     }
-
-    /* clip image to card radius without clipping the shadow */
-    .service-img {
-      border-radius: 14px 14px 0 0;
-    }
-
-    .service-card:nth-child(1) { transform: rotate(-2.5deg); background: #f5f0e8; } /* бежевый */
-    .service-card:nth-child(2) { transform: rotate(1.5deg);  background: #eef0f5; } /* голубой */
-    .service-card:nth-child(3) { transform: rotate(-1deg);   background: #f0f5ee; } /* зелёный */
-    .service-card:nth-child(4) { transform: rotate(2deg);    background: #f5eef0; } /* розовый */
-    .service-card:nth-child(5) { transform: rotate(-1.8deg); background: #f0edf5; } /* сиреневый */
-    .service-card:nth-child(6) { transform: rotate(1.2deg);  background: #f5f3e8; } /* жёлтый */
+    .service-card:nth-child(1) { transform: rotate(-2deg); background: #f5f0e8; }
+    .service-card:nth-child(2) { transform: rotate(1.5deg); background: #eef0f5; }
+    .service-card:nth-child(3) { transform: rotate(-1deg); background: #f0f5ee; }
+    .service-card:nth-child(4) { transform: rotate(2deg); background: #f5eef0; }
+    .service-card:nth-child(5) { transform: rotate(-1.5deg); background: #f0edf5; }
+    .service-card:nth-child(6) { transform: rotate(1.2deg); background: #f5f3e8; }
 
     .service-img {
       width: 100%;
-      aspect-ratio: 1 / 1;
+      aspect-ratio: 1/1;
       object-fit: contain;
-      display: block;
-      flex-shrink: 0;
-      padding: 16px;
-      background: var(--bg-card);
-      opacity: 0.72;
+      padding: 14px;
+      background: #e4dfd8;
+      opacity: 0.75;
       filter: grayscale(1);
+      display: block;
     }
-
-    .service-footer {
-      padding: 6px 8px 4px;
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 4px;
-      flex-shrink: 0;
+    .service-body {
+      padding: 6px 8px 8px;
     }
-
-    .service-label {
-      font-family: 'Lora', serif;
-      font-size: clamp(10px, 2.8vw, 13px);
-      font-weight: 400;
+    .service-name {
+      font-family: var(--font);
+      font-size: clamp(9px, 2.5vw, 12px);
       color: var(--text);
-      line-height: 1.2;
+      font-weight: 600;
     }
-
     .service-dur {
-      font-size: clamp(6px, 1.6vw, 7px);
-      letter-spacing: 0.12em;
-      color: var(--text-dim);
-      white-space: nowrap;
-      flex-shrink: 0;
+      font-size: clamp(7px, 1.8vw, 9px);
+      color: var(--dim);
+      margin-left: 4px;
+    }
+    .service-desc {
+      font-size: clamp(7px, 1.8vw, 9px);
+      color: var(--dim);
+      margin-top: 3px;
+      line-height: 1.4;
     }
 
-    .service-info {
-      padding: 0 8px 8px;
-      flex: 1;
+    /* ─── PRICE STACK ─── */
+    .price-section {
+      padding: var(--pad);
     }
-    .service-info-name { display: none; }
-    .service-info-desc {
-      font-size: clamp(6px, 1.6vw, 7px);
-      color: var(--text-dim);
-      line-height: 1.55;
-    }
-
-    /* dim non-target cards while zoomed */
-    body.is-zoomed .service-card:not(.zoom-target) {
-      opacity: 0.45;
-      transition: opacity 0.4s ease;
-    }
-
-    /* ── WHOLE-PAGE ZOOM ──────────────────────────────────────── */
-    body {
-      transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
-    body.is-zoomed {
-      transform: var(--page-transform, none);
-    }
-
-    /* ═══════════════════════════════════════════════════════════
-       PRICE TABLE
-    ═══════════════════════════════════════════════════════════ */
-
-    .price-title {
-      font-family: 'Lora', serif;
-      font-size: clamp(34px, 9vw, 50px);
-      font-weight: 300;
-      color: var(--text);
-      line-height: 1.1;
-      margin-bottom: 28px;
-      text-align: center;
-    }
-
-    /* ═══════════════════════════════════════════════════════════
-       PRICE TABLE — white paper sheet
-    ═══════════════════════════════════════════════════════════ */
-    #price { padding: 0; margin: 0; overflow: hidden; }
-
-    .price-sheet-wrap {
+    .price-stack {
       position: relative;
+      width: min(92vw, 400px);
+      aspect-ratio: 3/4;
+      margin: 0 auto;
+    }
+    .price-stack .sheet {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+    }
+    .sheet-4 { background: #e0dbd4; box-shadow: 2px 4px 12px rgba(0,0,0,0.12); transform: rotate(-3deg) translate(7px,7px); }
+    .sheet-3 { background: #e8e3dc; box-shadow: 2px 4px 12px rgba(0,0,0,0.10); transform: rotate(2.5deg) translate(-5px,5px); }
+    .sheet-2 { background: #ede9e3; box-shadow: 2px 4px 12px rgba(0,0,0,0.08); transform: rotate(-1deg) translate(3px,-3px); }
+    .sheet-1 {
+      background: #f2ede6;
+      box-shadow: 3px 6px 18px rgba(0,0,0,0.14);
+      transform: rotate(1deg);
+      overflow: hidden;
     }
 
-    /* the paper PNG as background */
-    .price-sheet-bg {
-      display: none; /* using CSS background instead */
-    }
-
-    .price-sheet-wrap {
-      margin: 8px 0 28px;
-    }
-
-    .price-table-wrap {
-      position: relative;
-      background: url("https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Massage_website_assets_pack_202605201701.png") center center / 100% 100% no-repeat;
-      border: none;
-      border-radius: 3px;
-      box-shadow:
-        2px 4px 16px rgba(0,0,0,0.13),
-        0 1px 4px rgba(0,0,0,0.06);
-      /* top padding large — accounts for spiral binding in PNG */
-      padding: 60px 32px 48px 32px;
-      overflow: visible;
+    .panel {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      padding: 5% 8%;
       transform: rotate(-1deg);
-      transform-origin: center top;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
     }
+    #panelPrice { opacity: 1; visibility: visible; }
+    #panelForm  { opacity: 0; visibility: hidden; pointer-events: none; }
 
-    /* remove CSS corner — it's drawn in the PNG */
-    .price-table-wrap::before,
-    .price-table-wrap::after {
-      display: none;
+    .panel-title {
+      font-family: var(--font);
+      font-size: clamp(9px, 2.2vw, 11px);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      text-align: center;
+      margin-bottom: 4%;
     }
-
-    .price-table {
-      width: 100%;
-      border-collapse: collapse;
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 2%;
     }
-
-    .price-table tbody tr {
-      border-bottom: 1px solid rgba(0,0,0,0.1);
+    .price-row-name {
+      font-family: var(--font);
+      font-size: clamp(12px, 3.2vw, 16px);
+      color: var(--accent);
     }
-
-    .price-table tbody tr:last-child {
-      border-bottom: none;
+    .price-row-dur {
+      font-size: clamp(8px, 2vw, 10px);
+      color: var(--dim);
+      margin-left: 4px;
     }
-
-    .price-table td {
-      padding: 13px 16px;
-      vertical-align: middle;
-    }
-
-    .price-table td:last-child {
-      text-align: right;
-      font-family: 'Lora', serif;
-      font-size: 20px;
-      font-weight: 300;
+    .price-row-val {
+      font-family: var(--font);
+      font-size: clamp(12px, 3.2vw, 16px);
       color: var(--accent);
       white-space: nowrap;
     }
-
-    .price-name {
-      font-family: 'Lora', serif;
-      font-size: 17px;
-      font-weight: 400;
-      color: var(--text);
-      display: block;
-      line-height: 1.2;
+    .price-section-label {
+      font-size: clamp(8px, 2vw, 10px);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin: 3% 0 2%;
+    }
+    .price-cta {
+      text-align: center;
+      margin-top: 4%;
+      font-family: var(--font);
+      font-size: clamp(12px, 3.2vw, 16px);
+      color: var(--accent);
+      cursor: pointer;
     }
 
-    .price-meta {
-      font-size: 10px;
-      color: var(--text-dim);
-      letter-spacing: 0.08em;
+    /* ─── FORM PANEL ─── */
+    .form-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4%;
+    }
+    .form-back {
+      font-family: var(--font);
+      font-size: clamp(10px, 2.5vw, 13px);
+      color: var(--dim);
+      cursor: pointer;
+    }
+    .form-title {
+      font-family: var(--font);
+      font-size: clamp(12px, 3vw, 15px);
+      color: var(--accent);
+      margin: 0 auto;
+    }
+    .form-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field-label {
+      font-family: var(--font);
+      font-size: clamp(9px, 2.2vw, 11px);
+      color: var(--accent);
+      margin-bottom: 2px;
+    }
+    .field-input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.4);
+      padding: 5px 8px;
+      font-size: clamp(10px, 2.5vw, 13px);
+      color: var(--accent);
+      outline: none;
+      font-family: var(--font);
+    }
+    .field-textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.4);
+      padding: 5px 8px;
+      font-size: clamp(10px, 2.5vw, 13px);
+      color: var(--accent);
+      outline: none;
+      resize: none;
+      font-family: var(--font);
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .chip {
+      font-family: var(--font);
+      font-size: clamp(9px, 2.2vw, 11px);
+      color: var(--accent);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip.active {
+      background: var(--accent);
+      color: #f7f3ee;
+    }
+    .form-submit {
+      text-align: center;
+      margin-top: 4%;
+      font-family: var(--font);
+      font-size: clamp(11px, 2.8vw, 14px);
+      color: var(--accent);
+      cursor: pointer;
     }
 
-    .price-currency {
-      font-size: 12px;
-      color: var(--text-dim);
-      margin-left: 2px;
+    /* ─── CONTACTS ─── */
+    .contacts-section {
+      padding: var(--pad);
+      padding-bottom: 48px;
     }
-
-    /* ═══════════════════════════════════════════════════════════
-       CONTACTS — 2×2 grid, full width, slight tilt + overlap
-    ═══════════════════════════════════════════════════════════ */
-    #contacts { padding: 0 0 50px !important; margin-top: -120px; }
-
-    .cards-pile {
+    .cards-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      /* allow cards to visually overflow their cells */
-      overflow: visible;
+      gap: 10px;
     }
-
-    /* credit card ratio 85.6 / 54 */
     .contact-card {
-      width: 100%;
-      aspect-ratio: 85.6 / 54;
-      padding: 0;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+      background: #ede8e1;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+      padding: 14px 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
+      gap: 6px;
       text-decoration: none;
-      position: relative;
-      overflow: hidden;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
     }
-
-    .card-1 { transform: rotate(-2deg) translate(-4px, 3px);  z-index: 1; background: #ede8e1; }
-    .card-2 { transform: rotate(1.5deg) translate(4px, -2px); z-index: 2; background: #ede8e1; }
-    .card-3 { transform: rotate(2.5deg) translate(-3px, -4px);z-index: 3; background: #ede8e1; }
-    .card-4 { transform: rotate(-1.5deg) translate(5px, 2px); z-index: 4; background: #ede8e1; }
+    .card-empty {
+      background: transparent;
+      box-shadow: none;
+      pointer-events: none;
+    }
+    .card-1 { transform: rotate(-2deg); }
+    .card-2 { transform: rotate(1.5deg); }
+    .card-3 { transform: rotate(2deg); }
+    .card-4 { transform: rotate(-1.5deg); }
 
     .card-logo {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       object-fit: contain;
-      opacity: 0.9;
       filter: invert(31%) sepia(28%) saturate(700%) hue-rotate(350deg) brightness(70%) contrast(90%);
     }
-
-    .card-handle {
-      font-family: 'Lora', serif;
-      font-size: 13px;
-      font-weight: 400;
+    .card-text {
+      font-family: var(--font);
+      font-size: clamp(9px, 2.5vw, 11px);
       color: var(--accent);
-      line-height: 1.2;
-      text-decoration: none;
+      line-height: 1.5;
       text-align: center;
     }
-
-    /* hide unused elements */
-    .card-platform, .card-desc { display: none; }
-
-    /* ─── SCROLLING BACKGROUND ASSETS ──────────────────────────── */
-    .bg-assets-layer { display: none; }
-    .bg-asset { position: absolute; pointer-events: none; }
-
-    /* ─── SWAY ANIMATION for Oil ───────────────────────────────── */
-    @keyframes sway {
-      0%   { transform: rotate(6deg) translate(0px, 0px); }
-      25%  { transform: rotate(5.8deg) translate(-1px, 0.5px); }
-      50%  { transform: rotate(6.2deg) translate(1px, -0.5px); }
-      75%  { transform: rotate(5.9deg) translate(-0.5px, 0px); }
-      100% { transform: rotate(6deg) translate(0px, 0px); }
+    .card-text a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: clamp(9px, 2.5vw, 11px);
     }
 
-    /* Candlebranch — чуть ниже */
-    .bg-asset-1 {
-      width: 190px;
-      top: 14%;
-      left: calc(50% - 340px);
-      transform: rotate(-8deg);
+    /* ─── TOAST NOTIFICATION ─── */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #2a2520;
+      color: #ede9e3;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-family: var(--font);
+      font-size: 13px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      z-index: 1000;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-align: center;
+      width: max-content;
+      max-width: 90vw;
+      pointer-events: none;
     }
-    /* Oil — медленное покачивание */
-    .bg-asset-2 {
-      width: 88px;
-      top: 26%;
-      right: calc(50% - 295px);
-      animation: sway 8s ease-in-out infinite;
-    }
-    /* Purple/lavender */
-    .bg-asset-3 {
-      width: 345px;
-      top: 42%;
-      left: calc(50% - 435px);
-      transform: rotate(-75deg);
-    }
-    /* Salt */
-    .bg-asset-4 {
-      width: 204px;
-      top: 77%;
-      right: calc(50% - 330px);
-      transform: rotate(-6deg);
-    }
-    /* Tovel */
-    .bg-asset-5 {
-      width: 230px;
-      top: 1%;
-      right: calc(50% - 340px);
-      transform: rotate(5deg);
-      filter:
-        drop-shadow(3px 6px 8px rgba(0,0,0,0.18))
-        drop-shadow(1px 2px 3px rgba(0,0,0,0.10));
+    .toast-container.show {
+      transform: translateX(-50%) translateY(0);
     }
 
-    /* ─── MOBILE: ассеты относительно краёв экрана ─────────────── */
-    @media (max-width: 600px) {
-      .bg-asset-1 { width: 38vw; left: -6vw;  right: auto; top: 14%; }
-      .bg-asset-2 { width: 17vw; right: -3vw; left: auto;  top: 26%; }
-      .bg-asset-3 { width: 72vw; left: -18vw; right: auto; top: 42%; }
-      .bg-asset-4 { width: 44vw; right: -8vw; left: auto;  top: 77%; }
-      .bg-asset-5 { width: 48vw; right: -6vw; left: auto;  top: 1%;  }
-    }
-    /* ─── CONTACTS mobile fix ───────────────────────────────────── */
-    @media (max-width: 480px) {
-      .cards-pile { gap: 8px; }
-      .contact-card {
-        aspect-ratio: unset;
-        padding: 12px 10px;
-        border-radius: 8px;
-        min-height: 0;
-      }
-      .card-logo { width: 22px; height: 22px; }
-      .card-handle { font-size: 11px; }
-
-      .asset-candle { width: 120px !important; bottom: -20px !important; left: -20px !important; }
-      .asset-oil    { width: 55px  !important; right:  -15px !important; }
-    }
-    .hrn { font-family: 'Comic Sans MS', cursive; font-size: 0.82em; }
-    .fade-in {
-      opacity: 1;
-      transform: none;
-    }
-    .fade-in.visible {
-      opacity: 1;
-      transform: none;
+    /* ─── DESKTOP ─── */
+    @media (min-width: 600px) {
+      :root { --pad: 24px; }
+      .services, .price-section, .contacts-section { padding: 24px; }
+      .services-grid { gap: 14px; }
+      .service-name { font-size: 13px; }
+      .service-dur  { font-size: 9px; }
+      .service-desc { font-size: 9px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ─── SCROLLING BACKGROUND ASSETS ────────────────────────── -->
-  <!-- ассеты перенесены в секции -->
+  <!-- LAYER FOR SCROLLABLE AND ZOOMABLE BACKGROUND -->
+  <div class="bg-layer"></div>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       HEADER — пустое место
-  ═══════════════════════════════════════════════════════════ -->
-  <header style="position:relative; overflow:visible;">
-    <div style="max-width:729px; margin:0 auto; padding:0 24px;">
-      <img
-        src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Header.webp"
-        alt="SENSO — Студія масажу"
-        style="width:100%; display:block; border-radius:16px;"
-      />
-    </div>
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast-container" id="toast">Повідомлення відправлено!</div>
+
+  <!-- HEADER PLACEHOLDER (Увеличенный пустой блок) -->
+  <header class="site-header">
+    <div></div>
   </header>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       SERVICES
-  ═══════════════════════════════════════════════════════════ -->
-  <section id="services" style="position:relative; overflow:visible;">
-    <div class="page-wrap" style="overflow:visible;">
-      <!-- масло — правый край -->
-      <img class="asset-oil" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/StoneAsset.png" alt="" aria-hidden="true"
-        style="position:absolute; width:132px; top:45%; right:-85px; z-index:3; pointer-events:none;
-               filter:drop-shadow(2px 3px 3px rgba(0,0,0,0.45));" />
+  <!-- SERVICES -->
+  <section class="services">
+    <div class="wrap">
+      <div class="services-grid">
 
-      <div class="services-viewport" id="servicesViewport">
-        <div class="services-grid" id="servicesGrid">
+        <div class="service-card" onclick="zoomCard(this, event)">
+          <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Stone.svg" alt="" />
+          <div class="service-body">
+            <span class="service-name">Стоун</span><span class="service-dur">90 хв</span>
+            <p class="service-desc">Гарячі базальтові камені вздовж хребта. Знімає хронічне напруження.</p>
+          </div>
+        </div>
 
-          <div class="service-card" data-name="Стоун-масаж" data-duration="90 хв" data-desc="Гарячі базальтові камені кладуться вздовж хребта і опрацьовують глибокі м'язові шари. Тепло проникає в тканини, знімає хронічне напруження і покращує кровообіг.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Stone.svg" alt="Стоун-масаж" />
-            <div class="service-footer"><span class="service-label">Стоун</span><span class="service-dur">90 хв</span></div>
-            <div class="service-info">
-              <span class="service-info-name">Стоун-масаж · 90 хв</span>
-              <p class="service-info-desc">Гарячі базальтові камені кладуться вздовж хребта і опрацьовують глибокі м'язові шари. Тепло проникає в тканини, знімає хронічне напруження і покращує кровообіг.</p>
-            </div>
+        <div class="service-card" onclick="zoomCard(this, event)">
+          <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Spa.svg" alt="" />
+          <div class="service-body">
+            <span class="service-name">СПА</span><span class="service-dur">120 хв</span>
+            <p class="service-desc">Олії, обгортання, пілінг і масаж. Шкіра м'яка, тіло легке.</p>
+          </div>
+        </div>
+
+        <div class="service-card" onclick="zoomCard(this, event)">
+          <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/All.svg" alt="" />
+          <div class="service-body">
+            <span class="service-name">Загальний</span><span class="service-dur">60–90 хв</span>
+            <p class="service-desc">Класичний масаж усього тіла. Знімає напруження.</p>
+          </div>
+        </div>
+
+        <div class="service-card" onclick="zoomCard(this, event)">
+          <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Sport.svg" alt="" />
+          <div class="service-body">
+            <span class="service-name">Спорт</span><span class="service-dur">60 хв</span>
+            <p class="service-desc">Глибока робота з м'язами. Усуває тригерні точки.</p>
+          </div>
+        </div>
+
+        <div class="service-card" onclick="zoomCard(this, event)">
+          <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Face.svg" alt="" />
+          <div class="service-body">
+            <span class="service-name">Обличчя</span><span class="service-dur">45 хв</span>
+            <p class="service-desc">Ліфтинг-масаж. Знімає набряклість, покращує овал.</p>
+          </div>
+        </div>
+
+        <div class="service-card" onclick="zoomCard(this, event)">
+          <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/THai.svg" alt="" />
+          <div class="service-body">
+            <span class="service-name">Тайський</span><span class="service-dur">90 хв</span>
+            <p class="service-desc">Акупресура, пасивна йога, енергетичні лінії тіла.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICE / BOOKING STACK -->
+  <section class="price-section">
+    <div class="wrap">
+      <div class="price-stack">
+        <div class="sheet sheet-4"></div>
+        <div class="sheet sheet-3"></div>
+        <div class="sheet sheet-2"></div>
+        <div class="sheet sheet-1">
+
+          <!-- PRICE PANEL -->
+          <div class="panel" id="panelPrice">
+            <div class="panel-title">Ціни на послуги</div>
+            <div class="price-row"><div><span class="price-row-name">Стоун</span><span class="price-row-dur">90 хв</span></div><span class="price-row-val">1 200 грн</span></div>
+            <div class="price-row"><div><span class="price-row-name">СПА</span><span class="price-row-dur">120 хв</span></div><span class="price-row-val">1 800 грн</span></div>
+            <div class="price-row"><div><span class="price-row-name">Загальний</span><span class="price-row-dur">60–90 хв</span></div><span class="price-row-val">900 грн</span></div>
+            <div class="price-row"><div><span class="price-row-name">Спорт</span><span class="price-row-dur">60 хв</span></div><span class="price-row-val">950 грн</span></div>
+            <div class="price-row"><div><span class="price-row-name">Обличчя</span><span class="price-row-dur">45 хв</span></div><span class="price-row-val">700 грн</span></div>
+            <div class="price-row"><div><span class="price-row-name">Тайський</span><span class="price-row-dur">90 хв</span></div><span class="price-row-val">1 100 грн</span></div>
+            <div class="price-section-label">Абонементи</div>
+            <div class="price-row"><div><span class="price-row-name">4 сеанси</span><span class="price-row-dur">-10%</span></div><span class="price-row-val">від 2 520 грн</span></div>
+            <div class="price-row"><div><span class="price-row-name">8 сеансів</span><span class="price-row-dur">-15%</span></div><span class="price-row-val">від 4 760 грн</span></div>
+            <div class="price-cta" onclick="showForm()">Записатися на масаж →</div>
           </div>
 
-          <div class="service-card" data-name="СПА-програма" data-duration="120 хв" data-desc="Ароматичні олії, гаряче обгортання, пілінг і завершальний масаж. Шкіра стає м'якою, тіло — легким. Програма відновлює не лише тіло, а й емоційний баланс.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Spa.svg" alt="СПА-програма" />
-            <div class="service-footer"><span class="service-label">СПА</span><span class="service-dur">120 хв</span></div>
-            <div class="service-info">
-              <span class="service-info-name">СПА-програма · 120 хв</span>
-              <p class="service-info-desc">Ароматичні олії, гаряче обгортання, пілінг і завершальний масаж. Шкіра стає м'якою, тіло — легким.</p>
+          <!-- FORM PANEL -->
+          <div class="panel" id="panelForm">
+            <div class="form-header">
+              <span class="form-back" onclick="hideForm()">← назад</span>
+              <span class="form-title">Запис на сеанс</span>
             </div>
-          </div>
-
-          <div class="service-card" data-name="Загальний масаж" data-duration="60–90 хв" data-desc="Класичний розслаблюючий масаж усього тіла. М'які погладжування і розминання знімають м'язове напруження, покращують лімфотік і дарують відчуття повного спокою.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/All.svg" alt="Загальний масаж" />
-            <div class="service-footer"><span class="service-label">Загальний</span><span class="service-dur">60–90 хв</span></div>
-            <div class="service-info">
-              <span class="service-info-name">Загальний масаж · 60–90 хв</span>
-              <p class="service-info-desc">Класичний розслаблюючий масаж усього тіла. М'які погладжування і розминання знімають м'язове напруження.</p>
+            <div class="form-fields">
+              <div>
+                <div class="field-label">Ім'я</div>
+                <input id="fieldName" class="field-input" type="text" placeholder="Як вас звати" />
+              </div>
+              <div>
+                <div class="field-label">Телефон</div>
+                <input id="fieldPhone" class="field-input" type="tel" placeholder="+380" />
+              </div>
+              <div>
+                <div class="field-label">Зв'язок</div>
+                <div class="chips">
+                  <button class="chip contact-btn" onclick="toggleChip(this)">Instagram</button>
+                  <button class="chip contact-btn" onclick="toggleChip(this)">Telegram</button>
+                  <button class="chip contact-btn" onclick="toggleChip(this)">Телефон</button>
+                </div>
+              </div>
+              <div>
+                <div class="field-label">Вид масажу</div>
+                <div class="chips">
+                  <button class="chip massage-btn" onclick="toggleChip(this)">Стоун</button>
+                  <button class="chip massage-btn" onclick="toggleChip(this)">СПА</button>
+                  <button class="chip massage-btn" onclick="toggleChip(this)">Загальний</button>
+                  <button class="chip massage-btn" onclick="toggleChip(this)">Спорт</button>
+                  <button class="chip massage-btn" onclick="toggleChip(this)">Обличчя</button>
+                  <button class="chip massage-btn" onclick="toggleChip(this)">Тайський</button>
+                </div>
+              </div>
+              <div>
+                <div class="field-label">Побажання</div>
+                <textarea id="fieldWishes" class="field-textarea" rows="2" placeholder="Зручний час, питання..."></textarea>
+              </div>
             </div>
-          </div>
-
-          <div class="service-card" data-name="Спортивний масаж" data-duration="60 хв" data-desc="Глибока опрацювання м'язів після фізичних навантажень. Усуває тригерні точки, прискорює відновлення, знижує ризик травм.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Sport.svg" alt="Спортивний масаж" />
-            <div class="service-footer"><span class="service-label">Спорт</span><span class="service-dur">60 хв</span></div>
-            <div class="service-info">
-              <span class="service-info-name">Спортивний масаж · 60 хв</span>
-              <p class="service-info-desc">Глибока опрацювання м'язів після фізичних навантажень. Усуває тригерні точки, прискорює відновлення.</p>
-            </div>
-          </div>
-
-          <div class="service-card" data-name="Масаж обличчя" data-duration="45 хв" data-desc="Ліфтинг-масаж за авторською технікою: знімає набряклість, опрацьовує жувальні м'язи і м'язи шиї, покращує овал обличчя.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/Face.svg" alt="Масаж обличчя" />
-            <div class="service-footer"><span class="service-label">Обличчя</span><span class="service-dur">45 хв</span></div>
-            <div class="service-info">
-              <span class="service-info-name">Масаж обличчя · 45 хв</span>
-              <p class="service-info-desc">Ліфтинг-масаж за авторською технікою: знімає набряклість, покращує овал обличчя.</p>
-            </div>
-          </div>
-
-          <div class="service-card" data-name="Тайський масаж" data-duration="90 хв" data-desc="Традиційна техніка, що поєднує акупресуру, пасивну йогу і роботу з енергетичними лініями тіла. Відновлює гнучкість і наповнює енергією.">
-            <img class="service-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/cb54292a33230940fced32db4c3efd00c3405c3b/THai.svg" alt="Тайський масаж" />
-            <div class="service-footer"><span class="service-label">Тайський</span><span class="service-dur">90 хв</span></div>
-            <div class="service-info">
-              <span class="service-info-name">Тайський масаж · 90 хв</span>
-              <p class="service-info-desc">Традиційна техніка: акупресура, пасивна йога і робота з енергетичними лініями тіла.</p>
-            </div>
+            <div class="form-submit" id="submitBtn" onclick="submitForm()">&#10003; Відправити заявку</div>
           </div>
 
         </div>
@@ -546,380 +534,188 @@
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       PRICE
-  ═══════════════════════════════════════════════════════════ -->
-  <section id="price" style="padding:48px 0 160px; margin:0; overflow:visible; position:relative; display:flex; justify-content:center; align-items:center;">
-    <!-- лаванда — левый верхний угол листа -->
-    <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/image-removebg-preview%20(9).png?raw=true" alt="" aria-hidden="true"
-      style="position:absolute; width:560px; top:-5%; left:260px; transform:rotate(-65deg); z-index:2; pointer-events:none;
-             filter:drop-shadow(3px 6px 8px rgba(0,0,0,0.15));" />
+  <!-- CONTACTS -->
+  <section class="contacts-section">
+    <div class="wrap">
+      <div class="cards-grid">
 
-    <!-- векторная стопка листов -->
-    <div aria-hidden="false" id="priceStack" style="
-      position:relative;
-      width: min(88vw, 380px);
-      aspect-ratio: 3/4;
-      margin: 0 auto;
-      pointer-events:all;
-    ">
-      <!-- лист 4 — нижний -->
-      <div style="position:absolute;inset:0;background:#e4e0da;border-radius:6px;box-shadow:2px 4px 12px rgba(0,0,0,0.13);transform:rotate(-3deg) translate(8px,8px);"></div>
-      <!-- лист 3 -->
-      <div style="position:absolute;inset:0;background:#eae6e1;border-radius:6px;box-shadow:2px 4px 12px rgba(0,0,0,0.11);transform:rotate(2.5deg) translate(-6px,5px);"></div>
-      <!-- лист 2 -->
-      <div style="position:absolute;inset:0;background:#f0ede9;border-radius:6px;box-shadow:2px 4px 12px rgba(0,0,0,0.09);transform:rotate(-1.2deg) translate(3px,-3px);"></div>
-      <!-- лист 1 — верхний, с двумя панелями -->
-      <div style="position:absolute;inset:0;background:#f2ede6;border-radius:6px;box-shadow:3px 6px 18px rgba(0,0,0,0.14);transform:rotate(1deg); overflow:hidden;">
-
-        <!-- панель прайса -->
-        <div id="panelPrice" style="
-          position:absolute; inset:0; overflow:hidden;
-          padding: 6% 10%;
-          font-family:'Comic Sans MS',cursive; color:#2a2520;
-          transform:rotate(-1deg);
-          transition: opacity 0.25s ease;
-        ">
-          <div style="font-size:clamp(13px,3vw,15px); font-weight:500; letter-spacing:0.22em; text-transform:uppercase; color:#6b4f35; margin-bottom:5%; text-align:center;">Ціни на послуги</div>
-
-          <div style="display:flex;flex-direction:column;gap:2%;">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">Стоун</span><span style="font-size:clamp(10px,2.2vw,12px);color:#6b4f35;margin-left:5px;">90 хв</span></div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">1 200 <span class="hrn">₴</span></span></div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">СПА</span><span style="font-size:clamp(10px,2.2vw,12px);color:#6b4f35;margin-left:5px;">120 хв</span></div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">1 800 <span class="hrn">₴</span></span></div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">Загальний</span><span style="font-size:clamp(10px,2.2vw,12px);color:#6b4f35;margin-left:5px;">60–90 хв</span></div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">900 <span class="hrn">₴</span></span></div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">Спорт</span><span style="font-size:clamp(10px,2.2vw,12px);color:#6b4f35;margin-left:5px;">60 хв</span></div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">950 <span class="hrn">₴</span></span></div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">Обличчя</span><span style="font-size:clamp(10px,2.2vw,12px);color:#6b4f35;margin-left:5px;">45 хв</span></div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">700 <span class="hrn">₴</span></span></div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">Тайський</span><span style="font-size:clamp(10px,2.2vw,12px);color:#6b4f35;margin-left:5px;">90 хв</span></div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">1 100 <span class="hrn">₴</span></span></div>
-          </div>
-
-          <div style="margin-top:4%; font-size:clamp(10px,2.2vw,12px); letter-spacing:0.22em; text-transform:uppercase; color:#6b4f35; margin-bottom:2%;">Абонементи</div>
-          <div style="display:flex;flex-direction:column;gap:2%;">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">4 сеанси</span><span style="font-size:clamp(10px,2.2vw,12px);color:#6b4f35;margin-left:5px;">−10%</span></div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">від 2 520 <span class="hrn">₴</span></span></div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">8 сеансів</span><span style="font-size:clamp(10px,2.2vw,12px);color:#6b4f35;margin-left:5px;">−15%</span></div><span style="font-size:clamp(16px,4vw,20px);color:#6b4f35;">від 4 760 <span class="hrn">₴</span></span></div>
-          </div>
-
-          <div onclick="showForm()" style="text-align:center; margin-top:4%; font-family:'MarckScript',cursive; font-size:clamp(16px,4vw,20px); color:#6b4f35; cursor:pointer;">Записатися на масаж →</div>
-        </div>
-
-        <!-- панель анкеты -->
-        <div id="panelForm" style="
-          position:absolute; inset:0; overflow:hidden;
-          padding: 5% 9% 5%;
-          font-family:'Comic Sans MS',cursive;
-          transform:rotate(-1deg);
-          opacity:0; visibility:hidden; pointer-events:none;
-          transition: opacity 0.25s ease, visibility 0.25s ease;
-        ">
-          <div style="display:flex; align-items:center; margin-bottom:5%; position:relative;">
-            <span onclick="hideForm()" style="font-family:'Comic Sans MS',cursive; font-size:clamp(13px,3vw,15px); color:#8a8078; cursor:pointer;">← назад</span>
-            <span style="font-family:'Comic Sans MS',cursive; font-size:clamp(16px,4vw,19px); color:#6b4f35; margin:0 auto;">Запис на сеанс</span>
-          </div>
-
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <div>
-              <div style="font-family:'Comic Sans MS',cursive;font-size:clamp(12px,3vw,14px);color:#6b4f35;margin-bottom:3px;">Ім'я</div>
-              <input id="fieldName" type="text" placeholder="Як вас звати" style="width:100%;border:1px solid #c8bfb5;border-radius:10px;background:rgba(255,255,255,0.4);padding:6px 10px;font-size:clamp(14px,3.5vw,17px);color:#6b4f35;outline:none;font-family:'Comic Sans MS',cursive;" />
-            </div>
-            <div>
-              <div style="font-family:'Comic Sans MS',cursive;font-size:clamp(12px,3vw,14px);color:#6b4f35;margin-bottom:3px;">Телефон</div>
-              <input id="fieldPhone" type="tel" placeholder="+380" style="width:100%;border:1px solid #c8bfb5;border-radius:10px;background:rgba(255,255,255,0.4);padding:6px 10px;font-size:clamp(14px,3.5vw,17px);color:#6b4f35;outline:none;font-family:'Comic Sans MS',cursive;" />
-            </div>
-            <div>
-              <div style="font-family:'Comic Sans MS',cursive;font-size:clamp(12px,3vw,14px);color:#6b4f35;margin-bottom:5px;">Зв'язок</div>
-              <div style="display:flex;gap:5px;flex-wrap:wrap;">
-                <button onclick="toggleBtn(this)" class="contact-btn" style="font-family:'Comic Sans MS',cursive;font-size:clamp(11px,2.8vw,13px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:3px 10px;cursor:pointer;transition:all 0.2s;">Instagram</button>
-                <button onclick="toggleBtn(this)" class="contact-btn" style="font-family:'Comic Sans MS',cursive;font-size:clamp(11px,2.8vw,13px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:3px 10px;cursor:pointer;transition:all 0.2s;">Telegram</button>
-                <button onclick="toggleBtn(this)" class="contact-btn" style="font-family:'Comic Sans MS',cursive;font-size:clamp(11px,2.8vw,13px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:3px 10px;cursor:pointer;transition:all 0.2s;">Телефон</button>
-              </div>
-            </div>
-            <div>
-              <div style="font-family:'Comic Sans MS',cursive;font-size:clamp(12px,3vw,14px);color:#6b4f35;margin-bottom:5px;">Вид масажу</div>
-              <div style="display:flex;gap:5px;flex-wrap:wrap;">
-                <button onclick="toggleBtn(this)" class="massage-btn" style="font-family:'Comic Sans MS',cursive;font-size:clamp(11px,2.8vw,13px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:3px 10px;cursor:pointer;transition:all 0.2s;">Стоун</button>
-                <button onclick="toggleBtn(this)" class="massage-btn" style="font-family:'Comic Sans MS',cursive;font-size:clamp(11px,2.8vw,13px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:3px 10px;cursor:pointer;transition:all 0.2s;">СПА</button>
-                <button onclick="toggleBtn(this)" class="massage-btn" style="font-family:'Comic Sans MS',cursive;font-size:clamp(11px,2.8vw,13px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:3px 10px;cursor:pointer;transition:all 0.2s;">Загальний</button>
-                <button onclick="toggleBtn(this)" class="massage-btn" style="font-family:'Comic Sans MS',cursive;font-size:clamp(11px,2.8vw,13px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:3px 10px;cursor:pointer;transition:all 0.2s;">Спорт</button>
-                <button onclick="toggleBtn(this)" class="massage-btn" style="font-family:'Comic Sans MS',cursive;font-size:clamp(11px,2.8vw,13px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:3px 10px;cursor:pointer;transition:all 0.2s;">Обличчя</button>
-                <button onclick="toggleBtn(this)" class="massage-btn" style="font-family:'Comic Sans MS',cursive;font-size:clamp(11px,2.8vw,13px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:3px 10px;cursor:pointer;transition:all 0.2s;">Тайський</button>
-              </div>
-            </div>
-            <div>
-              <div style="font-family:'Comic Sans MS',cursive;font-size:clamp(12px,3vw,14px);color:#6b4f35;margin-bottom:3px;">Побажання</div>
-              <textarea id="fieldWishes" placeholder="Зручний час, питання..." rows="2" style="width:100%;border:1px solid #c8bfb5;border-radius:10px;background:rgba(255,255,255,0.4);padding:6px 10px;font-size:clamp(14px,3.5vw,17px);color:#6b4f35;outline:none;resize:none;font-family:'Comic Sans MS',cursive;"></textarea>
-            </div>
-          </div>
-
-          <div style="text-align:center;margin-top:5%;">
-            <span id="submitBtn" onclick="submitForm()" style="font-family:'Comic Sans MS',cursive;font-size:clamp(16px,4vw,19px);color:#6b4f35;cursor:pointer;">&#10003; Відправити заявку</span>
-          </div>
-        </div>
-
-      </div><!-- /лист 1 верхний -->
-    </div>
-
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════════════
-       CONTACTS
-  ═══════════════════════════════════════════════════════════ -->
-  <section id="contacts">
-    <div class="page-wrap">
-
-      <div class="cards-pile fade-in" style="position:relative;">
-
-        <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/Salt.png?raw=true" alt="" aria-hidden="true"
-          style="position:absolute; width:55%; top:-18%; right:-8%; transform:rotate(-8deg); z-index:10; pointer-events:none;
-                 filter:drop-shadow(6px 10px 10px rgba(0,0,0,0.25));" />
-
-        <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/%D1%82%D0%B5%D0%BF%D0%B5%D1%80%D1%8C_%D1%81_%D1%82%D0%B0%D0%BA%D0%BE%D0%B3%D0%BE_%D0%B6%D0%B5_%D1%80%D0%B0%D0%BA%D1%83%D1%80%D1%81%D0%B0_202605202004.png?raw=true"
-          alt="" aria-hidden="true"
-          style="position:absolute; width:160%; bottom:-80%; left:-80%; z-index:10; pointer-events:none;
-                 filter:drop-shadow(4px 8px 10px rgba(0,0,0,0.20)); transform:rotate(25deg);" />
-
-        <div class="contact-card card-1">
+        <div class="contact-card card-1" onclick="window.open('https://instagram.com/senso.massage', '_blank')">
           <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Inst.svg" alt="Instagram" />
-          <div style="padding:8px 10px 6px; font-family:'MarckScript',cursive; font-size:11px; color:#6b4f35; line-height:1.5; text-align:center;">
-            <span style="display:inline-block; transform:rotate(-1.5deg);">Ось моя інста,</span><br>
-            <span style="display:inline-block; transform:rotate(1deg);">там багато цікавого</span><br>
-            <span style="display:inline-block; transform:rotate(-0.8deg);">і є акції</span><br>
-            <a href="https://instagram.com/senso.massage" target="_blank" rel="noopener"
-              style="display:inline-block; transform:rotate(1.2deg); color:#6b4f35; font-size:12px; text-decoration:none;">@senso.massage</a>
+          <div class="card-text">
+            Ось моя інста,<br>там багато цікавого<br>і є акції<br>
+            <a href="https://instagram.com/senso.massage" target="_blank" rel="noopener" onclick="event.stopPropagation();">@senso.massage</a>
           </div>
         </div>
 
-        <div class="contact-card card-2" style="background:transparent; box-shadow:none; border:none; pointer-events:none;"></div>
+        <div class="contact-card card-empty"></div>
 
-        <div class="contact-card card-3">
+        <div class="contact-card card-3" onclick="window.open('https://t.me/senso_massage', '_blank')">
           <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Teleg.svg" alt="Telegram" />
-          <div style="padding:8px 10px 6px; font-family:'MarckScript',cursive; font-size:11px; color:#6b4f35; line-height:1.5; text-align:center;">
-            <span style="display:inline-block; transform:rotate(1deg);">Тут телега —</span><br>
-            <span style="display:inline-block; transform:rotate(-1.2deg);">пишіть по справі</span><br>
-            <span style="display:inline-block; transform:rotate(0.8deg);">і в одному повідомленні</span><br>
-            <a href="https://t.me/senso_massage" target="_blank" rel="noopener"
-              style="display:inline-block; transform:rotate(-1deg); color:#6b4f35; font-size:12px; text-decoration:none;">@senso_massage</a>
+          <div class="card-text">
+            Тут телега —<br>пишіть по справі<br>і в одному повідомленні<br>
+            <a href="https://t.me/senso_massage" target="_blank" rel="noopener" onclick="event.stopPropagation();">@senso_massage</a>
           </div>
         </div>
 
-        <div class="contact-card card-4">
+        <div class="contact-card card-4" onclick="window.open('tel:+380000000000', '_self')">
           <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Phone.svg" alt="Phone" />
-          <div style="padding:8px 10px 6px; font-family:'MarckScript',cursive; font-size:11px; color:#6b4f35; line-height:1.5; text-align:center;">
-            <span style="display:inline-block; transform:rotate(-1deg);">Дзвонити з 10 до 20,</span><br>
-            <span style="display:inline-block; transform:rotate(1.2deg);">не передзвонювати,</span><br>
-            <span style="display:inline-block; transform:rotate(-0.8deg);">наберіться терпіння</span><br>
-            <a href="tel:+380000000000"
-              style="display:inline-block; transform:rotate(1deg); color:#6b4f35; font-size:12px; text-decoration:none; font-family:'MarckScript',cursive;">+380 00 000-00-00</a>
+          <div class="card-text">
+            Дзвонити з 10 до 20,<br>не передзвонювати,<br>наберіться терпіння<br>
+            <a href="tel:+380000000000" onclick="event.stopPropagation();">+380 00 000-00-00</a>
           </div>
         </div>
 
-      </div><!-- /cards-pile -->
-
+      </div>
     </div>
   </section>
 
-  <!-- ─── SCRIPTS ──────────────────────────────────────────────── -->
+  <!-- SCRIPTS -->
   <script>
-    /* ── Form sheet animation ── */
-    function showForm() {
-      const price = document.getElementById('panelPrice');
-      const form  = document.getElementById('panelForm');
-      price.style.opacity = '0';
-      price.style.pointerEvents = 'none';
-      setTimeout(() => {
-        form.style.opacity = '1';
-        form.style.visibility = 'visible';
-        form.style.pointerEvents = 'all';
-      }, 200);
-    }
-    function hideForm() {
-      const price = document.getElementById('panelPrice');
-      const form  = document.getElementById('panelForm');
-      form.style.opacity = '0';
-      form.style.visibility = 'hidden';
-      form.style.pointerEvents = 'none';
-      setTimeout(() => {
-        price.style.opacity = '1';
-        price.style.pointerEvents = 'all';
-      }, 200);
-    }
-    function toggleBtn(btn) {
-      const active = btn.classList.contains('active');
-      btn.classList.toggle('active', !active);
-      btn.style.background = active ? 'transparent' : '#6b4f35';
-      btn.style.color = active ? '#6b4f35' : '#f7f3ee';
-    }
+    // ─── ZOOM CARD LOGIC (Оригинальное приближение вьюпорта) ───
+    let activeCard = null;
 
-    /* ── Submit form to Telegram directly ── */
-    async function submitForm() {
-      const btn = document.getElementById('submitBtn');
-
-      const name   = document.getElementById('fieldName').value.trim();
-      const phone  = document.getElementById('fieldPhone').value.trim();
-      const wishes = document.getElementById('fieldWishes').value.trim();
-
-      const contact = Array.from(document.querySelectorAll('.contact-btn.active')).map(b => b.textContent).join(', ');
-      const massage = Array.from(document.querySelectorAll('.massage-btn.active')).map(b => b.textContent).join(', ');
-
-      if (!name && !phone) {
-        btn.textContent = "⚠ Вкажіть ім'я або телефон";
-        setTimeout(() => { btn.innerHTML = '✓ Відправити заявку'; }, 2500);
+    function zoomCard(card, event) {
+      if (document.body.classList.contains('is-zoomed')) {
+        closeZoom();
         return;
       }
 
-      btn.innerHTML = '⏳ Відправляємо...';
-      btn.style.pointerEvents = 'none';
+      activeCard = card;
+      card.classList.add('zoom-target');
 
-      const text = [
-        '📋 <b>Нова заявка на масаж</b>',
-        '',
-        `👤 <b>Ім'я:</b> ${name || '—'}`,
-        `📞 <b>Телефон:</b> ${phone || '—'}`,
-        `💬 <b>Зв'язок:</b> ${contact || '—'}`,
-        `💆 <b>Вид масажу:</b> ${massage || '—'}`,
-        `📝 <b>Побажання:</b> ${wishes || '—'}`,
-      ].join('\n');
+      const cardRect = card.getBoundingClientRect();
+      const cardCenterX = cardRect.left + cardRect.width / 2;
+      const cardCenterY = cardRect.top + cardRect.height / 2;
 
-      const BOT_TOKEN = '8526745919:AAFX0YqjYsrBXENjGbA2LzkfLws_1nC5FC8';
-      const CHAT_ID   = '8121184786';
+      const screenCenterX = window.innerWidth / 2;
+      const screenCenterY = window.innerHeight / 2;
 
-      try {
-        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: 'HTML' }),
-        });
+      const translateX = screenCenterX - cardCenterX;
+      const translateY = screenCenterY - cardCenterY;
 
-        const data = await res.json();
+      const scale = 2;
 
-        if (data.ok) {
-          btn.innerHTML = '✓ Заявку відправлено!';
-          document.getElementById('fieldName').value = '';
-          document.getElementById('fieldPhone').value = '';
-          document.getElementById('fieldWishes').value = '';
-          document.querySelectorAll('.contact-btn, .massage-btn').forEach(b => {
-            b.style.background = 'transparent';
-            b.style.color = '#6b4f35';
-            b.classList.remove('active');
-          });
-          setTimeout(() => {
-            btn.innerHTML = '✓ Відправити заявку';
-            btn.style.pointerEvents = 'all';
-            hideForm();
-          }, 2000);
-        } else {
-          throw new Error(data.description);
-        }
-      } catch(e) {
-        btn.innerHTML = '✗ Помилка. Спробуйте ще раз';
-        btn.style.pointerEvents = 'all';
-        setTimeout(() => { btn.innerHTML = '✓ Відправити заявку'; }, 3000);
-      }
-    }
-
-    /* ══════════════════════════════════════════════════════════
-       WHOLE-PAGE CAMERA ZOOM
-       The entire body is scaled. The card the user tapped
-       moves to the centre of the viewport. Neighbours are
-       visible on the sides. Tap again → zoom out.
-    ══════════════════════════════════════════════════════════ */
-    let zoomed     = false;
-    let activeCard = null;
-
-    function zoomIn(card) {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const scale = window.innerWidth < 600 ? 1.5 : 2.5;
-
-      // Get the card's current rotation from its nth-child CSS
-      // by reading the computed transform matrix
-      const matrix = new DOMMatrix(getComputedStyle(card).transform);
-      // matrix.a = cos(θ), matrix.b = sin(θ)
-      const cardAngleDeg = Math.round(Math.atan2(matrix.b, matrix.a) * 180 / Math.PI);
-      // Counter-rotate the camera by the same angle
-      const rotateDeg = -cardAngleDeg;
-
-      // Card centre in viewport coords
-      const r  = card.getBoundingClientRect();
-      const cx = r.left + r.width  / 2;
-      const cy = r.top  + r.height / 2;
-
-      // transform-origin = card centre in document coords
-      const originX = cx + window.scrollX;
-      const originY = cy + window.scrollY;
-
-      // translate to bring card centre to viewport centre (in pre-scale space)
-      const tx = (vw / 2 - cx) / scale;
-      const ty = (vh / 2 - cy) / scale;
-
-      document.body.style.transformOrigin = `${originX}px ${originY}px`;
-      document.body.style.setProperty('--page-transform',
-        `scale(${scale}) translate(${tx}px, ${ty}px) rotate(${rotateDeg}deg)`
+      document.body.style.setProperty(
+        '--zoom-transform',
+        `scale(${scale}) translate(${translateX / scale}px, ${translateY / scale}px)`
       );
       document.body.classList.add('is-zoomed');
-
-      card.classList.add('zoom-target');
-      activeCard = card;
-      zoomed = true;
-      document.documentElement.style.overflow = 'hidden';
     }
 
-    function zoomOut() {
-      document.body.style.setProperty('--page-transform', 'none');
+    function closeZoom() {
+      if (!activeCard) return;
+
+      activeCard.classList.remove('zoom-target');
       document.body.classList.remove('is-zoomed');
-      if (activeCard) { activeCard.classList.remove('zoom-target'); activeCard = null; }
-      zoomed = false;
-      document.documentElement.style.overflow = '';
+      document.body.style.removeProperty('--zoom-transform');
+      
+      activeCard = null;
     }
 
-    document.querySelectorAll('.service-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (!zoomed) {
-          zoomIn(card);
-        } else {
-          zoomOut();
+    window.addEventListener('click', function(e) {
+      if (document.body.classList.contains('is-zoomed')) {
+        if (!e.target.closest('.service-card')) {
+          closeZoom();
         }
-      });
-    });
-
-    // contact cards — same logic
-    document.querySelectorAll('.contact-card').forEach(card => {
-      card.addEventListener('click', e => {
-        if (e.target.closest('a')) return; // let links work
-        e.stopPropagation();
-        if (!zoomed) {
-          zoomIn(card);
-        } else {
-          zoomOut();
-        }
-      });
-    });
-
-    // любой клик вне карточки в зуме → zoom out
-    document.addEventListener('click', e => {
-      if (!zoomed) return;
-      if (e.target.closest('a')) return;
-      zoomOut();
-    });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') zoomOut(); });
-
-    /* ── Block pinch-zoom and horizontal scroll ── */
-    document.addEventListener('touchmove', e => {
-      if (e.touches.length > 1) e.preventDefault(); // pinch
-    }, { passive: false });
-
-    let touchStartX = 0;
-    document.addEventListener('touchstart', e => {
-      touchStartX = e.touches[0].clientX;
-    }, { passive: true });
-
-    document.addEventListener('touchmove', e => {
-      if (e.touches.length === 1) {
-        const dx = Math.abs(e.touches[0].clientX - touchStartX);
-        const dy = Math.abs(e.touches[0].clientY - (e.touches[0].clientY));
-        if (dx > 10 && dx > dy) e.preventDefault(); // horizontal swipe
       }
-    }, { passive: false });
-  </script>
+    });
 
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeZoom();
+      }
+    });
+
+
+    // ─── BOOKING PANEL TOGGLE ───
+    function showForm() {
+      const pricePanel = document.getElementById('panelPrice');
+      const formPanel = document.getElementById('panelForm');
+      
+      pricePanel.style.opacity = '0';
+      pricePanel.style.visibility = 'hidden';
+      pricePanel.style.pointerEvents = 'none';
+      
+      formPanel.style.opacity = '1';
+      formPanel.style.visibility = 'visible';
+      formPanel.style.pointerEvents = 'auto';
+    }
+
+    function hideForm() {
+      const pricePanel = document.getElementById('panelPrice');
+      const formPanel = document.getElementById('panelForm');
+      
+      formPanel.style.opacity = '0';
+      formPanel.style.visibility = 'hidden';
+      formPanel.style.pointerEvents = 'none';
+      
+      pricePanel.style.opacity = '1';
+      pricePanel.style.visibility = 'visible';
+      pricePanel.style.pointerEvents = 'auto';
+    }
+
+    // ─── CHIP TOGGLE ───
+    function toggleChip(button) {
+      const isContact = button.classList.contains('contact-btn');
+      
+      if (isContact) {
+        const parent = button.parentElement;
+        parent.querySelectorAll('.contact-btn').forEach(btn => {
+          if (btn !== button) btn.classList.remove('active');
+        });
+      }
+      
+      button.classList.toggle('active');
+    }
+
+    // ─── TOAST NOTIFICATION ───
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      toast.innerText = text;
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+
+    // ─── FORM SUBMISSION ───
+    function submitForm() {
+      const name = document.getElementById('fieldName').value.trim();
+      const phone = document.getElementById('fieldPhone').value.trim();
+      const wishes = document.getElementById('fieldWishes').value.trim();
+      
+      const selectedContacts = Array.from(document.querySelectorAll('.contact-btn.active')).map(btn => btn.innerText);
+      const selectedMassages = Array.from(document.querySelectorAll('.massage-btn.active')).map(btn => btn.innerText);
+
+      if (!name) {
+        showToast('Будь ласка, вкажіть ваше ім\'я');
+        return;
+      }
+      if (!phone) {
+        showToast('Будь ласка, вкажіть контактний телефон');
+        return;
+      }
+
+      console.log('Заявка на сеанс:', {
+        name,
+        phone,
+        contacts: selectedContacts,
+        massages: selectedMassages,
+        wishes
+      });
+
+      showToast('Заявку надіслано! Скоро зв\'яжемось.');
+      
+      document.getElementById('fieldName').value = '';
+      document.getElementById('fieldPhone').value = '';
+      document.getElementById('fieldWishes').value = '';
+      document.querySelectorAll('.chip.active').forEach(chip => chip.classList.remove('active'));
+      
+      setTimeout(() => {
+        hideForm();
+      }, 1500);
+    }
+  </script>
 </body>
 </html>
-
