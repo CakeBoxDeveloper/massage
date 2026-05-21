@@ -141,8 +141,8 @@
       inset: 0;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      padding: 22% 12% 18%;
+      justify-content: flex-start;
+      padding: 20% 12% 16%;
       border-radius: var(--radius);
     }
     .service-name {
@@ -151,7 +151,7 @@
       color: #3a2510;
       font-weight: 700;
       line-height: 1.2;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     .service-dur {
       font-size: clamp(8px, 2vw, 10px);
@@ -161,41 +161,43 @@
     .service-desc {
       font-size: clamp(8px, 2vw, 10px);
       color: #5a3e28;
-      margin-top: 4px;
-      line-height: 1.4;
+      margin-top: 6px;
+      line-height: 1.45;
     }
 
-    /* ─── PRICE STACK ─── */
+    /* ─── PRICE BOARD ─── */
     .price-section {
       padding: var(--pad);
     }
+
+    @keyframes floatBoard {
+      0%, 100% { transform: translateY(0px) rotate(-0.5deg); }
+      50%       { transform: translateY(-6px) rotate(0.5deg); }
+    }
+
     .price-stack {
       position: relative;
-      width: min(92vw, 400px);
-      aspect-ratio: 3/4;
+      width: min(96vw, 460px);
       margin: 0 auto;
+      animation: floatBoard 5s ease-in-out infinite;
     }
-    .price-stack .sheet {
-      position: absolute;
-      inset: 0;
+    .board-img {
+      width: 100%;
+      display: block;
       border-radius: 8px;
     }
-    .sheet-4 { background: #e0dbd4; box-shadow: 2px 4px 12px rgba(0,0,0,0.12); transform: rotate(-3deg) translate(7px,7px); }
-    .sheet-3 { background: #e8e3dc; box-shadow: 2px 4px 12px rgba(0,0,0,0.10); transform: rotate(2.5deg) translate(-5px,5px); }
-    .sheet-2 { background: #ede9e3; box-shadow: 2px 4px 12px rgba(0,0,0,0.08); transform: rotate(-1deg) translate(3px,-3px); }
-    .sheet-1 {
-      background: #f2ede6;
-      box-shadow: 3px 6px 18px rgba(0,0,0,0.14);
-      transform: rotate(1deg);
-      overflow: hidden;
+    .board-content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
     }
 
     .panel {
       position: absolute;
       inset: 0;
       overflow: hidden;
-      padding: 5% 8%;
-      transform: rotate(-1deg);
+      padding: 12% 10% 8%;
       transition: opacity 0.2s ease, visibility 0.2s ease;
     }
     #panelPrice { opacity: 1; visibility: visible; }
@@ -218,22 +220,22 @@
     }
     .price-row-name {
       font-family: var(--font);
-      font-size: clamp(12px, 3.2vw, 16px);
+      font-size: clamp(10px, 2.6vw, 13px);
       color: var(--accent);
     }
     .price-row-dur {
-      font-size: clamp(8px, 2vw, 10px);
+      font-size: clamp(7px, 1.6vw, 9px);
       color: var(--dim);
       margin-left: 4px;
     }
     .price-row-val {
       font-family: var(--font);
-      font-size: clamp(12px, 3.2vw, 16px);
+      font-size: clamp(10px, 2.6vw, 13px);
       color: var(--accent);
       white-space: nowrap;
     }
     .price-section-label {
-      font-size: clamp(8px, 2vw, 10px);
+      font-size: clamp(7px, 1.6vw, 9px);
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--dim);
@@ -243,7 +245,7 @@
       text-align: center;
       margin-top: 4%;
       font-family: var(--font);
-      font-size: clamp(12px, 3.2vw, 16px);
+      font-size: clamp(10px, 2.6vw, 13px);
       color: var(--accent);
       cursor: pointer;
     }
@@ -499,14 +501,12 @@
     </div>
   </section>
 
-  <!-- PRICE / BOOKING STACK -->
+  <!-- PRICE / BOOKING BOARD -->
   <section class="price-section">
     <div class="wrap">
       <div class="price-stack">
-        <div class="sheet sheet-4"></div>
-        <div class="sheet sheet-3"></div>
-        <div class="sheet sheet-2"></div>
-        <div class="sheet sheet-1">
+        <img class="board-img" src="https://github.com/CakeBoxDeveloper/massage/blob/main/LiteBoard.webp?raw=true" alt="" />
+        <div class="board-content">
 
           <!-- PRICE PANEL -->
           <div class="panel" id="panelPrice">
@@ -565,8 +565,8 @@
             <div class="form-submit" id="submitBtn" onclick="submitForm()">&#10003; Відправити заявку</div>
           </div>
 
-        </div>
-      </div>
+        </div><!-- /board-content -->
+      </div><!-- /price-stack -->
     </div>
   </section>
 
