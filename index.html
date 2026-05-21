@@ -8,6 +8,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
+    @font-face {
+      font-family: 'MarckScript';
+      src: url('https://github.com/CakeBoxDeveloper/massage/blob/main/MarckScript-Regular.ttf?raw=true') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
     /* ─── RESET ─────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -353,8 +359,8 @@
       width: 32px;
       height: 32px;
       object-fit: contain;
-      opacity: 0.75;
-      filter: grayscale(0.3);
+      opacity: 0.85;
+      filter: grayscale(0) sepia(0.6) saturate(0.8) hue-rotate(340deg) brightness(0.7);
     }
 
     .card-handle {
@@ -440,8 +446,12 @@
       }
       .card-logo { width: 22px; height: 22px; }
       .card-handle { font-size: 13px; }
+
+      /* ассеты на мобиле */
+      .asset-candle { width: 120px !important; bottom: -20px !important; left: -20px !important; }
+      .asset-oil    { width: 55px  !important; right:  -15px !important; }
     }
-    .fade-in {
+    .hrn { font-family: 'Comic Sans MS', cursive; font-size: 0.82em; }
       opacity: 0;
       transform: translateY(20px);
       transition: opacity 0.65s ease, transform 0.65s ease;
@@ -467,14 +477,14 @@
         style="position:absolute; width:230px; top:-10px; right:-80px; transform:rotate(5deg); z-index:3; pointer-events:none;
                filter:drop-shadow(3px 6px 8px rgba(0,0,0,0.18));" />
       <!-- свечка с листьями — левый край -->
-      <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/Candlebranch.png?raw=true" alt="" aria-hidden="true"
+      <img class="asset-candle" src="https://github.com/CakeBoxDeveloper/massage/blob/main/Candlebranch.png?raw=true" alt="" aria-hidden="true"
         style="position:absolute; width:190px; bottom:-60px; left:-80px; transform:rotate(-8deg); z-index:3; pointer-events:none;
                filter:drop-shadow(8px 12px 10px rgba(0,0,0,0.22));" />
-      <div class="header-placeholder" style="padding:0; overflow:hidden;">
+      <div class="header-placeholder" style="padding:0; overflow:hidden; background:transparent; box-shadow:none; border-radius:16px; min-height:calc(50svh - 48px);">
         <video
           src="https://github.com/CakeBoxDeveloper/massage/blob/main/%D0%BB%D0%B5%D0%B3%D0%BA%D0%B0%D1%8F_%D1%81%D1%82%D0%B0%D1%82%D0%B8%D1%87%D0%BD%D0%B0%D1%8F_idle-%D0%B0%D0%BD%D0%B8%D0%BC%D0%B0%D1%86%D0%B8%D1%8F_202605202022.mp4?raw=true"
           autoplay loop muted playsinline
-          style="width:100%; height:100%; min-height:calc(50svh - 48px); object-fit:cover; display:block; border-radius:16px; transform:scaleX(-1);"
+          style="width:100%; height:100%; min-height:calc(50svh - 48px); object-fit:cover; display:none; border-radius:16px; transform:scaleX(-1);"
         ></video>
       </div>
     </div>
@@ -486,7 +496,7 @@
   <section id="services" style="position:relative; overflow:visible;">
     <div class="page-wrap" style="overflow:visible;">
       <!-- масло — правый край -->
-      <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Oil.png" alt="" aria-hidden="true"
+      <img class="asset-oil" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Oil.png" alt="" aria-hidden="true"
         style="position:absolute; width:88px; top:10%; right:-60px; z-index:3; pointer-events:none;
                filter:drop-shadow(3px 5px 4px rgba(0,0,0,0.12)); animation:sway 8s ease-in-out infinite;" />
 
@@ -558,16 +568,16 @@
   <section id="price" style="padding:48px 0 160px; margin:0; overflow:visible; position:relative; display:flex; justify-content:center; align-items:center;">
     <!-- лаванда — левый верхний угол листа -->
     <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/image-removebg-preview%20(9).png?raw=true" alt="" aria-hidden="true"
-      style="position:absolute; width:280px; top:-12%; left:375px; transform:rotate(-75deg); z-index:3; pointer-events:none;
+      style="position:absolute; width:560px; top:-8%; left:260px; transform:rotate(-65deg); z-index:2; pointer-events:none;
              filter:drop-shadow(3px 6px 8px rgba(0,0,0,0.15));" />
 
     <!-- векторная стопка листов -->
-    <div aria-hidden="true" style="
+    <div aria-hidden="false" id="priceStack" style="
       position:relative;
       width: min(97.75vw, 414px);
       aspect-ratio: 3/4;
       margin: 0 auto;
-      pointer-events:none;
+      pointer-events:all;
     ">
       <!-- лист 4 — нижний -->
       <div style="position:absolute;inset:0;background:#e4e0da;border-radius:6px;box-shadow:2px 4px 12px rgba(0,0,0,0.13);transform:rotate(-3deg) translate(8px,8px);"></div>
@@ -575,77 +585,91 @@
       <div style="position:absolute;inset:0;background:#eae6e1;border-radius:6px;box-shadow:2px 4px 12px rgba(0,0,0,0.11);transform:rotate(2.5deg) translate(-6px,5px);"></div>
       <!-- лист 2 -->
       <div style="position:absolute;inset:0;background:#f0ede9;border-radius:6px;box-shadow:2px 4px 12px rgba(0,0,0,0.09);transform:rotate(-1.2deg) translate(3px,-3px);"></div>
-      <!-- лист 1 — верхний -->
-      <div style="position:absolute;inset:0;background:#f2ede6;border-radius:6px;box-shadow:3px 6px 18px rgba(0,0,0,0.14);transform:rotate(1deg);">
-        <div style="padding: 10% 12%; font-family:'IBM Plex Sans',sans-serif; color:#2a2520; transform:rotate(-1deg);">
-          <div style="font-size:clamp(13px,3vw,16px); font-weight:500; letter-spacing:0.22em; text-transform:uppercase; color:#8a8078; margin-bottom:7%; text-align:center;">Прайс</div>
+      <!-- лист 1 — верхний, с двумя панелями -->
+      <div style="position:absolute;inset:0;background:#f2ede6;border-radius:6px;box-shadow:3px 6px 18px rgba(0,0,0,0.14);transform:rotate(1deg); overflow:hidden;">
 
-          <!-- разовые -->
-          <div style="display:flex;flex-direction:column;gap:3.5%;">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <div>
-                <span style="font-size:clamp(14px,3.5vw,18px);">Стоун</span>
-                <span style="font-size:clamp(10px,2.2vw,12px);color:#8a8078;margin-left:6px;">90 хв</span>
-              </div>
-              <span style="font-size:clamp(14px,3.5vw,18px);color:#6b4f35;">1 200 ₴</span>
+        <!-- панель прайса -->
+        <div id="panelPrice" style="
+          position:absolute; inset:0; overflow:hidden;
+          padding: 6% 10%;
+          font-family:'MarckScript',cursive; color:#2a2520;
+          transform:rotate(-1deg);
+          transition: filter 0.25s ease, opacity 0.25s ease;
+        ">
+          <div style="font-size:clamp(11px,2.5vw,13px); font-weight:500; letter-spacing:0.22em; text-transform:uppercase; color:#8a8078; margin-bottom:5%; text-align:center;">Ціни на послуги</div>
+
+          <div style="display:flex;flex-direction:column;gap:1.5%;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(12px,2.8vw,15px);">Стоун</span><span style="font-size:clamp(8px,1.8vw,10px);color:#8a8078;margin-left:5px;">90 хв</span></div><span style="font-size:clamp(12px,2.8vw,15px);color:#6b4f35;">1 200 <span class="hrn">₴</span></span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(12px,2.8vw,15px);">СПА</span><span style="font-size:clamp(8px,1.8vw,10px);color:#8a8078;margin-left:5px;">120 хв</span></div><span style="font-size:clamp(12px,2.8vw,15px);color:#6b4f35;">1 800 <span class="hrn">₴</span></span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(12px,2.8vw,15px);">Загальний</span><span style="font-size:clamp(8px,1.8vw,10px);color:#8a8078;margin-left:5px;">60–90 хв</span></div><span style="font-size:clamp(12px,2.8vw,15px);color:#6b4f35;">900 <span class="hrn">₴</span></span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(12px,2.8vw,15px);">Спорт</span><span style="font-size:clamp(8px,1.8vw,10px);color:#8a8078;margin-left:5px;">60 хв</span></div><span style="font-size:clamp(12px,2.8vw,15px);color:#6b4f35;">950 <span class="hrn">₴</span></span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(12px,2.8vw,15px);">Обличчя</span><span style="font-size:clamp(8px,1.8vw,10px);color:#8a8078;margin-left:5px;">45 хв</span></div><span style="font-size:clamp(12px,2.8vw,15px);color:#6b4f35;">700 <span class="hrn">₴</span></span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(12px,2.8vw,15px);">Тайський</span><span style="font-size:clamp(8px,1.8vw,10px);color:#8a8078;margin-left:5px;">90 хв</span></div><span style="font-size:clamp(12px,2.8vw,15px);color:#6b4f35;">1 100 <span class="hrn">₴</span></span></div>
+          </div>
+
+          <div style="margin-top:3%; font-size:clamp(8px,1.8vw,10px); letter-spacing:0.22em; text-transform:uppercase; color:#8a8078; margin-bottom:1.5%;">Абонементи</div>
+          <div style="display:flex;flex-direction:column;gap:1.5%;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(12px,2.8vw,15px);">4 сеанси</span><span style="font-size:clamp(8px,1.8vw,10px);color:#8a8078;margin-left:5px;">−10%</span></div><span style="font-size:clamp(12px,2.8vw,15px);color:#6b4f35;">від 2 520 <span class="hrn">₴</span></span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:clamp(12px,2.8vw,15px);">8 сеансів</span><span style="font-size:clamp(8px,1.8vw,10px);color:#8a8078;margin-left:5px;">−15%</span></div><span style="font-size:clamp(12px,2.8vw,15px);color:#6b4f35;">від 4 760 <span class="hrn">₴</span></span></div>
+          </div>
+
+          <div onclick="showForm()" style="text-align:center; margin-top:3%; font-family:'MarckScript',cursive; font-size:clamp(12px,2.8vw,15px); color:#6b4f35; cursor:pointer;">Записатися на масаж →</div>
+        </div>
+
+        <!-- панель анкеты -->
+        <div id="panelForm" style="
+          position:absolute; inset:0; overflow:hidden;
+          padding: 5% 8% 4%;
+          font-family:'MarckScript',cursive;
+          transform:rotate(-1deg);
+          opacity:0; filter:blur(8px); pointer-events:none;
+          transition: filter 0.25s ease, opacity 0.25s ease;
+        ">
+          <div style="display:flex; align-items:center; margin-bottom:4%; position:relative;">
+            <span onclick="hideForm()" style="font-family:'MarckScript',cursive; font-size:clamp(11px,2.5vw,13px); color:#8a8078; cursor:pointer;">← назад</span>
+            <span style="font-family:'MarckScript',cursive; font-size:clamp(13px,3vw,16px); color:#6b4f35; margin:0 auto;">Запис на сеанс</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div>
+              <div style="font-family:'MarckScript',cursive;font-size:clamp(10px,2.5vw,12px);color:#6b4f35;margin-bottom:2px;">Ім'я</div>
+              <input type="text" placeholder="Як вас звати" style="width:100%;border:none;border-bottom:1px solid #c8bfb5;background:transparent;padding:3px 0;font-size:clamp(11px,2.8vw,14px);color:#6b4f35;outline:none;font-family:'MarckScript',cursive;" />
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <div>
-                <span style="font-size:clamp(14px,3.5vw,18px);">СПА</span>
-                <span style="font-size:clamp(10px,2.2vw,12px);color:#8a8078;margin-left:6px;">120 хв</span>
-              </div>
-              <span style="font-size:clamp(14px,3.5vw,18px);color:#6b4f35;">1 800 ₴</span>
+            <div>
+              <div style="font-family:'MarckScript',cursive;font-size:clamp(10px,2.5vw,12px);color:#6b4f35;margin-bottom:2px;">Телефон</div>
+              <input type="tel" placeholder="+380" style="width:100%;border:none;border-bottom:1px solid #c8bfb5;background:transparent;padding:3px 0;font-size:clamp(11px,2.8vw,14px);color:#6b4f35;outline:none;font-family:'MarckScript',cursive;" />
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <div>
-                <span style="font-size:clamp(14px,3.5vw,18px);">Загальний</span>
-                <span style="font-size:clamp(10px,2.2vw,12px);color:#8a8078;margin-left:6px;">60–90 хв</span>
+            <div>
+              <div style="font-family:'MarckScript',cursive;font-size:clamp(10px,2.5vw,12px);color:#6b4f35;margin-bottom:4px;">Зв'язок</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <button onclick="toggleBtn(this)" style="font-family:'MarckScript',cursive;font-size:clamp(9px,2.2vw,11px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:2px 8px;cursor:pointer;transition:all 0.2s;">Instagram</button>
+                <button onclick="toggleBtn(this)" style="font-family:'MarckScript',cursive;font-size:clamp(9px,2.2vw,11px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:2px 8px;cursor:pointer;transition:all 0.2s;">Telegram</button>
+                <button onclick="toggleBtn(this)" style="font-family:'MarckScript',cursive;font-size:clamp(9px,2.2vw,11px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:2px 8px;cursor:pointer;transition:all 0.2s;">Телефон</button>
               </div>
-              <span style="font-size:clamp(14px,3.5vw,18px);color:#6b4f35;">900 ₴</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <div>
-                <span style="font-size:clamp(14px,3.5vw,18px);">Спорт</span>
-                <span style="font-size:clamp(10px,2.2vw,12px);color:#8a8078;margin-left:6px;">60 хв</span>
+            <div>
+              <div style="font-family:'MarckScript',cursive;font-size:clamp(10px,2.5vw,12px);color:#6b4f35;margin-bottom:4px;">Вид масажу</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <button onclick="toggleBtn(this)" style="font-family:'MarckScript',cursive;font-size:clamp(9px,2.2vw,11px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:2px 8px;cursor:pointer;transition:all 0.2s;">Стоун</button>
+                <button onclick="toggleBtn(this)" style="font-family:'MarckScript',cursive;font-size:clamp(9px,2.2vw,11px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:2px 8px;cursor:pointer;transition:all 0.2s;">СПА</button>
+                <button onclick="toggleBtn(this)" style="font-family:'MarckScript',cursive;font-size:clamp(9px,2.2vw,11px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:2px 8px;cursor:pointer;transition:all 0.2s;">Загальний</button>
+                <button onclick="toggleBtn(this)" style="font-family:'MarckScript',cursive;font-size:clamp(9px,2.2vw,11px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:2px 8px;cursor:pointer;transition:all 0.2s;">Спорт</button>
+                <button onclick="toggleBtn(this)" style="font-family:'MarckScript',cursive;font-size:clamp(9px,2.2vw,11px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:2px 8px;cursor:pointer;transition:all 0.2s;">Обличчя</button>
+                <button onclick="toggleBtn(this)" style="font-family:'MarckScript',cursive;font-size:clamp(9px,2.2vw,11px);color:#6b4f35;background:transparent;border:1px solid #c8bfb5;border-radius:20px;padding:2px 8px;cursor:pointer;transition:all 0.2s;">Тайський</button>
               </div>
-              <span style="font-size:clamp(14px,3.5vw,18px);color:#6b4f35;">950 ₴</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <div>
-                <span style="font-size:clamp(14px,3.5vw,18px);">Обличчя</span>
-                <span style="font-size:clamp(10px,2.2vw,12px);color:#8a8078;margin-left:6px;">45 хв</span>
-              </div>
-              <span style="font-size:clamp(14px,3.5vw,18px);color:#6b4f35;">700 ₴</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <div>
-                <span style="font-size:clamp(14px,3.5vw,18px);">Тайський</span>
-                <span style="font-size:clamp(10px,2.2vw,12px);color:#8a8078;margin-left:6px;">90 хв</span>
-              </div>
-              <span style="font-size:clamp(14px,3.5vw,18px);color:#6b4f35;">1 100 ₴</span>
+            <div>
+              <div style="font-family:'MarckScript',cursive;font-size:clamp(10px,2.5vw,12px);color:#6b4f35;margin-bottom:2px;">Побажання</div>
+              <textarea placeholder="Зручний час, питання..." rows="2" style="width:100%;border:none;border-bottom:1px solid #c8bfb5;background:transparent;padding:3px 0;font-size:clamp(11px,2.8vw,14px);color:#6b4f35;outline:none;resize:none;font-family:'MarckScript',cursive;"></textarea>
             </div>
           </div>
 
-          <!-- абонементи -->
-          <div style="margin-top:7%; font-size:clamp(9px,2.2vw,11px); font-weight:400; letter-spacing:0.22em; text-transform:uppercase; color:#8a8078; margin-bottom:4%;">Абонементи</div>
-          <div style="display:flex;flex-direction:column;gap:3.5%;">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <div>
-                <span style="font-size:clamp(14px,3.5vw,18px);">4 сеанси</span>
-                <span style="font-size:clamp(10px,2.2vw,12px);color:#8a8078;margin-left:6px;">−10%</span>
-              </div>
-              <span style="font-size:clamp(14px,3.5vw,18px);color:#6b4f35;">від 2 520 ₴</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <div>
-                <span style="font-size:clamp(14px,3.5vw,18px);">8 сеансів</span>
-                <span style="font-size:clamp(10px,2.2vw,12px);color:#8a8078;margin-left:6px;">−15%</span>
-              </div>
-              <span style="font-size:clamp(14px,3.5vw,18px);color:#6b4f35;">від 4 760 ₴</span>
-            </div>
+          <div style="text-align:center;margin-top:4%;">
+            <span style="font-family:'MarckScript',cursive;font-size:clamp(12px,2.8vw,15px);color:#6b4f35;cursor:pointer;">Відправити →</span>
           </div>
         </div>
-      </div>
+
+      </div><!-- /лист 1 верхний -->
     </div>
 
   </section>
@@ -659,7 +683,7 @@
       <div class="cards-pile fade-in" style="position:relative;">
 
         <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/Salt.png?raw=true" alt="" aria-hidden="true"
-          style="position:absolute; width:55%; top:-18%; right:-8%; transform:rotate(-8deg); z-index:10; pointer-events:none;
+          style="position:absolute; width:55%; top:-32%; right:-8%; transform:rotate(-8deg); z-index:10; pointer-events:none;
                  filter:drop-shadow(6px 10px 10px rgba(0,0,0,0.25));" />
 
         <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/%D1%82%D0%B5%D0%BF%D0%B5%D1%80%D1%8C_%D1%81_%D1%82%D0%B0%D0%BA%D0%BE%D0%B3%D0%BE_%D0%B6%D0%B5_%D1%80%D0%B0%D0%BA%D1%83%D1%80%D1%81%D0%B0_202605202004.png?raw=true"
@@ -669,19 +693,37 @@
 
         <div class="contact-card card-1">
           <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Inst.svg" alt="Instagram" />
-          <a class="card-handle" href="https://instagram.com/senso.massage" target="_blank" rel="noopener">@senso.massage</a>
+          <div style="padding:8px 10px 6px; font-family:'MarckScript',cursive; font-size:11px; color:#6b4f35; line-height:1.5; text-align:center;">
+            <span style="display:inline-block; transform:rotate(-1.5deg);">Ось моя інста,</span><br>
+            <span style="display:inline-block; transform:rotate(1deg);">там багато цікавого</span><br>
+            <span style="display:inline-block; transform:rotate(-0.8deg);">і є акції</span><br>
+            <a href="https://instagram.com/senso.massage" target="_blank" rel="noopener"
+              style="display:inline-block; transform:rotate(1.2deg); color:#6b4f35; font-size:12px; text-decoration:none;">@senso.massage</a>
+          </div>
         </div>
 
         <div class="contact-card card-2" style="background:transparent; box-shadow:none; border:none; pointer-events:none;"></div>
 
         <div class="contact-card card-3">
           <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Teleg.svg" alt="Telegram" />
-          <a class="card-handle" href="https://t.me/senso_massage" target="_blank" rel="noopener">@senso_massage</a>
+          <div style="padding:8px 10px 6px; font-family:'MarckScript',cursive; font-size:11px; color:#6b4f35; line-height:1.5; text-align:center;">
+            <span style="display:inline-block; transform:rotate(1deg);">Тут телега —</span><br>
+            <span style="display:inline-block; transform:rotate(-1.2deg);">пишіть по справі</span><br>
+            <span style="display:inline-block; transform:rotate(0.8deg);">і в одному повідомленні</span><br>
+            <a href="https://t.me/senso_massage" target="_blank" rel="noopener"
+              style="display:inline-block; transform:rotate(-1deg); color:#6b4f35; font-size:12px; text-decoration:none;">@senso_massage</a>
+          </div>
         </div>
 
         <div class="contact-card card-4">
           <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Phone.svg" alt="Phone" />
-          <a class="card-handle" href="tel:+380000000000">+380 00 000-00-00</a>
+          <div style="padding:8px 10px 6px; font-family:'MarckScript',cursive; font-size:11px; color:#6b4f35; line-height:1.5; text-align:center;">
+            <span style="display:inline-block; transform:rotate(-1deg);">Дзвонити з 10 до 20,</span><br>
+            <span style="display:inline-block; transform:rotate(1.2deg);">не передзвонювати,</span><br>
+            <span style="display:inline-block; transform:rotate(-0.8deg);">наберіться терпіння</span><br>
+            <a href="tel:+380000000000"
+              style="display:inline-block; transform:rotate(1deg); color:#6b4f35; font-size:12px; text-decoration:none; font-family:'MarckScript',cursive;">+380 00 000-00-00</a>
+          </div>
         </div>
 
       </div><!-- /cards-pile -->
@@ -691,6 +733,37 @@
 
   <!-- ─── SCRIPTS ──────────────────────────────────────────────── -->
   <script>
+    /* ── Form sheet animation ── */
+    function showForm() {
+      const price = document.getElementById('panelPrice');
+      const form  = document.getElementById('panelForm');
+      price.style.filter  = 'blur(8px)';
+      price.style.opacity = '0';
+      price.style.pointerEvents = 'none';
+      setTimeout(() => {
+        form.style.filter  = 'blur(0)';
+        form.style.opacity = '1';
+        form.style.pointerEvents = 'all';
+      }, 200);
+    }
+    function hideForm() {
+      const price = document.getElementById('panelPrice');
+      const form  = document.getElementById('panelForm');
+      form.style.filter  = 'blur(8px)';
+      form.style.opacity = '0';
+      form.style.pointerEvents = 'none';
+      setTimeout(() => {
+        price.style.filter  = 'blur(0)';
+        price.style.opacity = '1';
+        price.style.pointerEvents = 'all';
+      }, 200);
+    }
+    function toggleBtn(btn) {
+      const active = btn.style.background === 'rgb(107, 79, 53)';
+      btn.style.background = active ? 'transparent' : '#6b4f35';
+      btn.style.color = active ? '#6b4f35' : '#f7f3ee';
+    }
+
     /* ── Scroll fade-in ── */
     const io = new IntersectionObserver(
       entries => entries.forEach(e => {
