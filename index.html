@@ -73,7 +73,7 @@
       padding: 0 var(--pad);
     }
 
-    /* ─── HEADER (Максимально увеличенное пустое место) ─── */
+    /* ─── HEADER ─── */
     .site-header {
       padding: var(--pad) var(--pad) 0;
     }
@@ -84,6 +84,16 @@
       aspect-ratio: 9 / 24;
       border-radius: var(--radius);
       background: transparent;
+      position: relative;
+      overflow: hidden;
+    }
+    .header-video {
+      position: absolute;
+      top: 25%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 105%;
+      border-radius: 12px;
     }
 
     /* ─── SERVICES ─── */
@@ -102,11 +112,10 @@
       overflow: hidden;
       box-shadow: none;
       cursor: pointer;
-      display: flex;
-      flex-direction: column;
+      position: relative;
       -webkit-user-select: none;
       user-select: none;
-      transition: opacity 0.3s, transform 0.3s;
+      transition: opacity 0.3s;
     }
     @keyframes float1 { 0%,100% { transform: rotate(-2deg)   translateY(0px); } 50% { transform: rotate(-2deg)   translateY(-4px); } }
     @keyframes float2 { 0%,100% { transform: rotate(1.5deg)  translateY(0px); } 50% { transform: rotate(1.5deg)  translateY(-4px); } }
@@ -128,23 +137,31 @@
       border-radius: var(--radius);
     }
     .service-body {
-      padding: 6px 8px 8px;
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 22% 12% 18%;
+      border-radius: var(--radius);
     }
     .service-name {
       font-family: var(--font);
-      font-size: clamp(9px, 2.5vw, 12px);
-      color: var(--text);
-      font-weight: 600;
+      font-size: clamp(10px, 2.8vw, 14px);
+      color: #3a2510;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 3px;
     }
     .service-dur {
-      font-size: clamp(7px, 1.8vw, 9px);
-      color: var(--dim);
+      font-size: clamp(8px, 2vw, 10px);
+      color: #6b4f35;
       margin-left: 4px;
     }
     .service-desc {
-      font-size: clamp(7px, 1.8vw, 9px);
-      color: var(--dim);
-      margin-top: 3px;
+      font-size: clamp(8px, 2vw, 10px);
+      color: #5a3e28;
+      margin-top: 4px;
       line-height: 1.4;
     }
 
@@ -408,9 +425,15 @@
   <!-- TOAST NOTIFICATION -->
   <div class="toast-container" id="toast">Повідомлення відправлено!</div>
 
-  <!-- HEADER PLACEHOLDER (Увеличенный пустой блок) -->
+  <!-- HEADER -->
   <header class="site-header">
-    <div></div>
+    <div>
+      <video
+        class="header-video"
+        src="https://github.com/CakeBoxDeveloper/massage/blob/main/LiteAq.webm?raw=true"
+        autoplay loop muted playsinline
+      ></video>
+    </div>
   </header>
 
   <!-- SERVICES -->
@@ -578,10 +601,12 @@
 
   <!-- SCRIPTS -->
   <script>
-    // ─── ZOOM CARD LOGIC (Оригинальное приближение вьюпорта) ───
+    // ─── ZOOM CARD LOGIC ───
     let activeCard = null;
 
     function zoomCard(card, event) {
+      event.stopPropagation();
+
       if (document.body.classList.contains('is-zoomed')) {
         closeZoom();
         return;
@@ -593,45 +618,46 @@
       const cardRect = card.getBoundingClientRect();
       const cardCenterX = cardRect.left + cardRect.width / 2;
       const cardCenterY = cardRect.top + cardRect.height / 2;
-
       const screenCenterX = window.innerWidth / 2;
       const screenCenterY = window.innerHeight / 2;
-
-      const translateX = screenCenterX - cardCenterX;
-      const translateY = screenCenterY - cardCenterY;
-
       const scale = 2;
+      const translateX = (screenCenterX - cardCenterX) / scale;
+      const translateY = (screenCenterY - cardCenterY) / scale;
 
-      document.body.style.setProperty(
-        '--zoom-transform',
-        `scale(${scale}) translate(${translateX / scale}px, ${translateY / scale}px)`
+      document.body.style.setProperty('--zoom-transform',
+        `scale(${scale}) translate(${translateX}px, ${translateY}px)`
       );
       document.body.classList.add('is-zoomed');
+
+      // блокируем скролл
+      document.documentElement.style.overflow = 'hidden';
     }
 
     function closeZoom() {
       if (!activeCard) return;
-
       activeCard.classList.remove('zoom-target');
       document.body.classList.remove('is-zoomed');
       document.body.style.removeProperty('--zoom-transform');
-      
+      document.documentElement.style.overflow = '';
       activeCard = null;
     }
 
-    window.addEventListener('click', function(e) {
+    // любой клик в зум-режиме → zoom out
+    document.addEventListener('click', function(e) {
       if (document.body.classList.contains('is-zoomed')) {
-        if (!e.target.closest('.service-card')) {
-          closeZoom();
-        }
-      }
-    });
-
-    window.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
         closeZoom();
       }
     });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeZoom();
+    });
+
+    // блокируем pinch-zoom и горизонтальный свайп
+    document.addEventListener('touchmove', function(e) {
+      if (e.touches.length > 1) e.preventDefault();
+      if (document.body.classList.contains('is-zoomed')) e.preventDefault();
+    }, { passive: false });
 
 
     // ─── BOOKING PANEL TOGGLE ───
