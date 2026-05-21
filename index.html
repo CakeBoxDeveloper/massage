@@ -10,7 +10,7 @@
   <style>
     @font-face {
       font-family: 'MarckScript';
-      src: url('https://github.com/CakeBoxDeveloper/massage/blob/main/MarckScript-Regular.ttf?raw=true') format('truetype');
+      src: url('https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/MarckScript-Regular.ttf') format('truetype');
       font-weight: normal;
       font-style: normal;
     }
@@ -747,24 +747,19 @@
       btn.style.color = active ? '#6b4f35' : '#f7f3ee';
     }
 
-    /* ── Submit form to Telegram via API ── */
+    /* ── Submit form to Telegram directly ── */
     async function submitForm() {
       const btn = document.getElementById('submitBtn');
 
-      const name    = document.getElementById('fieldName').value.trim();
-      const phone   = document.getElementById('fieldPhone').value.trim();
-      const wishes  = document.getElementById('fieldWishes').value.trim();
+      const name   = document.getElementById('fieldName').value.trim();
+      const phone  = document.getElementById('fieldPhone').value.trim();
+      const wishes = document.getElementById('fieldWishes').value.trim();
 
-      // collect toggled contact buttons
-      const contactBtns = document.querySelectorAll('#panelForm .contact-btn.active');
-      const contact = Array.from(contactBtns).map(b => b.textContent).join(', ');
-
-      // collect toggled massage buttons
-      const massageBtns = document.querySelectorAll('#panelForm .massage-btn.active');
-      const massage = Array.from(massageBtns).map(b => b.textContent).join(', ');
+      const contact = Array.from(document.querySelectorAll('.contact-btn.active')).map(b => b.textContent).join(', ');
+      const massage = Array.from(document.querySelectorAll('.massage-btn.active')).map(b => b.textContent).join(', ');
 
       if (!name && !phone) {
-        btn.textContent = '⚠ Вкажіть ім\'я або телефон';
+        btn.textContent = "⚠ Вкажіть ім'я або телефон";
         setTimeout(() => { btn.innerHTML = '✓ Відправити заявку'; }, 2500);
         return;
       }
@@ -772,20 +767,34 @@
       btn.innerHTML = '⏳ Відправляємо...';
       btn.style.pointerEvents = 'none';
 
+      const text = [
+        '📋 <b>Нова заявка на масаж</b>',
+        '',
+        `👤 <b>Ім'я:</b> ${name || '—'}`,
+        `📞 <b>Телефон:</b> ${phone || '—'}`,
+        `💬 <b>Зв'язок:</b> ${contact || '—'}`,
+        `💆 <b>Вид масажу:</b> ${massage || '—'}`,
+        `📝 <b>Побажання:</b> ${wishes || '—'}`,
+      ].join('\n');
+
+      const BOT_TOKEN = '8526745919:AAFX0YqjYsrBXENjGbA2LzkfLws_1nC5FC8';
+      const CHAT_ID   = '8121184786';
+
       try {
-        const res = await fetch('/api/submit', {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone, contact, massage, wishes }),
+          body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: 'HTML' }),
         });
 
-        if (res.ok) {
+        const data = await res.json();
+
+        if (data.ok) {
           btn.innerHTML = '✓ Заявку відправлено!';
-          // clear fields
           document.getElementById('fieldName').value = '';
           document.getElementById('fieldPhone').value = '';
           document.getElementById('fieldWishes').value = '';
-          document.querySelectorAll('#panelForm button').forEach(b => {
+          document.querySelectorAll('.contact-btn, .massage-btn').forEach(b => {
             b.style.background = 'transparent';
             b.style.color = '#6b4f35';
             b.classList.remove('active');
@@ -796,9 +805,9 @@
             hideForm();
           }, 2000);
         } else {
-          throw new Error('Server error');
+          throw new Error(data.description);
         }
-      } catch {
+      } catch(e) {
         btn.innerHTML = '✗ Помилка. Спробуйте ще раз';
         btn.style.pointerEvents = 'all';
         setTimeout(() => { btn.innerHTML = '✓ Відправити заявку'; }, 3000);
