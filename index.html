@@ -78,20 +78,14 @@
 
     /* ─── HEADER ────────────────────────────────────────────────── */
     header {
-      min-height: 62svh;
-    }
-    header .page-wrap {
-      min-height: 62svh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      padding: 24px 0 0;
     }
 
     /* placeholder block — shows available header space */
     .header-placeholder {
       width: 100%;
       height: 100%;
-      min-height: calc(62svh - 48px);
+      min-height: calc(68svh - 48px);
       border-radius: 16px;
       background: var(--bg-card);
       box-shadow: 0 2px 6px rgba(0,0,0,0.10);
@@ -359,8 +353,8 @@
       width: 32px;
       height: 32px;
       object-fit: contain;
-      opacity: 0.85;
-      filter: grayscale(0) sepia(0.6) saturate(0.8) hue-rotate(340deg) brightness(0.7);
+      opacity: 0.9;
+      filter: invert(31%) sepia(28%) saturate(700%) hue-rotate(350deg) brightness(70%) contrast(90%);
     }
 
     .card-handle {
@@ -452,13 +446,13 @@
       .asset-oil    { width: 55px  !important; right:  -15px !important; }
     }
     .hrn { font-family: 'Comic Sans MS', cursive; font-size: 0.82em; }
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.65s ease, transform 0.65s ease;
+    .fade-in {
+      opacity: 1;
+      transform: none;
     }
     .fade-in.visible {
       opacity: 1;
-      transform: translateY(0);
+      transform: none;
     }
   </style>
 </head>
@@ -471,14 +465,12 @@
        HEADER — пустое место
   ═══════════════════════════════════════════════════════════ -->
   <header style="position:relative; overflow:visible;">
-    <div class="page-wrap" style="overflow:visible; padding:0;">
-      <div class="header-placeholder" style="padding:0; overflow:hidden; background:transparent; box-shadow:none; border-radius:16px; min-height:calc(62svh - 48px);">
-        <img
-          src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Header.webp"
-          alt="SENSO — Студія масажу"
-          style="width:100%; height:100%; min-height:calc(62svh - 48px); object-fit:cover; display:block; border-radius:16px;"
-        />
-      </div>
+    <div style="max-width:729px; margin:0 auto; padding:0 24px;">
+      <img
+        src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Header.webp"
+        alt="SENSO — Студія масажу"
+        style="width:100%; display:block; border-radius:16px;"
+      />
     </div>
   </header>
 
@@ -488,9 +480,9 @@
   <section id="services" style="position:relative; overflow:visible;">
     <div class="page-wrap" style="overflow:visible;">
       <!-- масло — правый край -->
-      <img class="asset-oil" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Oil.png" alt="" aria-hidden="true"
-        style="position:absolute; width:88px; top:10%; right:-20px; z-index:3; pointer-events:none;
-               filter:drop-shadow(3px 5px 4px rgba(0,0,0,0.12)); animation:sway 8s ease-in-out infinite;" />
+      <img class="asset-oil" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/StoneAsset.png" alt="" aria-hidden="true"
+        style="position:absolute; width:132px; top:45%; right:-85px; z-index:3; pointer-events:none;
+               filter:drop-shadow(2px 3px 3px rgba(0,0,0,0.45));" />
 
       <div class="services-viewport" id="servicesViewport">
         <div class="services-grid" id="servicesGrid">
@@ -560,7 +552,7 @@
   <section id="price" style="padding:48px 0 160px; margin:0; overflow:visible; position:relative; display:flex; justify-content:center; align-items:center;">
     <!-- лаванда — левый верхний угол листа -->
     <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/image-removebg-preview%20(9).png?raw=true" alt="" aria-hidden="true"
-      style="position:absolute; width:560px; top:-8%; left:260px; transform:rotate(-65deg); z-index:2; pointer-events:none;
+      style="position:absolute; width:560px; top:-5%; left:260px; transform:rotate(-65deg); z-index:2; pointer-events:none;
              filter:drop-shadow(3px 6px 8px rgba(0,0,0,0.15));" />
 
     <!-- векторная стопка листов -->
@@ -586,7 +578,7 @@
           padding: 6% 10%;
           font-family:'MarckScript',cursive; color:#2a2520;
           transform:rotate(-1deg);
-          transition: filter 0.25s ease, opacity 0.25s ease;
+          transition: opacity 0.25s ease;
         ">
           <div style="font-size:clamp(13px,3vw,15px); font-weight:500; letter-spacing:0.22em; text-transform:uppercase; color:#6b4f35; margin-bottom:5%; text-align:center;">Ціни на послуги</div>
 
@@ -614,8 +606,8 @@
           padding: 5% 9% 5%;
           font-family:'MarckScript',cursive;
           transform:rotate(-1deg);
-          opacity:0; filter:blur(8px); pointer-events:none;
-          transition: filter 0.25s ease, opacity 0.25s ease;
+          opacity:0; visibility:hidden; pointer-events:none;
+          transition: opacity 0.25s ease, visibility 0.25s ease;
         ">
           <div style="display:flex; align-items:center; margin-bottom:5%; position:relative;">
             <span onclick="hideForm()" style="font-family:'MarckScript',cursive; font-size:clamp(13px,3vw,15px); color:#8a8078; cursor:pointer;">← назад</span>
@@ -625,11 +617,11 @@
           <div style="display:flex;flex-direction:column;gap:10px;">
             <div>
               <div style="font-family:'MarckScript',cursive;font-size:clamp(12px,3vw,14px);color:#6b4f35;margin-bottom:3px;">Ім'я</div>
-              <input type="text" placeholder="Як вас звати" style="width:100%;border:none;border-bottom:1px solid #c8bfb5;background:transparent;padding:4px 0;font-size:clamp(14px,3.5vw,17px);color:#6b4f35;outline:none;font-family:'MarckScript',cursive;" />
+              <input type="text" placeholder="Як вас звати" style="width:100%;border:1px solid #c8bfb5;border-radius:10px;background:rgba(255,255,255,0.4);padding:6px 10px;font-size:clamp(14px,3.5vw,17px);color:#6b4f35;outline:none;font-family:'MarckScript',cursive;" />
             </div>
             <div>
               <div style="font-family:'MarckScript',cursive;font-size:clamp(12px,3vw,14px);color:#6b4f35;margin-bottom:3px;">Телефон</div>
-              <input type="tel" placeholder="+380" style="width:100%;border:none;border-bottom:1px solid #c8bfb5;background:transparent;padding:4px 0;font-size:clamp(14px,3.5vw,17px);color:#6b4f35;outline:none;font-family:'MarckScript',cursive;" />
+              <input type="tel" placeholder="+380" style="width:100%;border:1px solid #c8bfb5;border-radius:10px;background:rgba(255,255,255,0.4);padding:6px 10px;font-size:clamp(14px,3.5vw,17px);color:#6b4f35;outline:none;font-family:'MarckScript',cursive;" />
             </div>
             <div>
               <div style="font-family:'MarckScript',cursive;font-size:clamp(12px,3vw,14px);color:#6b4f35;margin-bottom:5px;">Зв'язок</div>
@@ -652,7 +644,7 @@
             </div>
             <div>
               <div style="font-family:'MarckScript',cursive;font-size:clamp(12px,3vw,14px);color:#6b4f35;margin-bottom:3px;">Побажання</div>
-              <textarea placeholder="Зручний час, питання..." rows="2" style="width:100%;border:none;border-bottom:1px solid #c8bfb5;background:transparent;padding:4px 0;font-size:clamp(14px,3.5vw,17px);color:#6b4f35;outline:none;resize:none;font-family:'MarckScript',cursive;"></textarea>
+              <textarea placeholder="Зручний час, питання..." rows="2" style="width:100%;border:1px solid #c8bfb5;border-radius:10px;background:rgba(255,255,255,0.4);padding:6px 10px;font-size:clamp(14px,3.5vw,17px);color:#6b4f35;outline:none;resize:none;font-family:'MarckScript',cursive;"></textarea>
             </div>
           </div>
 
@@ -680,8 +672,8 @@
 
         <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/%D1%82%D0%B5%D0%BF%D0%B5%D1%80%D1%8C_%D1%81_%D1%82%D0%B0%D0%BA%D0%BE%D0%B3%D0%BE_%D0%B6%D0%B5_%D1%80%D0%B0%D0%BA%D1%83%D1%80%D1%81%D0%B0_202605202004.png?raw=true"
           alt="" aria-hidden="true"
-          style="position:absolute; width:143%; bottom:-95%; left:-75%; z-index:10; pointer-events:none;
-                 filter:drop-shadow(4px 8px 10px rgba(0,0,0,0.20)); transform:rotate(-5deg);" />
+          style="position:absolute; width:160%; bottom:-80%; left:-80%; z-index:10; pointer-events:none;
+                 filter:drop-shadow(4px 8px 10px rgba(0,0,0,0.20)); transform:rotate(25deg);" />
 
         <div class="contact-card card-1">
           <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Inst.svg" alt="Instagram" />
@@ -729,23 +721,21 @@
     function showForm() {
       const price = document.getElementById('panelPrice');
       const form  = document.getElementById('panelForm');
-      price.style.filter  = 'blur(8px)';
       price.style.opacity = '0';
       price.style.pointerEvents = 'none';
       setTimeout(() => {
-        form.style.filter  = 'blur(0)';
         form.style.opacity = '1';
+        form.style.visibility = 'visible';
         form.style.pointerEvents = 'all';
       }, 200);
     }
     function hideForm() {
       const price = document.getElementById('panelPrice');
       const form  = document.getElementById('panelForm');
-      form.style.filter  = 'blur(8px)';
       form.style.opacity = '0';
+      form.style.visibility = 'hidden';
       form.style.pointerEvents = 'none';
       setTimeout(() => {
-        price.style.filter  = 'blur(0)';
         price.style.opacity = '1';
         price.style.pointerEvents = 'all';
       }, 200);
@@ -756,14 +746,7 @@
       btn.style.color = active ? '#6b4f35' : '#f7f3ee';
     }
 
-    /* ── Scroll fade-in ── */
-    const io = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
-      }),
-      { threshold: 0.1 }
-    );
-    document.querySelectorAll('.fade-in').forEach(el => io.observe(el));
+    /* ── Scroll fade-in disabled — all elements visible immediately ── */
 
     /* ══════════════════════════════════════════════════════════
        WHOLE-PAGE CAMERA ZOOM
