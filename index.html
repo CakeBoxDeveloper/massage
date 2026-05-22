@@ -7,7 +7,7 @@
   <style>
     @font-face {
       font-family: 'Belepotan';
-      src: url('https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Belepotan-Normal.otf') format('opentype');
+      src: url('https://github.com/CakeBoxDeveloper/massage/blob/main/Belepotan-Normal.otf?raw=true') format('opentype');
       font-weight: normal;
       font-style: normal;
     }
@@ -155,15 +155,10 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      padding: 22% 14% 18%;
+      align-items: center;
+      padding: 22% 12% 20%;
       border-radius: var(--radius);
       overflow: hidden;
-    }
-    .service-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 5px;
     }
     .service-name {
       font-family: 'Belepotan', cursive;
@@ -171,17 +166,9 @@
       color: #3a2510;
       font-weight: normal;
       line-height: 1.2;
-    }
-    .service-dur {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(7px, 1.8vw, 9px);
-      color: #5a3e28;
-      border: 1px solid #5a3e28;
-      border-radius: 4px;
-      padding: 1px 6px;
-      white-space: nowrap;
-      background: transparent;
-      flex-shrink: 0;
+      text-align: center;
+      margin-bottom: 5px;
+      width: 100%;
     }
     .service-desc {
       font-size: clamp(7px, 1.8vw, 9px);
@@ -190,8 +177,24 @@
       font-family: 'Belepotan', cursive;
       overflow: hidden;
       display: -webkit-box;
-      -webkit-line-clamp: 6;
+      -webkit-line-clamp: 5;
       -webkit-box-orient: vertical;
+      text-align: left;
+      width: 100%;
+      flex: 1;
+    }
+    .service-dur {
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(6px, 1.5vw, 8px);
+      color: #5a3e28;
+      border: 1px solid #5a3e28;
+      border-radius: 4px;
+      padding: 1px 10px;
+      white-space: nowrap;
+      background: transparent;
+      margin-top: auto;
+      align-self: center;
+      max-width: 90%;
     }
 
     /* ─── PRICE BOARD ─── */
@@ -226,7 +229,7 @@
       position: absolute;
       inset: 0;
       overflow: hidden;
-      padding: 44% 20% 10% 18%;
+      padding: 42% 20% 10% 18%;
       transition: opacity 0.2s ease, visibility 0.2s ease;
     }
     #panelPrice { opacity: 1; visibility: visible; }
@@ -476,48 +479,54 @@
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Стоун" />
           <div class="service-body">
-            <div class="service-header-row"><span class="service-name">Стоун</span><span class="service-dur">90 хв</span></div>
+            <span class="service-name">Стоун</span>
             <p class="service-desc">Гарячі базальтові камені кладуться вздовж хребта і опрацьовують глибокі м'язові шари. Тепло проникає в тканини, знімає хронічне напруження і покращує кровообіг.</p>
+            <span class="service-dur">90 хвилин</span>
           </div>
         </div>
 
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="СПА" />
           <div class="service-body">
-            <div class="service-header-row"><span class="service-name">СПА</span><span class="service-dur">120 хв</span></div>
+            <span class="service-name">СПА</span>
             <p class="service-desc">Ароматичні олії, гаряче обгортання, пілінг і завершальний масаж. Шкіра стає м'якою, тіло — легким. Відновлює емоційний баланс.</p>
+            <span class="service-dur">120 хвилин</span>
           </div>
         </div>
 
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Загальний" />
           <div class="service-body">
-            <div class="service-header-row"><span class="service-name">Загальний</span><span class="service-dur">60–90 хв</span></div>
+            <span class="service-name">Загальний</span>
             <p class="service-desc">Класичний розслаблюючий масаж усього тіла. М'які погладжування і розминання знімають м'язове напруження і покращують лімфотік.</p>
+            <span class="service-dur">60–90 хвилин</span>
           </div>
         </div>
 
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Спорт" />
           <div class="service-body">
-            <div class="service-header-row"><span class="service-name">Спорт</span><span class="service-dur">60 хв</span></div>
+            <span class="service-name">Спорт</span>
             <p class="service-desc">Глибока опрацювання м'язів після фізичних навантажень. Усуває тригерні точки, прискорює відновлення і знижує ризик травм.</p>
+            <span class="service-dur">60 хвилин</span>
           </div>
         </div>
 
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Обличчя" />
           <div class="service-body">
-            <div class="service-header-row"><span class="service-name">Обличчя</span><span class="service-dur">45 хв</span></div>
+            <span class="service-name">Обличчя</span>
             <p class="service-desc">Ліфтинг-масаж за авторською технікою. Знімає набряклість, опрацьовує жувальні м'язи і м'язи шиї, покращує овал обличчя.</p>
+            <span class="service-dur">45 хвилин</span>
           </div>
         </div>
 
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Тайський" />
           <div class="service-body">
-            <div class="service-header-row"><span class="service-name">Тайський</span><span class="service-dur">90 хв</span></div>
+            <span class="service-name">Тайський</span>
             <p class="service-desc">Традиційна техніка: акупресура, пасивна йога і робота з енергетичними лініями тіла. Відновлює гнучкість і наповнює енергією.</p>
+            <span class="service-dur">90 хвилин</span>
           </div>
         </div>
 
