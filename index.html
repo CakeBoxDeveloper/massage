@@ -21,8 +21,8 @@
       --card:    #f2ede6;
       --text:    #2a2520;
       --dim:     #8a8078;
-      --accent:  #6b4f35;
-      --border:  #c8bfb5;
+      --accent:  #1a4a48;
+      --border:  #1a4a48;
       --font:    'Comic Sans MS', cursive, sans-serif;
       --radius:  14px;
       --max:     480px;
@@ -36,7 +36,7 @@
       overscroll-behavior: none;
     }
     body {
-      background-color: #1a2a1a;
+      background-color: #1a2e1a;
       color: var(--text);
       font-family: var(--font);
       font-size: 15px;
@@ -62,7 +62,8 @@
       z-index: -1;
       pointer-events: none;
       overflow: hidden;
-      transition: filter 0.42s ease;
+      /* fallback для мобильных — статичный webp */
+      background: url('https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/LiteLayout3.webp') center top / cover no-repeat;
     }
     .bg-layer video {
       width: 100%;
@@ -94,7 +95,7 @@
       max-width: var(--max);
       margin: 0 auto;
       width: 100%;
-      aspect-ratio: 9 / 24;
+      aspect-ratio: 9 / 26;
       border-radius: var(--radius);
       background: transparent;
       position: relative;
@@ -200,6 +201,7 @@
     /* ─── PRICE BOARD ─── */
     .price-section {
       padding: var(--pad);
+      padding-bottom: 160px;
     }
 
     @keyframes floatBoard {
@@ -212,6 +214,7 @@
       width: min(96vw, 460px);
       margin: 0 auto;
       animation: floatBoard 5s ease-in-out infinite;
+      filter: drop-shadow(0 12px 32px rgba(0,0,0,0.55)) drop-shadow(0 4px 8px rgba(0,0,0,0.35));
     }
     .board-img {
       width: 100%;
@@ -231,6 +234,7 @@
       overflow: hidden;
       padding: 42% 20% 10% 18%;
       transition: opacity 0.2s ease, visibility 0.2s ease;
+      filter: url(#inkNoise);
     }
     #panelPrice { opacity: 1; visibility: visible; }
     #panelForm  { opacity: 0; visibility: hidden; pointer-events: none; transform: rotate(-1.5deg); }
@@ -240,7 +244,7 @@
       font-size: clamp(8px, 2vw, 11px);
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: #3a2510;
+      color: #1a4a48;
       text-align: center;
       margin-bottom: 3%;
     }
@@ -259,8 +263,8 @@
     .price-row-dur {
       font-family: 'Belepotan', cursive;
       font-size: clamp(6px, 1.4vw, 8px);
-      color: #5a3e28;
-      border: 1px solid #5a3e28;
+      color: #1a4a48;
+      border: 1px solid #1a4a48;
       border-radius: 4px;
       padding: 1px 6px;
       margin-left: 5px;
@@ -277,7 +281,7 @@
       font-size: clamp(8px, 2vw, 11px);
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: #3a2510;
+      color: #1a4a48;
       text-align: center;
       margin: 2% 0 1%;
     }
@@ -299,7 +303,7 @@
     .form-back {
       font-family: 'Belepotan', cursive;
       font-size: clamp(8px, 2vw, 10px);
-      color: var(--dim);
+      color: #4a8a88;
       cursor: pointer;
     }
     .form-title {
@@ -321,27 +325,29 @@
     }
     .field-input {
       width: 100%;
-      border: 1px solid #5a3e28;
+      border: 1px solid #1a4a48;
       border-radius: 4px;
       background: transparent;
       padding: 2px 5px;
       font-size: clamp(8px, 2vw, 10px);
-      color: var(--accent);
+      color: #1a4a48;
       outline: none;
       font-family: 'Belepotan', cursive;
     }
+    .field-input::placeholder { color: transparent; }
     .field-textarea {
       width: 100%;
-      border: 1px solid #5a3e28;
+      border: 1px solid #1a4a48;
       border-radius: 4px;
       background: transparent;
       padding: 2px 5px;
       font-size: clamp(8px, 2vw, 10px);
-      color: var(--accent);
+      color: #1a4a48;
       outline: none;
       resize: none;
       font-family: 'Belepotan', cursive;
     }
+    .field-textarea::placeholder { color: transparent; }
     .chips {
       display: flex;
       flex-wrap: wrap;
@@ -350,17 +356,17 @@
     .chip {
       font-family: 'Belepotan', cursive;
       font-size: clamp(8px, 2vw, 10px);
-      color: var(--accent);
+      color: #1a4a48;
       background: transparent;
-      border: 1px solid #5a3e28;
+      border: 1px solid #1a4a48;
       border-radius: 6px;
       padding: 1px 6px;
       cursor: pointer;
       transition: all 0.15s;
     }
     .chip.active {
-      background: var(--accent);
-      color: #f7f3ee;
+      background: #1a4a48;
+      color: #f0ede6;
     }
     .form-submit {
       text-align: left;
@@ -452,9 +458,23 @@
 </head>
 <body>
 
+  <!-- SVG фильтр фрактального шума для текста -->
+  <svg width="0" height="0" style="position:absolute;">
+    <defs>
+      <filter id="inkNoise" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="5" seed="7" result="noise"/>
+        <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+        <feComponentTransfer in="grayNoise" result="maskedNoise">
+          <feFuncA type="linear" slope="0.45" intercept="0.55"/>
+        </feComponentTransfer>
+        <feComposite in="SourceGraphic" in2="maskedNoise" operator="in"/>
+      </filter>
+    </defs>
+  </svg>
+
   <!-- LAYER FOR SCROLLABLE AND ZOOMABLE BACKGROUND -->
   <div class="bg-layer">
-    <video src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Layout3.mp4" autoplay loop muted playsinline></video>
+    <video src="https://cdn.jsdelivr.net/gh/CakeBoxDeveloper/massage@main/Layout3.mp4" autoplay loop muted playsinline preload="auto"></video>
   </div>
 
   <!-- TOAST NOTIFICATION -->
@@ -471,88 +491,26 @@
     </div>
   </header>
 
-  <!-- SERVICES -->
-  <section class="services">
-    <div class="wrap">
-      <div class="services-grid">
-
-        <div class="service-card" onclick="zoomCard(this, event)">
-          <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Стоун" />
-          <div class="service-body">
-            <span class="service-name">Стоун</span>
-            <p class="service-desc">Гарячі базальтові камені кладуться вздовж хребта і опрацьовують глибокі м'язові шари. Тепло проникає в тканини, знімає хронічне напруження і покращує кровообіг.</p>
-            <span class="service-dur">90 хвилин</span>
-          </div>
-        </div>
-
-        <div class="service-card" onclick="zoomCard(this, event)">
-          <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="СПА" />
-          <div class="service-body">
-            <span class="service-name">СПА</span>
-            <p class="service-desc">Ароматичні олії, гаряче обгортання, пілінг і завершальний масаж. Шкіра стає м'якою, тіло — легким. Відновлює емоційний баланс.</p>
-            <span class="service-dur">120 хвилин</span>
-          </div>
-        </div>
-
-        <div class="service-card" onclick="zoomCard(this, event)">
-          <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Загальний" />
-          <div class="service-body">
-            <span class="service-name">Загальний</span>
-            <p class="service-desc">Класичний розслаблюючий масаж усього тіла. М'які погладжування і розминання знімають м'язове напруження і покращують лімфотік.</p>
-            <span class="service-dur">60–90 хвилин</span>
-          </div>
-        </div>
-
-        <div class="service-card" onclick="zoomCard(this, event)">
-          <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Спорт" />
-          <div class="service-body">
-            <span class="service-name">Спорт</span>
-            <p class="service-desc">Глибока опрацювання м'язів після фізичних навантажень. Усуває тригерні точки, прискорює відновлення і знижує ризик травм.</p>
-            <span class="service-dur">60 хвилин</span>
-          </div>
-        </div>
-
-        <div class="service-card" onclick="zoomCard(this, event)">
-          <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Обличчя" />
-          <div class="service-body">
-            <span class="service-name">Обличчя</span>
-            <p class="service-desc">Ліфтинг-масаж за авторською технікою. Знімає набряклість, опрацьовує жувальні м'язи і м'язи шиї, покращує овал обличчя.</p>
-            <span class="service-dur">45 хвилин</span>
-          </div>
-        </div>
-
-        <div class="service-card" onclick="zoomCard(this, event)">
-          <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Тайський" />
-          <div class="service-body">
-            <span class="service-name">Тайський</span>
-            <p class="service-desc">Традиційна техніка: акупресура, пасивна йога і робота з енергетичними лініями тіла. Відновлює гнучкість і наповнює енергією.</p>
-            <span class="service-dur">90 хвилин</span>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
   <!-- PRICE / BOOKING BOARD -->
   <section class="price-section">
     <div class="wrap">
       <div class="price-stack">
         <img class="board-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/LiteBoard.webp" alt="" />
+
         <div class="board-content">
 
           <!-- PRICE PANEL -->
           <div class="panel" id="panelPrice">
             <div class="panel-title">Ціни на послуги</div>
-            <div class="price-row"><div><span class="price-row-name">Стоун</span><span class="price-row-dur">90 хв</span></div><span class="price-row-val">1 200</span></div>
-            <div class="price-row"><div><span class="price-row-name">СПА</span><span class="price-row-dur">120 хв</span></div><span class="price-row-val">1 800</span></div>
-            <div class="price-row"><div><span class="price-row-name">Загальний</span><span class="price-row-dur">60–90 хв</span></div><span class="price-row-val">900</span></div>
-            <div class="price-row"><div><span class="price-row-name">Спорт</span><span class="price-row-dur">60 хв</span></div><span class="price-row-val">950</span></div>
-            <div class="price-row"><div><span class="price-row-name">Обличчя</span><span class="price-row-dur">45 хв</span></div><span class="price-row-val">700</span></div>
-            <div class="price-row"><div><span class="price-row-name">Тайський</span><span class="price-row-dur">90 хв</span></div><span class="price-row-val">1 100</span></div>
+            <div class="price-row"><div><span class="price-row-name">Стоун</span><span class="price-row-dur">90 хвилин</span></div><span class="price-row-val">1 200</span></div>
+            <div class="price-row"><div><span class="price-row-name">СПА</span><span class="price-row-dur">120 хвилин</span></div><span class="price-row-val">1 800</span></div>
+            <div class="price-row"><div><span class="price-row-name">Загальний</span><span class="price-row-dur">60–90 хвилин</span></div><span class="price-row-val">900</span></div>
+            <div class="price-row"><div><span class="price-row-name">Спорт</span><span class="price-row-dur">60 хвилин</span></div><span class="price-row-val">950</span></div>
+            <div class="price-row"><div><span class="price-row-name">Обличчя</span><span class="price-row-dur">45 хвилин</span></div><span class="price-row-val">700</span></div>
+            <div class="price-row"><div><span class="price-row-name">Тайський</span><span class="price-row-dur">90 хвилин</span></div><span class="price-row-val">1 100</span></div>
             <div class="price-section-label">Абонементи</div>
-            <div class="price-row"><div><span class="price-row-name">4 сеанси</span><span class="price-row-dur">-10%</span></div><span class="price-row-val">від 2 520</span></div>
-            <div class="price-row"><div><span class="price-row-name">8 сеансів</span><span class="price-row-dur">-15%</span></div><span class="price-row-val">від 4 760</span></div>
+            <div class="price-row"><div><span class="price-row-name">4 сеанси</span></div><span class="price-row-val">від 2 520</span></div>
+            <div class="price-row"><div><span class="price-row-name">8 сеансів</span></div><span class="price-row-val">від 4 760</span></div>
             <div class="price-cta" onclick="showForm()">Записатися на масаж</div>
           </div>
 
@@ -603,22 +561,8 @@
     </div>
   </section>
 
-  <!-- BUSINESS CARDS -->
-  <section class="cards-section">
-    <div class="wrap">
-      <div class="cards-row">
-
-        <a class="biz-card" href="https://instagram.com/senso.massage" target="_blank" rel="noopener">
-          <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Blank1.png" alt="Instagram" />
-        </a>
-
-        <a class="biz-card" href="https://t.me/senso_massage" target="_blank" rel="noopener">
-          <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Blank2.png" alt="Telegram" />
-        </a>
-
-      </div>
-    </div>
-  </section>
+  <!-- SPACER -->
+  <div style="height: 40vh;"></div>
 
   <!-- SCRIPTS -->
   <script>
