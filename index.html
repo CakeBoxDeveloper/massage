@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
   <title>SENSO — Студія масажу</title>
   <style>
-    /* ─── RESET ─── */
+    @font-face {
+      font-family: 'Belepotan';
+      src: url('https://github.com/CakeBoxDeveloper/massage/blob/main/Belepotan-Normal.otf?raw=true') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     * { -webkit-tap-highlight-color: transparent; }
     ::-webkit-scrollbar { display: none; }
@@ -31,7 +36,7 @@
       overscroll-behavior: none;
     }
     body {
-      background-color: var(--bg);
+      background-color: #1a2a1a;
       color: var(--text);
       font-family: var(--font);
       font-size: 15px;
@@ -39,34 +44,37 @@
       overflow-x: hidden;
       position: relative;
       min-height: 100vh;
-      /* Плавная трансформация вьюпорта при зуме */
+    }
+    /* ZOOM DISABLED
+    body.is-zoomed {
+      transform: var(--zoom-transform, none);
       transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94);
       transform-origin: center center;
     }
-    body.is-zoomed {
-      transform: var(--zoom-transform, none);
-    }
+    */
 
-    /* ─── BACKGROUND LAYER (Зумится вместе с body) ─── */
+    /* ─── BACKGROUND LAYER ─── */
     .bg-layer {
       position: absolute;
-      inset: 0;
-      background-image: url('https://github.com/CakeBoxDeveloper/massage/blob/main/LiteLayout3.webp?raw=true');
-      background-position: center top;
-      background-repeat: no-repeat;
-      background-size: 300% auto;
+      top: 0; left: 0;
+      width: 100%;
+      min-height: 100%;
       z-index: -1;
       pointer-events: none;
+      overflow: hidden;
       transition: filter 0.42s ease;
     }
-    body.is-zoomed .bg-layer {
-      filter: blur(6px);
+    .bg-layer video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+      position: absolute;
+      top: 0; left: 0;
     }
-
-    @media (min-width: 600px) {
-      .bg-layer {
-        background-size: 100% auto;
-      }
+    body.is-zoomed .bg-layer {
+      filter: none;
     }
 
     /* ─── LAYOUT ─── */
@@ -80,6 +88,7 @@
     /* ─── HEADER ─── */
     .site-header {
       padding: var(--pad) var(--pad) 0;
+      visibility: hidden;
     }
     .site-header > div {
       max-width: var(--max);
@@ -146,27 +155,40 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      padding: 20% 12% 16%;
+      padding: 26% 14% 14%;
       border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .service-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 5px;
     }
     .service-name {
-      font-family: var(--font);
-      font-size: clamp(10px, 2.8vw, 14px);
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(11px, 3vw, 15px);
       color: #3a2510;
-      font-weight: 700;
+      font-weight: normal;
       line-height: 1.2;
-      margin-bottom: 2px;
     }
     .service-dur {
-      font-size: clamp(8px, 2vw, 10px);
-      color: #6b4f35;
-      margin-left: 4px;
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(7px, 1.8vw, 9px);
+      color: #5a3e28;
+      border: 1px solid #5a3e28;
+      border-radius: 4px;
+      padding: 1px 6px;
+      white-space: nowrap;
+      background: transparent;
+      flex-shrink: 0;
     }
     .service-desc {
-      font-size: clamp(8px, 2vw, 10px);
+      font-size: clamp(7px, 1.8vw, 9px);
       color: #5a3e28;
-      margin-top: 6px;
-      line-height: 1.45;
+      line-height: 1.4;
+      font-family: 'Belepotan', cursive;
+      overflow: hidden;
     }
 
     /* ─── PRICE BOARD ─── */
@@ -205,16 +227,16 @@
       transition: opacity 0.2s ease, visibility 0.2s ease;
     }
     #panelPrice { opacity: 1; visibility: visible; }
-    #panelForm  { opacity: 0; visibility: hidden; pointer-events: none; }
+    #panelForm  { opacity: 0; visibility: hidden; pointer-events: none; transform: rotate(-1.5deg); }
 
     .panel-title {
-      font-family: var(--font);
-      font-size: clamp(6px, 1.4vw, 8px);
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(8px, 2vw, 11px);
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: var(--dim);
+      color: #3a2510;
       text-align: center;
-      margin-bottom: 2%;
+      margin-bottom: 3%;
     }
     .price-row {
       display: flex;
@@ -223,33 +245,41 @@
       margin-bottom: 1%;
     }
     .price-row-name {
-      font-family: var(--font);
-      font-size: clamp(7px, 1.8vw, 9px);
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(9px, 2.4vw, 13px);
       color: var(--accent);
+      text-transform: uppercase;
     }
     .price-row-dur {
-      font-size: clamp(5px, 1.2vw, 7px);
-      color: var(--dim);
-      margin-left: 3px;
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(6px, 1.4vw, 8px);
+      color: #5a3e28;
+      border: 1px solid #5a3e28;
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-left: 5px;
+      background: transparent;
     }
     .price-row-val {
-      font-family: var(--font);
-      font-size: clamp(7px, 1.8vw, 9px);
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(9px, 2.4vw, 13px);
       color: var(--accent);
       white-space: nowrap;
     }
     .price-section-label {
-      font-size: clamp(5px, 1.2vw, 7px);
-      letter-spacing: 0.2em;
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(8px, 2vw, 11px);
+      letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: var(--dim);
-      margin: 1.5% 0 1%;
+      color: #3a2510;
+      text-align: center;
+      margin: 2% 0 1%;
     }
     .price-cta {
-      text-align: center;
-      margin-top: 2%;
-      font-family: var(--font);
-      font-size: clamp(7px, 1.8vw, 9px);
+      text-align: left;
+      margin-top: 5%;
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(11px, 2.8vw, 15px);
       color: var(--accent);
       cursor: pointer;
     }
@@ -258,67 +288,67 @@
     .form-header {
       display: flex;
       align-items: center;
-      margin-bottom: 4%;
+      margin-bottom: 2%;
     }
     .form-back {
-      font-family: var(--font);
-      font-size: clamp(10px, 2.5vw, 13px);
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(8px, 2vw, 10px);
       color: var(--dim);
       cursor: pointer;
     }
     .form-title {
-      font-family: var(--font);
-      font-size: clamp(12px, 3vw, 15px);
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(11px, 2.8vw, 15px);
       color: var(--accent);
       margin: 0 auto;
     }
     .form-fields {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 3px;
     }
     .field-label {
-      font-family: var(--font);
-      font-size: clamp(9px, 2.2vw, 11px);
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(8px, 2vw, 10px);
       color: var(--accent);
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
     .field-input {
       width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.4);
-      padding: 5px 8px;
-      font-size: clamp(10px, 2.5vw, 13px);
+      border: 1px solid #5a3e28;
+      border-radius: 4px;
+      background: transparent;
+      padding: 2px 5px;
+      font-size: clamp(8px, 2vw, 10px);
       color: var(--accent);
       outline: none;
-      font-family: var(--font);
+      font-family: 'Belepotan', cursive;
     }
     .field-textarea {
       width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.4);
-      padding: 5px 8px;
-      font-size: clamp(10px, 2.5vw, 13px);
+      border: 1px solid #5a3e28;
+      border-radius: 4px;
+      background: transparent;
+      padding: 2px 5px;
+      font-size: clamp(8px, 2vw, 10px);
       color: var(--accent);
       outline: none;
       resize: none;
-      font-family: var(--font);
+      font-family: 'Belepotan', cursive;
     }
     .chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 3px;
     }
     .chip {
-      font-family: var(--font);
-      font-size: clamp(9px, 2.2vw, 11px);
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(8px, 2vw, 10px);
       color: var(--accent);
       background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 2px 8px;
+      border: 1px solid #5a3e28;
+      border-radius: 6px;
+      padding: 1px 6px;
       cursor: pointer;
       transition: all 0.15s;
     }
@@ -327,10 +357,10 @@
       color: #f7f3ee;
     }
     .form-submit {
-      text-align: center;
-      margin-top: 4%;
-      font-family: var(--font);
-      font-size: clamp(11px, 2.8vw, 14px);
+      text-align: left;
+      margin-top: 2%;
+      font-family: 'Belepotan', cursive;
+      font-size: clamp(10px, 2.5vw, 13px);
       color: var(--accent);
       cursor: pointer;
     }
@@ -417,7 +447,9 @@
 <body>
 
   <!-- LAYER FOR SCROLLABLE AND ZOOMABLE BACKGROUND -->
-  <div class="bg-layer"></div>
+  <div class="bg-layer">
+    <video src="https://github.com/CakeBoxDeveloper/massage/blob/main/Layout3.mp4?raw=true" autoplay loop muted playsinline></video>
+  </div>
 
   <!-- TOAST NOTIFICATION -->
   <div class="toast-container" id="toast">Повідомлення відправлено!</div>
@@ -441,48 +473,48 @@
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Стоун" />
           <div class="service-body">
-            <span class="service-name">Стоун</span><span class="service-dur">90 хв</span>
-            <p class="service-desc">Гарячі базальтові камені вздовж хребта. Знімає хронічне напруження і покращує кровообіг.</p>
+            <div class="service-header-row"><span class="service-name">Стоун</span><span class="service-dur">90 хв</span></div>
+            <p class="service-desc">Гарячі базальтові камені кладуться вздовж хребта і опрацьовують глибокі м'язові шари. Тепло проникає в тканини, знімає хронічне напруження і покращує кровообіг.</p>
           </div>
         </div>
 
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="СПА" />
           <div class="service-body">
-            <span class="service-name">СПА</span><span class="service-dur">120 хв</span>
-            <p class="service-desc">Олії, обгортання, пілінг і масаж. Шкіра м'яка, тіло легке.</p>
+            <div class="service-header-row"><span class="service-name">СПА</span><span class="service-dur">120 хв</span></div>
+            <p class="service-desc">Ароматичні олії, гаряче обгортання, пілінг і завершальний масаж. Шкіра стає м'якою, тіло — легким. Відновлює емоційний баланс.</p>
           </div>
         </div>
 
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Загальний" />
           <div class="service-body">
-            <span class="service-name">Загальний</span><span class="service-dur">60–90 хв</span>
-            <p class="service-desc">Класичний масаж усього тіла. Знімає м'язове напруження.</p>
+            <div class="service-header-row"><span class="service-name">Загальний</span><span class="service-dur">60–90 хв</span></div>
+            <p class="service-desc">Класичний розслаблюючий масаж усього тіла. М'які погладжування і розминання знімають м'язове напруження і покращують лімфотік.</p>
           </div>
         </div>
 
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Спорт" />
           <div class="service-body">
-            <span class="service-name">Спорт</span><span class="service-dur">60 хв</span>
-            <p class="service-desc">Глибока робота з м'язами. Усуває тригерні точки.</p>
+            <div class="service-header-row"><span class="service-name">Спорт</span><span class="service-dur">60 хв</span></div>
+            <p class="service-desc">Глибока опрацювання м'язів після фізичних навантажень. Усуває тригерні точки, прискорює відновлення і знижує ризик травм.</p>
           </div>
         </div>
 
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Обличчя" />
           <div class="service-body">
-            <span class="service-name">Обличчя</span><span class="service-dur">45 хв</span>
-            <p class="service-desc">Ліфтинг-масаж. Знімає набряклість, покращує овал обличчя.</p>
+            <div class="service-header-row"><span class="service-name">Обличчя</span><span class="service-dur">45 хв</span></div>
+            <p class="service-desc">Ліфтинг-масаж за авторською технікою. Знімає набряклість, опрацьовує жувальні м'язи і м'язи шиї, покращує овал обличчя.</p>
           </div>
         </div>
 
         <div class="service-card" onclick="zoomCard(this, event)">
           <img class="service-deck-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="Тайський" />
           <div class="service-body">
-            <span class="service-name">Тайський</span><span class="service-dur">90 хв</span>
-            <p class="service-desc">Акупресура, пасивна йога, енергетичні лінії тіла.</p>
+            <div class="service-header-row"><span class="service-name">Тайський</span><span class="service-dur">90 хв</span></div>
+            <p class="service-desc">Традиційна техніка: акупресура, пасивна йога і робота з енергетичними лініями тіла. Відновлює гнучкість і наповнює енергією.</p>
           </div>
         </div>
 
@@ -500,15 +532,15 @@
           <!-- PRICE PANEL -->
           <div class="panel" id="panelPrice">
             <div class="panel-title">Ціни на послуги</div>
-            <div class="price-row"><div><span class="price-row-name">Стоун</span><span class="price-row-dur">90 хв</span></div><span class="price-row-val">1 200 грн</span></div>
-            <div class="price-row"><div><span class="price-row-name">СПА</span><span class="price-row-dur">120 хв</span></div><span class="price-row-val">1 800 грн</span></div>
-            <div class="price-row"><div><span class="price-row-name">Загальний</span><span class="price-row-dur">60–90 хв</span></div><span class="price-row-val">900 грн</span></div>
-            <div class="price-row"><div><span class="price-row-name">Спорт</span><span class="price-row-dur">60 хв</span></div><span class="price-row-val">950 грн</span></div>
-            <div class="price-row"><div><span class="price-row-name">Обличчя</span><span class="price-row-dur">45 хв</span></div><span class="price-row-val">700 грн</span></div>
-            <div class="price-row"><div><span class="price-row-name">Тайський</span><span class="price-row-dur">90 хв</span></div><span class="price-row-val">1 100 грн</span></div>
+            <div class="price-row"><div><span class="price-row-name">Стоун</span><span class="price-row-dur">90 хв</span></div><span class="price-row-val">1 200</span></div>
+            <div class="price-row"><div><span class="price-row-name">СПА</span><span class="price-row-dur">120 хв</span></div><span class="price-row-val">1 800</span></div>
+            <div class="price-row"><div><span class="price-row-name">Загальний</span><span class="price-row-dur">60–90 хв</span></div><span class="price-row-val">900</span></div>
+            <div class="price-row"><div><span class="price-row-name">Спорт</span><span class="price-row-dur">60 хв</span></div><span class="price-row-val">950</span></div>
+            <div class="price-row"><div><span class="price-row-name">Обличчя</span><span class="price-row-dur">45 хв</span></div><span class="price-row-val">700</span></div>
+            <div class="price-row"><div><span class="price-row-name">Тайський</span><span class="price-row-dur">90 хв</span></div><span class="price-row-val">1 100</span></div>
             <div class="price-section-label">Абонементи</div>
-            <div class="price-row"><div><span class="price-row-name">4 сеанси</span><span class="price-row-dur">-10%</span></div><span class="price-row-val">від 2 520 грн</span></div>
-            <div class="price-row"><div><span class="price-row-name">8 сеансів</span><span class="price-row-dur">-15%</span></div><span class="price-row-val">від 4 760 грн</span></div>
+            <div class="price-row"><div><span class="price-row-name">4 сеанси</span><span class="price-row-dur">-10%</span></div><span class="price-row-val">від 2 520</span></div>
+            <div class="price-row"><div><span class="price-row-name">8 сеансів</span><span class="price-row-dur">-15%</span></div><span class="price-row-val">від 4 760</span></div>
             <div class="price-cta" onclick="showForm()">Записатися на масаж →</div>
           </div>
 
@@ -578,63 +610,19 @@
 
   <!-- SCRIPTS -->
   <script>
-    // ─── ZOOM CARD LOGIC ───
+    // ─── ZOOM CARD LOGIC (DISABLED) ───
     let activeCard = null;
 
     function zoomCard(card, event) {
       event.stopPropagation();
-
-      if (document.body.classList.contains('is-zoomed')) {
-        closeZoom();
-        return;
-      }
-
-      activeCard = card;
-      card.classList.add('zoom-target');
-
-      const scale = 2.2;
-      const r = card.getBoundingClientRect();
-      const cardCX = r.left + r.width  / 2;
-      const cardCY = r.top  + r.height / 2;
-      const screenCX = window.innerWidth  / 2;
-      const screenCY = window.innerHeight / 2;
-
-      // origin — центр карточки в координатах документа
-      const originX = cardCX + window.scrollX;
-      const originY = cardCY + window.scrollY;
-
-      // смещение чтобы карточка оказалась в центре вьюпорта
-      const tx = (screenCX - cardCX) / scale;
-      const ty = (screenCY - cardCY) / scale;
-
-      document.body.style.transformOrigin = `${originX}px ${originY}px`;
-      document.body.style.setProperty('--zoom-transform',
-        `scale(${scale}) translate(${tx}px, ${ty}px)`
-      );
-      document.body.classList.add('is-zoomed');
-
-      // блокируем скролл и touch
-      document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
+      // zoom disabled
     }
 
     function closeZoom() {
-      if (!activeCard) return;
-      activeCard.classList.remove('zoom-target');
-      document.body.classList.remove('is-zoomed');
-      document.body.style.setProperty('--zoom-transform', 'none');
-
-      // сбрасываем origin только после завершения transition
-      const card = activeCard;
-      activeCard = null;
-      setTimeout(() => {
-        document.body.style.removeProperty('--zoom-transform');
-        document.body.style.transformOrigin = '';
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
-      }, 440);
+      // zoom disabled
     }
 
+    /*
     // любой клик в зум-режиме → zoom out
     document.addEventListener('click', function(e) {
       if (document.body.classList.contains('is-zoomed')) {
@@ -651,6 +639,7 @@
       if (e.touches.length > 1) e.preventDefault();
       if (document.body.classList.contains('is-zoomed')) e.preventDefault();
     }, { passive: false });
+    */
 
 
     // ─── BOOKING PANEL TOGGLE ───
