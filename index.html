@@ -216,7 +216,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 22% 8% 18%;
+      padding: 22% 14% 18%;
       overflow: hidden;
       filter: url(#inkNoise);
     }
@@ -274,8 +274,8 @@
     }
 
     @keyframes floatBoard {
-      0%, 100% { transform: translateY(0px) rotate(-0.5deg); }
-      50%       { transform: translateY(-6px) rotate(0.5deg); }
+      0%, 100% { transform: translateX(-25px) translateY(0px) rotate(-4deg); }
+      50%       { transform: translateX(-25px) translateY(-6px) rotate(-3deg); }
     }
 
     .price-stack {
@@ -569,7 +569,7 @@
       <div class="side-card-body">
         <span class="service-name">Стоун</span>
         <p class="service-desc">Гарячі базальтові камені вздовж хребта. Знімає хронічне напруження і покращує кровообіг.</p>
-        <span class="service-dur">90 хвилин</span>
+        <span class="service-dur">90 хв · 1200</span>
       </div>
     </div>
     <div class="side-card sc2">
@@ -577,7 +577,7 @@
       <div class="side-card-body">
         <span class="service-name">СПА</span>
         <p class="service-desc">Олії, обгортання, пілінг і масаж. Шкіра м'яка, тіло легке.</p>
-        <span class="service-dur">120 хвилин</span>
+        <span class="service-dur">120 хв · 1800</span>
       </div>
     </div>
     <div class="side-card sc3">
@@ -585,7 +585,7 @@
       <div class="side-card-body">
         <span class="service-name">Загальний</span>
         <p class="service-desc">Класичний масаж усього тіла. Знімає м'язове напруження.</p>
-        <span class="service-dur">60–90 хвилин</span>
+        <span class="service-dur">60–90 хв · 900</span>
       </div>
     </div>
 
@@ -595,7 +595,7 @@
       <div class="side-card-body">
         <span class="service-name">Спорт</span>
         <p class="service-desc">Глибока робота з м'язами. Усуває тригерні точки.</p>
-        <span class="service-dur">60 хвилин</span>
+        <span class="service-dur">60 хв · 950</span>
       </div>
     </div>
     <div class="side-card sc5">
@@ -603,7 +603,7 @@
       <div class="side-card-body">
         <span class="service-name">Обличчя</span>
         <p class="service-desc">Ліфтинг-масаж. Знімає набряклість, покращує овал.</p>
-        <span class="service-dur">45 хвилин</span>
+        <span class="service-dur">45 хв · 700</span>
       </div>
     </div>
     <div class="side-card sc6">
@@ -611,7 +611,7 @@
       <div class="side-card-body">
         <span class="service-name">Тайський</span>
         <p class="service-desc">Акупресура, пасивна йога, енергетичні лінії тіла.</p>
-        <span class="service-dur">90 хвилин</span>
+        <span class="service-dur">90 хв · 1100</span>
       </div>
     </div>
 
@@ -619,7 +619,7 @@
       <div class="price-stack">
         <img class="board-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/LiteBoard.webp" alt="" />
         <div class="board-content">
-          <div class="panel" id="panelForm" style="opacity:1;visibility:visible;pointer-events:auto;">
+          <div class="panel" id="panelForm" style="opacity:1;visibility:visible;pointer-events:auto;transform:rotate(-2deg);">
             <div class="form-header" style="justify-content:center;">
               <span class="form-title">Запис на сеанс</span>
             </div>
