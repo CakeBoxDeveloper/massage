@@ -198,7 +198,76 @@
       max-width: 90%;
     }
 
-    /* ─── PRICE BOARD ─── */
+    /* ─── SIDE CARDS ─── */
+    .side-card {
+      position: absolute;
+      width: 155px;
+      cursor: default;
+      filter: drop-shadow(0 6px 16px rgba(0,0,0,0.45));
+    }
+    .side-card-img {
+      width: 100%;
+      display: block;
+      border-radius: 10px;
+    }
+    .side-card-body {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 22% 8% 18%;
+      overflow: hidden;
+      filter: url(#inkNoise);
+    }
+    .side-card-body .service-name {
+      font-size: clamp(14px, 3.5vw, 18px);
+      margin-bottom: 5px;
+      text-align: center;
+    }
+    .side-card-body .service-desc {
+      font-size: clamp(8px, 1.8vw, 10px);
+      text-align: left;
+      padding-left: 5px;
+      flex: 1;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      width: 100%;
+    }
+    .side-card-body .service-dur {
+      margin-top: auto;
+      margin-bottom: 8%;
+      font-size: clamp(7px, 1.6vw, 9px);
+    }
+
+    /* левая тройка — веером */
+    .sc1 { top: -10%; left: calc(50% - 380px); }
+    .sc2 { top:  32%; left: calc(50% - 460px); }
+    .sc3 { top:  74%; left: calc(50% - 380px); }
+    /* правая тройка */
+    .sc4 { top: -10%; right: calc(50% - 380px); }
+    .sc5 { top:  32%; right: calc(50% - 460px); }
+    .sc6 { top:  74%; right: calc(50% - 380px); }
+
+    @keyframes scFloat1 { 0%,100%{transform:rotate(15deg) translateY(0);} 50%{transform:rotate(15deg) translateY(-6px);} }
+    @keyframes scFloat2 { 0%,100%{transform:rotate(4deg) translateY(0);} 50%{transform:rotate(4deg) translateY(-6px);} }
+    @keyframes scFloat3 { 0%,100%{transform:rotate(-15deg) translateY(0);} 50%{transform:rotate(-15deg) translateY(-6px);} }
+    @keyframes scFloat4 { 0%,100%{transform:rotate(-15deg) translateY(0);} 50%{transform:rotate(-15deg) translateY(-6px);} }
+    @keyframes scFloat5 { 0%,100%{transform:rotate(-3deg) translateY(0);} 50%{transform:rotate(-3deg) translateY(-6px);} }
+    @keyframes scFloat6 { 0%,100%{transform:rotate(15deg) translateY(0);} 50%{transform:rotate(15deg) translateY(-6px);} }
+
+    .sc1 { animation: scFloat1 4.2s ease-in-out infinite; }
+    .sc2 { animation: scFloat2 4.8s ease-in-out infinite 0.5s; }
+    .sc3 { animation: scFloat3 4.0s ease-in-out infinite 1.0s; }
+    .sc4 { animation: scFloat4 4.5s ease-in-out infinite 0.3s; }
+    .sc5 { animation: scFloat5 4.3s ease-in-out infinite 0.8s; }
+    .sc6 { animation: scFloat6 4.7s ease-in-out infinite 0.2s; }
+
+    @media (max-width: 900px) {
+      .side-card { display: none; }
+    }
     .price-section {
       padding: var(--pad);
       padding-bottom: 160px;
@@ -491,43 +560,77 @@
     </div>
   </header>
 
-  <!-- PRICE / BOOKING BOARD -->
-  <section class="price-section">
+  <!-- BOOKING BOARD -->
+  <section class="price-section" style="position:relative;">
+
+    <!-- таблички слева -->
+    <div class="side-card sc1">
+      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
+      <div class="side-card-body">
+        <span class="service-name">Стоун</span>
+        <p class="service-desc">Гарячі базальтові камені вздовж хребта. Знімає хронічне напруження і покращує кровообіг.</p>
+        <span class="service-dur">90 хвилин</span>
+      </div>
+    </div>
+    <div class="side-card sc2">
+      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
+      <div class="side-card-body">
+        <span class="service-name">СПА</span>
+        <p class="service-desc">Олії, обгортання, пілінг і масаж. Шкіра м'яка, тіло легке.</p>
+        <span class="service-dur">120 хвилин</span>
+      </div>
+    </div>
+    <div class="side-card sc3">
+      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
+      <div class="side-card-body">
+        <span class="service-name">Загальний</span>
+        <p class="service-desc">Класичний масаж усього тіла. Знімає м'язове напруження.</p>
+        <span class="service-dur">60–90 хвилин</span>
+      </div>
+    </div>
+
+    <!-- таблички справа -->
+    <div class="side-card sc4">
+      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
+      <div class="side-card-body">
+        <span class="service-name">Спорт</span>
+        <p class="service-desc">Глибока робота з м'язами. Усуває тригерні точки.</p>
+        <span class="service-dur">60 хвилин</span>
+      </div>
+    </div>
+    <div class="side-card sc5">
+      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
+      <div class="side-card-body">
+        <span class="service-name">Обличчя</span>
+        <p class="service-desc">Ліфтинг-масаж. Знімає набряклість, покращує овал.</p>
+        <span class="service-dur">45 хвилин</span>
+      </div>
+    </div>
+    <div class="side-card sc6">
+      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
+      <div class="side-card-body">
+        <span class="service-name">Тайський</span>
+        <p class="service-desc">Акупресура, пасивна йога, енергетичні лінії тіла.</p>
+        <span class="service-dur">90 хвилин</span>
+      </div>
+    </div>
+
     <div class="wrap">
       <div class="price-stack">
         <img class="board-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/LiteBoard.webp" alt="" />
-
         <div class="board-content">
-
-          <!-- PRICE PANEL -->
-          <div class="panel" id="panelPrice">
-            <div class="panel-title">Ціни на послуги</div>
-            <div class="price-row"><div><span class="price-row-name">Стоун</span><span class="price-row-dur">90 хвилин</span></div><span class="price-row-val">1 200</span></div>
-            <div class="price-row"><div><span class="price-row-name">СПА</span><span class="price-row-dur">120 хвилин</span></div><span class="price-row-val">1 800</span></div>
-            <div class="price-row"><div><span class="price-row-name">Загальний</span><span class="price-row-dur">60–90 хвилин</span></div><span class="price-row-val">900</span></div>
-            <div class="price-row"><div><span class="price-row-name">Спорт</span><span class="price-row-dur">60 хвилин</span></div><span class="price-row-val">950</span></div>
-            <div class="price-row"><div><span class="price-row-name">Обличчя</span><span class="price-row-dur">45 хвилин</span></div><span class="price-row-val">700</span></div>
-            <div class="price-row"><div><span class="price-row-name">Тайський</span><span class="price-row-dur">90 хвилин</span></div><span class="price-row-val">1 100</span></div>
-            <div class="price-section-label">Абонементи</div>
-            <div class="price-row"><div><span class="price-row-name">4 сеанси</span></div><span class="price-row-val">від 2 520</span></div>
-            <div class="price-row"><div><span class="price-row-name">8 сеансів</span></div><span class="price-row-val">від 4 760</span></div>
-            <div class="price-cta" onclick="showForm()">Записатися на масаж</div>
-          </div>
-
-          <!-- FORM PANEL -->
-          <div class="panel" id="panelForm">
-            <div class="form-header">
-              <span class="form-back" onclick="hideForm()">← назад</span>
+          <div class="panel" id="panelForm" style="opacity:1;visibility:visible;pointer-events:auto;">
+            <div class="form-header" style="justify-content:center;">
               <span class="form-title">Запис на сеанс</span>
             </div>
             <div class="form-fields">
               <div>
                 <div class="field-label">Ім'я</div>
-                <input id="fieldName" class="field-input" type="text" placeholder="Як вас звати" />
+                <input id="fieldName" class="field-input" type="text" placeholder="" />
               </div>
               <div>
                 <div class="field-label">Телефон</div>
-                <input id="fieldPhone" class="field-input" type="tel" placeholder="+380" />
+                <input id="fieldPhone" class="field-input" type="tel" placeholder="" />
               </div>
               <div>
                 <div class="field-label">Зв'язок</div>
@@ -550,12 +653,11 @@
               </div>
               <div>
                 <div class="field-label">Побажання</div>
-                <textarea id="fieldWishes" class="field-textarea" rows="2" placeholder="Зручний час, питання..."></textarea>
+                <textarea id="fieldWishes" class="field-textarea" rows="2" placeholder=""></textarea>
               </div>
             </div>
             <div class="form-submit" id="submitBtn" onclick="submitForm()">Відправити заявку</div>
           </div>
-
         </div><!-- /board-content -->
       </div><!-- /price-stack -->
     </div>
