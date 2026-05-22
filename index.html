@@ -51,12 +51,16 @@
     .bg-layer {
       position: absolute;
       inset: 0;
-      background-image: url('https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Layout3.png');
+      background-image: url('https://github.com/CakeBoxDeveloper/massage/blob/main/LiteLayout3.webp?raw=true');
       background-position: center top;
       background-repeat: no-repeat;
       background-size: 300% auto;
       z-index: -1;
       pointer-events: none;
+      transition: filter 0.42s ease;
+    }
+    body.is-zoomed .bg-layer {
+      filter: blur(6px);
     }
 
     @media (min-width: 600px) {
@@ -118,11 +122,11 @@
       transition: opacity 0.3s;
     }
     @keyframes float1 { 0%,100% { transform: rotate(-2deg)   translateY(0px); } 50% { transform: rotate(-2deg)   translateY(-4px); } }
-    @keyframes float2 { 0%,100% { transform: rotate(1.5deg)  translateY(0px); } 50% { transform: rotate(1.5deg)  translateY(-4px); } }
-    @keyframes float3 { 0%,100% { transform: rotate(-1deg)   translateY(0px); } 50% { transform: rotate(-1deg)   translateY(-4px); } }
-    @keyframes float4 { 0%,100% { transform: rotate(2deg)    translateY(0px); } 50% { transform: rotate(2deg)    translateY(-4px); } }
-    @keyframes float5 { 0%,100% { transform: rotate(-1.5deg) translateY(0px); } 50% { transform: rotate(-1.5deg) translateY(-4px); } }
-    @keyframes float6 { 0%,100% { transform: rotate(1.2deg)  translateY(0px); } 50% { transform: rotate(1.2deg)  translateY(-4px); } }
+    @keyframes float2 { 0%,100% { transform: rotate(4deg)   translateY(0px); } 50% { transform: rotate(4deg)   translateY(-4px); } }
+    @keyframes float3 { 0%,100% { transform: rotate(-5deg)   translateY(0px); } 50% { transform: rotate(-5deg)   translateY(-4px); } }
+    @keyframes float4 { 0%,100% { transform: rotate(3deg)    translateY(0px); } 50% { transform: rotate(3deg)    translateY(-4px); } }
+    @keyframes float5 { 0%,100% { transform: rotate(-1deg) translateY(0px); } 50% { transform: rotate(-1deg) translateY(-4px); } }
+    @keyframes float6 { 0%,100% { transform: rotate(6deg)  translateY(0px); } 50% { transform: rotate(6deg)  translateY(-4px); } }
 
     .service-card:nth-child(1) { animation: float1 4.0s ease-in-out infinite; }
     .service-card:nth-child(2) { animation: float2 4.4s ease-in-out infinite 0.3s; }
@@ -197,7 +201,7 @@
       position: absolute;
       inset: 0;
       overflow: hidden;
-      padding: 12% 10% 8%;
+      padding: 44% 20% 10% 18%;
       transition: opacity 0.2s ease, visibility 0.2s ease;
     }
     #panelPrice { opacity: 1; visibility: visible; }
@@ -205,47 +209,47 @@
 
     .panel-title {
       font-family: var(--font);
-      font-size: clamp(9px, 2.2vw, 11px);
+      font-size: clamp(6px, 1.4vw, 8px);
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--dim);
       text-align: center;
-      margin-bottom: 4%;
+      margin-bottom: 2%;
     }
     .price-row {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      margin-bottom: 2%;
+      margin-bottom: 1%;
     }
     .price-row-name {
       font-family: var(--font);
-      font-size: clamp(10px, 2.6vw, 13px);
+      font-size: clamp(7px, 1.8vw, 9px);
       color: var(--accent);
     }
     .price-row-dur {
-      font-size: clamp(7px, 1.6vw, 9px);
+      font-size: clamp(5px, 1.2vw, 7px);
       color: var(--dim);
-      margin-left: 4px;
+      margin-left: 3px;
     }
     .price-row-val {
       font-family: var(--font);
-      font-size: clamp(10px, 2.6vw, 13px);
+      font-size: clamp(7px, 1.8vw, 9px);
       color: var(--accent);
       white-space: nowrap;
     }
     .price-section-label {
-      font-size: clamp(7px, 1.6vw, 9px);
+      font-size: clamp(5px, 1.2vw, 7px);
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--dim);
-      margin: 3% 0 2%;
+      margin: 1.5% 0 1%;
     }
     .price-cta {
       text-align: center;
-      margin-top: 4%;
+      margin-top: 2%;
       font-family: var(--font);
-      font-size: clamp(10px, 2.6vw, 13px);
+      font-size: clamp(7px, 1.8vw, 9px);
       color: var(--accent);
       cursor: pointer;
     }
@@ -331,57 +335,42 @@
       cursor: pointer;
     }
 
-    /* ─── CONTACTS ─── */
-    .contacts-section {
+    /* ─── BUSINESS CARDS ─── */
+    .cards-section {
       padding: var(--pad);
-      padding-bottom: 48px;
+      padding-bottom: 60px;
     }
-    .cards-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .contact-card {
-      background: #ede8e1;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-      padding: 14px 12px;
+    .cards-row {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      text-decoration: none;
-      cursor: pointer;
-      -webkit-user-select: none;
-      user-select: none;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
     }
-    .card-empty {
-      background: transparent;
-      box-shadow: none;
-      pointer-events: none;
-    }
-    .card-1 { transform: rotate(-2deg); }
-    .card-2 { transform: rotate(1.5deg); }
-    .card-3 { transform: rotate(2deg); }
-    .card-4 { transform: rotate(-1.5deg); }
 
-    .card-logo {
-      width: 28px;
-      height: 28px;
-      object-fit: contain;
-      filter: invert(31%) sepia(28%) saturate(700%) hue-rotate(350deg) brightness(70%) contrast(90%);
+    @keyframes floatCard1 {
+      0%, 100% { transform: rotate(-3deg) translateY(0px); }
+      50%       { transform: rotate(-3deg) translateY(-5px); }
     }
-    .card-text {
-      font-family: var(--font);
-      font-size: clamp(9px, 2.5vw, 11px);
-      color: var(--accent);
-      line-height: 1.5;
-      text-align: center;
+    @keyframes floatCard2 {
+      0%, 100% { transform: rotate(2deg) translateY(0px); }
+      50%       { transform: rotate(2deg) translateY(-5px); }
     }
-    .card-text a {
-      color: var(--accent);
-      text-decoration: none;
-      font-size: clamp(9px, 2.5vw, 11px);
+
+    .biz-card {
+      width: min(44vw, 200px);
+      animation-duration: 4.5s;
+      animation-timing-function: ease-in-out;
+      animation-iteration-count: infinite;
+      display: block;
+    }
+    .biz-card:nth-child(1) { animation-name: floatCard1; animation-delay: 0s; }
+    .biz-card:nth-child(2) { animation-name: floatCard2; animation-delay: 0.6s; }
+    .biz-card img {
+      width: 100%;
+      display: block;
+      border-radius: 0;
+      box-shadow: none;
+      background: transparent;
     }
 
     /* ─── TOAST NOTIFICATION ─── */
@@ -411,7 +400,7 @@
     /* ─── DESKTOP ─── */
     @media (min-width: 600px) {
       :root { --pad: 24px; }
-      .services, .price-section, .contacts-section { padding: 24px; }
+      .services, .price-section, .cards-section { padding: 24px; }
       .services-grid { gap: 14px; }
       .service-name { font-size: 13px; }
       .service-dur  { font-size: 9px; }
@@ -570,36 +559,18 @@
     </div>
   </section>
 
-  <!-- CONTACTS -->
-  <section class="contacts-section">
+  <!-- BUSINESS CARDS -->
+  <section class="cards-section">
     <div class="wrap">
-      <div class="cards-grid">
+      <div class="cards-row">
 
-        <div class="contact-card card-1" onclick="window.open('https://instagram.com/senso.massage', '_blank')">
-          <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Inst.svg" alt="Instagram" />
-          <div class="card-text">
-            Ось моя інста,<br>там багато цікавого<br>і є акції<br>
-            <a href="https://instagram.com/senso.massage" target="_blank" rel="noopener" onclick="event.stopPropagation();">@senso.massage</a>
-          </div>
-        </div>
+        <a class="biz-card" href="https://instagram.com/senso.massage" target="_blank" rel="noopener">
+          <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/Blank1.png?raw=true" alt="Instagram" />
+        </a>
 
-        <div class="contact-card card-empty"></div>
-
-        <div class="contact-card card-3" onclick="window.open('https://t.me/senso_massage', '_blank')">
-          <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Teleg.svg" alt="Telegram" />
-          <div class="card-text">
-            Тут телега —<br>пишіть по справі<br>і в одному повідомленні<br>
-            <a href="https://t.me/senso_massage" target="_blank" rel="noopener" onclick="event.stopPropagation();">@senso_massage</a>
-          </div>
-        </div>
-
-        <div class="contact-card card-4" onclick="window.open('tel:+380000000000', '_self')">
-          <img class="card-logo" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/3993098fa3d936717178c6886cf6ccc0b9ae0f48/Phone.svg" alt="Phone" />
-          <div class="card-text">
-            Дзвонити з 10 до 20,<br>не передзвонювати,<br>наберіться терпіння<br>
-            <a href="tel:+380000000000" onclick="event.stopPropagation();">+380 00 000-00-00</a>
-          </div>
-        </div>
+        <a class="biz-card" href="https://t.me/senso_massage" target="_blank" rel="noopener">
+          <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/Blank2.png?raw=true" alt="Telegram" />
+        </a>
 
       </div>
     </div>
@@ -621,31 +592,47 @@
       activeCard = card;
       card.classList.add('zoom-target');
 
-      const cardRect = card.getBoundingClientRect();
-      const cardCenterX = cardRect.left + cardRect.width / 2;
-      const cardCenterY = cardRect.top + cardRect.height / 2;
-      const screenCenterX = window.innerWidth / 2;
-      const screenCenterY = window.innerHeight / 2;
-      const scale = 2;
-      const translateX = (screenCenterX - cardCenterX) / scale;
-      const translateY = (screenCenterY - cardCenterY) / scale;
+      const scale = 2.2;
+      const r = card.getBoundingClientRect();
+      const cardCX = r.left + r.width  / 2;
+      const cardCY = r.top  + r.height / 2;
+      const screenCX = window.innerWidth  / 2;
+      const screenCY = window.innerHeight / 2;
 
+      // origin — центр карточки в координатах документа
+      const originX = cardCX + window.scrollX;
+      const originY = cardCY + window.scrollY;
+
+      // смещение чтобы карточка оказалась в центре вьюпорта
+      const tx = (screenCX - cardCX) / scale;
+      const ty = (screenCY - cardCY) / scale;
+
+      document.body.style.transformOrigin = `${originX}px ${originY}px`;
       document.body.style.setProperty('--zoom-transform',
-        `scale(${scale}) translate(${translateX}px, ${translateY}px)`
+        `scale(${scale}) translate(${tx}px, ${ty}px)`
       );
       document.body.classList.add('is-zoomed');
 
-      // блокируем скролл
+      // блокируем скролл и touch
       document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
     }
 
     function closeZoom() {
       if (!activeCard) return;
       activeCard.classList.remove('zoom-target');
       document.body.classList.remove('is-zoomed');
-      document.body.style.removeProperty('--zoom-transform');
-      document.documentElement.style.overflow = '';
+      document.body.style.setProperty('--zoom-transform', 'none');
+
+      // сбрасываем origin только после завершения transition
+      const card = activeCard;
       activeCard = null;
+      setTimeout(() => {
+        document.body.style.removeProperty('--zoom-transform');
+        document.body.style.transformOrigin = '';
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+      }, 440);
     }
 
     // любой клик в зум-режиме → zoom out
@@ -659,7 +646,7 @@
       if (e.key === 'Escape') closeZoom();
     });
 
-    // блокируем pinch-zoom и горизонтальный свайп
+    // блокируем скролл touch в зуме
     document.addEventListener('touchmove', function(e) {
       if (e.touches.length > 1) e.preventDefault();
       if (document.body.classList.contains('is-zoomed')) e.preventDefault();
