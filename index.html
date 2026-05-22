@@ -7,7 +7,7 @@
   <style>
     @font-face {
       font-family: 'Belepotan';
-      src: url('https://github.com/CakeBoxDeveloper/massage/blob/main/Belepotan-Normal.otf?raw=true') format('opentype');
+      src: url('https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Belepotan-Normal.otf') format('opentype');
       font-weight: normal;
       font-style: normal;
     }
@@ -87,7 +87,7 @@
 
     /* ─── HEADER ─── */
     .site-header {
-      padding: var(--pad) var(--pad) 0;
+      padding: calc(var(--pad) - 4px) var(--pad) 0;
       visibility: hidden;
     }
     .site-header > div {
@@ -155,7 +155,7 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      padding: 26% 14% 14%;
+      padding: 22% 14% 18%;
       border-radius: var(--radius);
       overflow: hidden;
     }
@@ -189,6 +189,9 @@
       line-height: 1.4;
       font-family: 'Belepotan', cursive;
       overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 6;
+      -webkit-box-orient: vertical;
     }
 
     /* ─── PRICE BOARD ─── */
@@ -358,7 +361,7 @@
     }
     .form-submit {
       text-align: left;
-      margin-top: 2%;
+      margin-top: 4%;
       font-family: 'Belepotan', cursive;
       font-size: clamp(10px, 2.5vw, 13px);
       color: var(--accent);
@@ -448,7 +451,7 @@
 
   <!-- LAYER FOR SCROLLABLE AND ZOOMABLE BACKGROUND -->
   <div class="bg-layer">
-    <video src="https://github.com/CakeBoxDeveloper/massage/blob/main/Layout3.mp4?raw=true" autoplay loop muted playsinline></video>
+    <video src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Layout3.mp4" autoplay loop muted playsinline></video>
   </div>
 
   <!-- TOAST NOTIFICATION -->
@@ -459,7 +462,7 @@
     <div>
       <video
         class="header-video"
-        src="https://github.com/CakeBoxDeveloper/massage/blob/main/LiteAq.webm?raw=true"
+        src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/LiteAq.webm"
         autoplay loop muted playsinline
       ></video>
     </div>
@@ -526,7 +529,7 @@
   <section class="price-section">
     <div class="wrap">
       <div class="price-stack">
-        <img class="board-img" src="https://github.com/CakeBoxDeveloper/massage/blob/main/LiteBoard.webp?raw=true" alt="" />
+        <img class="board-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/LiteBoard.webp" alt="" />
         <div class="board-content">
 
           <!-- PRICE PANEL -->
@@ -541,7 +544,7 @@
             <div class="price-section-label">Абонементи</div>
             <div class="price-row"><div><span class="price-row-name">4 сеанси</span><span class="price-row-dur">-10%</span></div><span class="price-row-val">від 2 520</span></div>
             <div class="price-row"><div><span class="price-row-name">8 сеансів</span><span class="price-row-dur">-15%</span></div><span class="price-row-val">від 4 760</span></div>
-            <div class="price-cta" onclick="showForm()">Записатися на масаж →</div>
+            <div class="price-cta" onclick="showForm()">Записатися на масаж</div>
           </div>
 
           <!-- FORM PANEL -->
@@ -583,7 +586,7 @@
                 <textarea id="fieldWishes" class="field-textarea" rows="2" placeholder="Зручний час, питання..."></textarea>
               </div>
             </div>
-            <div class="form-submit" id="submitBtn" onclick="submitForm()">&#10003; Відправити заявку</div>
+            <div class="form-submit" id="submitBtn" onclick="submitForm()">Відправити заявку</div>
           </div>
 
         </div><!-- /board-content -->
@@ -597,11 +600,11 @@
       <div class="cards-row">
 
         <a class="biz-card" href="https://instagram.com/senso.massage" target="_blank" rel="noopener">
-          <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/Blank1.png?raw=true" alt="Instagram" />
+          <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Blank1.png" alt="Instagram" />
         </a>
 
         <a class="biz-card" href="https://t.me/senso_massage" target="_blank" rel="noopener">
-          <img src="https://github.com/CakeBoxDeveloper/massage/blob/main/Blank2.png?raw=true" alt="Telegram" />
+          <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Blank2.png" alt="Telegram" />
         </a>
 
       </div>
