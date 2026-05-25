@@ -67,6 +67,7 @@
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             z-index: 3;
+            pointer-events: none;
             animation: shimmer 14s cubic-bezier(0.25,1,0.5,1) infinite;
         }
 
@@ -105,7 +106,6 @@
             min-height: 0;
         }
 
-        /* ===== КАРТОЧКА ===== */
         .info-card {
             padding: 24px 20px;
             border-radius: 28px;
@@ -113,7 +113,6 @@
             min-height: 0;
             overflow-y: auto;
             scrollbar-width: none;
-            transition: border-radius 0.6s cubic-bezier(0.4,0,0.2,1);
         }
         .info-card::-webkit-scrollbar { display: none; }
 
@@ -123,7 +122,6 @@
             margin-bottom: 16px;
             letter-spacing: 0.3px;
             text-align: center;
-            transition: opacity 0.3s ease;
         }
 
         .accordion-item {
@@ -189,147 +187,158 @@
             color: rgba(255,255,255,0.5);
         }
 
-        /* ===== ЗОНА КНОПОК — жидкое стекло ===== */
+        /* ===== ЗОНА КНОПОК ===== */
         .contacts-zone {
             width: 100%;
             flex-shrink: 0;
             margin-bottom: 5px;
-            position: relative;
         }
 
-        /* Большая кнопка */
-        .btn-main {
-            width: 100%;
-            height: 58px;
-            border: none;
-            cursor: pointer;
-            border-radius: 18px;
-            font-size: 0.85rem;
-            font-weight: 400;
-            letter-spacing: 2px;
-            color: rgba(255,255,255,0.6);
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition:
-                height 0.55s cubic-bezier(0.4,0,0.2,1),
-                border-radius 0.55s cubic-bezier(0.4,0,0.2,1),
-                opacity 0.3s ease;
-            will-change: height, border-radius;
-            overflow: hidden;
-        }
-
-        .btn-main.expanding {
-            height: 140px;
-            border-radius: 28px 28px 0 0;
-        }
-
-        .btn-main-label {
-            transition: opacity 0.2s ease, transform 0.2s ease;
-            white-space: nowrap;
-        }
-        .btn-main.expanding .btn-main-label {
-            opacity: 0;
-            transform: scale(0.85);
-        }
-
-        /* Сетка 5 кнопок — вырастает снизу */
-        .links-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 0;
-            width: 100%;
-            height: 0;
-            overflow: hidden;
-            transition: height 0.55s cubic-bezier(0.4,0,0.2,1);
-        }
-        .links-grid.visible {
-            height: 72px;
-        }
-
-        .grid-btn {
-            height: 72px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-decoration: none;
-            font-size: 0.78rem;
-            font-weight: 500;
-            color: rgba(255,255,255,0.75);
-            letter-spacing: 0.5px;
-            border-radius: 0;
-            backdrop-filter: blur(1.5px);
-            -webkit-backdrop-filter: blur(1.5px);
-            background: rgba(255,255,255,0.03);
-            position: relative;
-            overflow: hidden;
-            transition: background 0.2s ease, transform 0.15s ease;
-            border-top: 1px solid rgba(255,255,255,0.07);
-            border-right: 1px solid rgba(255,255,255,0.05);
-        }
-        .grid-btn:last-child { border-right: none; }
-
-        /* Скруглённые углы у крайних нижних кнопок */
-        .grid-btn:first-child {
-            border-radius: 0 0 0 20px;
-        }
-        .grid-btn:last-child {
-            border-radius: 0 0 20px 0;
-        }
-
-        .grid-btn:active {
-            transform: scale(0.93);
-            background: rgba(255,255,255,0.07);
-        }
-
-        /* Разделитель — единый контейнер с общим стеклом */
+        /* Обёртка — стекло */
         .contacts-glass {
             border-radius: 18px;
             overflow: hidden;
             backdrop-filter: blur(1.5px) saturate(120%);
             -webkit-backdrop-filter: blur(1.5px) saturate(120%);
             background: rgba(255,255,255,0.04);
-            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.12);
             position: relative;
-            transition: border-radius 0.55s cubic-bezier(0.4,0,0.2,1);
-        }
-        .contacts-glass.expanded {
-            border-radius: 28px;
         }
 
-        /* Oil canvas на весь contacts-glass */
+        /* Shimmer border для contacts-glass */
+        .contacts-glass::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(
+                45deg,
+                rgba(255,255,255,0.02) 0%,
+                rgba(255,255,255,0.02) 40%,
+                rgba(255,255,255,0.45) 50%,
+                rgba(255,255,255,0.02) 60%,
+                rgba(255,255,255,0.02) 100%
+            );
+            background-size: 300% 100%;
+            background-position: 150% 0;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            z-index: 3;
+            pointer-events: none;
+            animation: shimmer 14s cubic-bezier(0.25,1,0.5,1) infinite;
+            animation-delay: -8s;
+        }
+
         .contacts-glass > .oil-canvas {
             border-radius: inherit;
             z-index: 0;
+            pointer-events: none;
         }
         .contacts-glass > *:not(.oil-canvas) {
             position: relative;
-            z-index: 1;
+            z-index: 2;
         }
 
-        /* Капля жидкости — SVG-фильтр gooey */
-        .gooey-wrap {
-            filter: url(#gooey);
+        /* ===== НОВАЯ СИСТЕМА КНОПОК ===== */
+        .btn-row {
+            display: flex;
+            align-items: stretch;
+            height: 58px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Каждая кнопка — стеклянная ячейка */
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            background: rgba(255,255,255,0.03);
+            color: rgba(255,255,255,0.65);
+            font-size: 0.82rem;
+            font-weight: 400;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            text-decoration: none;
+            transition:
+                flex 0.52s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.25s ease,
+                background 0.2s ease;
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+        }
+        .cell:last-child { border-right: none; }
+
+        /* Главная кнопка — занимает всё */
+        .cell-main {
+            flex: 1 1 100%;
+            border-right: none;
+        }
+
+        /* Боковые кнопки — скрыты (flex: 0, ширина 0) */
+        .cell-side {
+            flex: 0 0 0px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Состояние expanded */
+        .btn-row.expanded .cell-main {
+            flex: 1 1 0%;
+        }
+        .btn-row.expanded .cell-side {
+            flex: 1 1 0%;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Текст внутри главной кнопки */
+        .cell-main-label {
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            pointer-events: none;
+        }
+        .btn-row.expanded .cell-main-label {
+            opacity: 0;
+            transform: scale(0.75);
+        }
+
+        /* Иконки соцсетей */
+        .cell-side svg {
+            width: 20px;
+            height: 20px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .cell-side:hover svg { opacity: 1; }
+        .cell-side:active {
+            background: rgba(255,255,255,0.08);
+            transform: scale(0.93);
+        }
+        .cell-main:active {
+            background: rgba(255,255,255,0.07);
+        }
+
+        /* Иконка главной кнопки в свёрнутом виде — невидима */
+        .cell-main-icon {
+            position: absolute;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.22s ease 0.1s, transform 0.22s ease 0.1s;
+        }
+        .btn-row.expanded .cell-main-icon {
+            opacity: 0.65;
+            transform: scale(1);
         }
     </style>
 </head>
 <body>
-
-    <!-- SVG-фильтр для эффекта жидкого слияния -->
-    <svg width="0" height="0" style="position:absolute">
-        <defs>
-            <filter id="gooey" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
-                <feColorMatrix in="blur" mode="matrix"
-                    values="1 0 0 0 0
-                            0 1 0 0 0
-                            0 0 1 0 0
-                            0 0 0 22 -9" result="goo"/>
-                <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
-            </filter>
-        </defs>
-    </svg>
 
     <header class="header glass-element">
         <canvas class="oil-canvas"></canvas>
@@ -416,21 +425,54 @@
 
         </section>
 
-        <!-- Единый стеклянный блок кнопок -->
+        <!-- Стеклянный блок кнопок -->
         <div class="contacts-zone">
             <div class="contacts-glass" id="contactsGlass">
                 <canvas class="oil-canvas" id="contactsOil"></canvas>
 
-                <button class="btn-main" id="btnMain">
-                    <span class="btn-main-label">Записатися на масаж</span>
-                </button>
+                <div class="btn-row" id="btnRow">
 
-                <div class="links-grid" id="linksGrid">
-                    <a href="https://diia.fo/" target="_blank" class="grid-btn">1</a>
-                    <a href="https://t.me/username" target="_blank" class="grid-btn">2</a>
-                    <a href="https://instagram.com/username" target="_blank" class="grid-btn">3</a>
-                    <a href="viber://chat?number=%2B380000000000" class="grid-btn">4</a>
-                    <a href="tel:+380000000000" class="grid-btn">5</a>
+                    <!-- Левые 2 кнопки -->
+                    <a href="https://diia.fo/" target="_blank" class="cell cell-side">
+                        <!-- Сайт / глобус -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </a>
+
+                    <a href="https://t.me/username" target="_blank" class="cell cell-side">
+                        <!-- Telegram -->
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                        </svg>
+                    </a>
+
+                    <!-- Главная кнопка — по центру -->
+                    <button class="cell cell-main" id="btnMain">
+                        <span class="cell-main-label">Записатися</span>
+                        <!-- Иконка-крест когда expanded -->
+                        <span class="cell-main-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="18" height="18">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </span>
+                    </button>
+
+                    <!-- Правые 2 кнопки -->
+                    <a href="https://instagram.com/username" target="_blank" class="cell cell-side">
+                        <!-- Instagram -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                        </svg>
+                    </a>
+
+                    <a href="tel:+380000000000" class="cell cell-side">
+                        <!-- Телефон -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.29h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.84a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/>
+                        </svg>
+                    </a>
+
                 </div>
             </div>
         </div>
@@ -484,31 +526,21 @@
             });
         });
 
-        // ЖИДКОЕ РАСКРЫТИЕ
-        const btnMain      = document.getElementById('btnMain');
-        const linksGrid    = document.getElementById('linksGrid');
-        const contactsGlass = document.getElementById('contactsGlass');
-        let expanded = false;
+        // РАСКРЫТИЕ КНОПОК
+        const btnMain   = document.getElementById('btnMain');
+        const btnRow    = document.getElementById('btnRow');
+        let expanded    = false;
 
         btnMain.addEventListener('click', () => {
-            if (expanded) return;
-            expanded = true;
-            btnMain.classList.add('expanding');
-            contactsGlass.classList.add('expanded');
-            // Небольшая задержка чтоб кнопка успела вырасти, потом появляются ячейки
-            setTimeout(() => {
-                linksGrid.classList.add('visible');
-            }, 180);
+            expanded = !expanded;
+            btnRow.classList.toggle('expanded', expanded);
         });
 
+        // Клик вне — закрыть
         document.addEventListener('click', (e) => {
             if (expanded && !e.target.closest('.contacts-zone')) {
                 expanded = false;
-                linksGrid.classList.remove('visible');
-                setTimeout(() => {
-                    btnMain.classList.remove('expanding');
-                    contactsGlass.classList.remove('expanded');
-                }, 120);
+                btnRow.classList.remove('expanded');
             }
         });
 
@@ -615,10 +647,7 @@
             draw();
         }
 
-        // Инициализируем все canvas кроме contactsOil (он особый — большой)
         document.querySelectorAll('.oil-canvas').forEach(c => {
-            // contactsOil — canvas внутри contacts-glass, его размер будет расти
-            // поэтому инициализируем после небольшой задержки
             initOilCanvas(c);
         });
 
