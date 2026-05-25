@@ -1,794 +1,628 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
-  <title>SENSO — Студія масажу</title>
-  <style>
-    @font-face {
-      font-family: 'Belepotan';
-      src: url('https://github.com/CakeBoxDeveloper/massage/blob/main/Belepotan-Normal.otf?raw=true') format('opentype');
-      font-weight: normal;
-      font-style: normal;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    * { -webkit-tap-highlight-color: transparent; }
-    ::-webkit-scrollbar { display: none; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Час для себе — Студія масажу</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ─── VARIABLES ─── */
-    :root {
-      --bg:      #e8e3dc;
-      --card:    #f2ede6;
-      --text:    #2a2520;
-      --dim:     #8a8078;
-      --accent:  #1a4a48;
-      --border:  #1a4a48;
-      --font:    'Comic Sans MS', cursive, sans-serif;
-      --radius:  14px;
-      --max:     480px;
-      --pad:     16px;
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 25px 20px 30px 20px;
+            overflow: hidden;
+            background-color: #0d0e12;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-attachment: fixed;
+        }
 
-    /* ─── BASE ─── */
-    html {
-      scroll-behavior: smooth;
-      overflow-x: hidden;
-      overscroll-behavior: none;
-    }
-    body {
-      background-color: #1a2e1a;
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 15px;
-      line-height: 1.5;
-      overflow-x: hidden;
-      position: relative;
-      min-height: 100vh;
-    }
-    /* ZOOM DISABLED
-    body.is-zoomed {
-      transform: var(--zoom-transform, none);
-      transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      transform-origin: center center;
-    }
-    */
+        .glass-element {
+            backdrop-filter: blur(1.5px) saturate(120%);
+            -webkit-backdrop-filter: blur(1.5px) saturate(120%);
+            background: rgba(255,255,255,0.04);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.12);
+            position: relative;
+            overflow: hidden;
+        }
 
-    /* ─── BACKGROUND LAYER ─── */
-    .bg-layer {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      min-height: 100%;
-      z-index: -1;
-      pointer-events: none;
-      overflow: hidden;
-      /* fallback для мобильных — статичный webp */
-      background: url('https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/LiteLayout3.webp') center top / cover no-repeat;
-    }
-    .bg-layer video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center top;
-      display: block;
-      position: absolute;
-      top: 0; left: 0;
-    }
-    body.is-zoomed .bg-layer {
-      filter: none;
-    }
+        .oil-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            border-radius: inherit;
+        }
 
-    /* ─── LAYOUT ─── */
-    .wrap {
-      width: 100%;
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 var(--pad);
-    }
+        .glass-element > *:not(.oil-canvas) {
+            position: relative;
+            z-index: 2;
+        }
 
-    /* ─── HEADER ─── */
-    .site-header {
-      padding: calc(var(--pad) - 4px) var(--pad) 0;
-      visibility: hidden;
-    }
-    .site-header > div {
-      max-width: var(--max);
-      margin: 0 auto;
-      width: 100%;
-      aspect-ratio: 9 / 26;
-      border-radius: var(--radius);
-      background: transparent;
-      position: relative;
-      overflow: hidden;
-    }
-    .header-video {
-      position: absolute;
-      top: 25%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 105%;
-      border-radius: 12px;
-    }
+        .glass-element::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(
+                45deg,
+                rgba(255,255,255,0.02) 0%,
+                rgba(255,255,255,0.02) 40%,
+                rgba(255,255,255,0.45) 50%,
+                rgba(255,255,255,0.02) 60%,
+                rgba(255,255,255,0.02) 100%
+            );
+            background-size: 300% 100%;
+            background-position: 150% 0;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            z-index: 3;
+            animation: shimmer 14s cubic-bezier(0.25,1,0.5,1) infinite;
+        }
 
-    /* ─── SERVICES ─── */
-    .services {
-      padding: var(--pad);
-      position: relative;
-    }
-    .services-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-    .service-card {
-      background: transparent;
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: none;
-      cursor: pointer;
-      position: relative;
-      -webkit-user-select: none;
-      user-select: none;
-      transition: opacity 0.3s;
-    }
-    @keyframes float1 { 0%,100% { transform: rotate(-2deg)   translateY(0px); } 50% { transform: rotate(-2deg)   translateY(-4px); } }
-    @keyframes float2 { 0%,100% { transform: rotate(4deg)   translateY(0px); } 50% { transform: rotate(4deg)   translateY(-4px); } }
-    @keyframes float3 { 0%,100% { transform: rotate(-5deg)   translateY(0px); } 50% { transform: rotate(-5deg)   translateY(-4px); } }
-    @keyframes float4 { 0%,100% { transform: rotate(3deg)    translateY(0px); } 50% { transform: rotate(3deg)    translateY(-4px); } }
-    @keyframes float5 { 0%,100% { transform: rotate(-1deg) translateY(0px); } 50% { transform: rotate(-1deg) translateY(-4px); } }
-    @keyframes float6 { 0%,100% { transform: rotate(6deg)  translateY(0px); } 50% { transform: rotate(6deg)  translateY(-4px); } }
+        .header.glass-element::before   { animation-delay: -2s; }
+        #main-card.glass-element::before { animation-delay: -5s; }
 
-    .service-card:nth-child(1) { animation: float1 4.0s ease-in-out infinite; }
-    .service-card:nth-child(2) { animation: float2 4.4s ease-in-out infinite 0.3s; }
-    .service-card:nth-child(3) { animation: float3 3.8s ease-in-out infinite 0.7s; }
-    .service-card:nth-child(4) { animation: float4 4.2s ease-in-out infinite 0.5s; }
-    .service-card:nth-child(5) { animation: float5 4.6s ease-in-out infinite 0.2s; }
-    .service-card:nth-child(6) { animation: float6 3.9s ease-in-out infinite 0.9s; }
+        @keyframes shimmer {
+            0%   { background-position: 150% 0; }
+            100% { background-position: -150% 0; }
+        }
 
-    .service-deck-img {
-      width: 100%;
-      display: block;
-      border-radius: var(--radius);
-    }
-    .service-body {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: center;
-      padding: 22% 12% 20%;
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .service-name {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(11px, 3vw, 15px);
-      color: #3a2510;
-      font-weight: normal;
-      line-height: 1.2;
-      text-align: center;
-      margin-bottom: 5px;
-      width: 100%;
-    }
-    .service-desc {
-      font-size: clamp(7px, 1.8vw, 9px);
-      color: #5a3e28;
-      line-height: 1.4;
-      font-family: 'Belepotan', cursive;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 5;
-      -webkit-box-orient: vertical;
-      text-align: left;
-      width: 100%;
-      flex: 1;
-    }
-    .service-dur {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(6px, 1.5vw, 8px);
-      color: #5a3e28;
-      border: 1px solid #5a3e28;
-      border-radius: 4px;
-      padding: 1px 10px;
-      white-space: nowrap;
-      background: transparent;
-      margin-top: auto;
-      align-self: center;
-      max-width: 90%;
-    }
+        .header {
+            width: 100%;
+            max-width: 400px;
+            padding: 16px 20px;
+            border-radius: 20px;
+            text-align: center;
+            flex-shrink: 0;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 1.45rem;
+            font-weight: 500;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+        }
 
-    /* ─── SIDE CARDS ─── */
-    .side-card {
-      position: absolute;
-      width: 155px;
-      cursor: default;
-      filter: drop-shadow(0 6px 16px rgba(0,0,0,0.45));
-    }
-    .side-card-img {
-      width: 100%;
-      display: block;
-      border-radius: 10px;
-    }
-    .side-card-body {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 22% 14% 18%;
-      overflow: hidden;
-      filter: url(#inkNoise);
-    }
-    .side-card-body .service-name {
-      font-size: clamp(14px, 3.5vw, 18px);
-      margin-bottom: 5px;
-      text-align: center;
-    }
-    .side-card-body .service-desc {
-      font-size: clamp(8px, 1.8vw, 10px);
-      text-align: left;
-      padding-left: 5px;
-      flex: 1;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 4;
-      -webkit-box-orient: vertical;
-      width: 100%;
-    }
-    .side-card-body .service-dur {
-      margin-top: auto;
-      margin-bottom: 8%;
-      font-size: clamp(7px, 1.6vw, 9px);
-    }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 16px;
+            min-height: 0;
+        }
 
-    /* левая тройка — веером */
-    .sc1 { top: -10%; left: calc(50% - 380px); }
-    .sc2 { top:  32%; left: calc(50% - 460px); }
-    .sc3 { top:  74%; left: calc(50% - 380px); }
-    /* правая тройка */
-    .sc4 { top: -10%; right: calc(50% - 380px); }
-    .sc5 { top:  32%; right: calc(50% - 460px); }
-    .sc6 { top:  74%; right: calc(50% - 380px); }
+        /* ===== КАРТОЧКА ===== */
+        .info-card {
+            padding: 24px 20px;
+            border-radius: 28px;
+            flex-shrink: 1;
+            min-height: 0;
+            overflow-y: auto;
+            scrollbar-width: none;
+            transition: border-radius 0.6s cubic-bezier(0.4,0,0.2,1);
+        }
+        .info-card::-webkit-scrollbar { display: none; }
 
-    @keyframes scFloat1 { 0%,100%{transform:rotate(15deg) translateY(0);} 50%{transform:rotate(15deg) translateY(-6px);} }
-    @keyframes scFloat2 { 0%,100%{transform:rotate(4deg) translateY(0);} 50%{transform:rotate(4deg) translateY(-6px);} }
-    @keyframes scFloat3 { 0%,100%{transform:rotate(-15deg) translateY(0);} 50%{transform:rotate(-15deg) translateY(-6px);} }
-    @keyframes scFloat4 { 0%,100%{transform:rotate(-15deg) translateY(0);} 50%{transform:rotate(-15deg) translateY(-6px);} }
-    @keyframes scFloat5 { 0%,100%{transform:rotate(-3deg) translateY(0);} 50%{transform:rotate(-3deg) translateY(-6px);} }
-    @keyframes scFloat6 { 0%,100%{transform:rotate(15deg) translateY(0);} 50%{transform:rotate(15deg) translateY(-6px);} }
+        .info-card h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            letter-spacing: 0.3px;
+            text-align: center;
+            transition: opacity 0.3s ease;
+        }
 
-    .sc1 { animation: scFloat1 4.2s ease-in-out infinite; }
-    .sc2 { animation: scFloat2 4.8s ease-in-out infinite 0.5s; }
-    .sc3 { animation: scFloat3 4.0s ease-in-out infinite 1.0s; }
-    .sc4 { animation: scFloat4 4.5s ease-in-out infinite 0.3s; }
-    .sc5 { animation: scFloat5 4.3s ease-in-out infinite 0.8s; }
-    .sc6 { animation: scFloat6 4.7s ease-in-out infinite 0.2s; }
+        .accordion-item {
+            border-bottom: 1px solid rgba(255,255,255,0.10);
+            overflow: hidden;
+        }
+        .accordion-item:last-child { border-bottom: none; }
 
-    @media (max-width: 900px) {
-      .side-card { display: none; }
-    }
-    .price-section {
-      padding: var(--pad);
-      padding-bottom: 160px;
-    }
+        .accordion-trigger {
+            width: 100%;
+            background: none;
+            border: none;
+            color: #fff;
+            padding: 13px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+            text-align: left;
+            gap: 8px;
+        }
 
-    @keyframes floatBoard {
-      0%, 100% { transform: translateX(-25px) translateY(0px) rotate(-4deg); }
-      50%       { transform: translateX(-25px) translateY(-6px) rotate(-3deg); }
-    }
+        .acc-icon {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), border-color 0.3s;
+            font-size: 0.75rem;
+        }
+        .accordion-trigger[aria-expanded="true"] .acc-icon {
+            transform: rotate(45deg);
+            border-color: rgba(255,255,255,0.6);
+        }
 
-    .price-stack {
-      position: relative;
-      width: min(96vw, 460px);
-      margin: 0 auto;
-      animation: floatBoard 5s ease-in-out infinite;
-      filter: drop-shadow(0 12px 32px rgba(0,0,0,0.55)) drop-shadow(0 4px 8px rgba(0,0,0,0.35));
-    }
-    .board-img {
-      width: 100%;
-      display: block;
-      border-radius: 8px;
-    }
-    .board-content {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-    }
+        .accordion-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+        }
+        .accordion-body.open { max-height: 200px; }
 
-    .panel {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      padding: 42% 20% 10% 18%;
-      transition: opacity 0.2s ease, visibility 0.2s ease;
-      filter: url(#inkNoise);
-    }
-    #panelPrice { opacity: 1; visibility: visible; }
-    #panelForm  { opacity: 0; visibility: hidden; pointer-events: none; transform: rotate(-1.5deg); }
+        .accordion-content {
+            padding: 0 4px 14px 4px;
+            font-size: 0.85rem;
+            line-height: 1.65;
+            color: rgba(255,255,255,0.82);
+        }
 
-    .panel-title {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(8px, 2vw, 11px);
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: #1a4a48;
-      text-align: center;
-      margin-bottom: 3%;
-    }
-    .price-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 1%;
-    }
-    .price-row-name {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(9px, 2.4vw, 13px);
-      color: var(--accent);
-      text-transform: uppercase;
-    }
-    .price-row-dur {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(6px, 1.4vw, 8px);
-      color: #1a4a48;
-      border: 1px solid #1a4a48;
-      border-radius: 4px;
-      padding: 1px 6px;
-      margin-left: 5px;
-      background: transparent;
-    }
-    .price-row-val {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(9px, 2.4vw, 13px);
-      color: var(--accent);
-      white-space: nowrap;
-    }
-    .price-section-label {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(8px, 2vw, 11px);
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: #1a4a48;
-      text-align: center;
-      margin: 2% 0 1%;
-    }
-    .price-cta {
-      text-align: left;
-      margin-top: 5%;
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(11px, 2.8vw, 15px);
-      color: var(--accent);
-      cursor: pointer;
-    }
+        .acc-meta { display: flex; gap: 10px; margin-top: 8px; }
+        .acc-tag {
+            background: rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.5);
+        }
 
-    /* ─── FORM PANEL ─── */
-    .form-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 2%;
-    }
-    .form-back {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(8px, 2vw, 10px);
-      color: #4a8a88;
-      cursor: pointer;
-    }
-    .form-title {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(11px, 2.8vw, 15px);
-      color: var(--accent);
-      margin: 0 auto;
-    }
-    .form-fields {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    .field-label {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(8px, 2vw, 10px);
-      color: var(--accent);
-      margin-bottom: 1px;
-    }
-    .field-input {
-      width: 100%;
-      border: 1px solid #1a4a48;
-      border-radius: 4px;
-      background: transparent;
-      padding: 2px 5px;
-      font-size: clamp(8px, 2vw, 10px);
-      color: #1a4a48;
-      outline: none;
-      font-family: 'Belepotan', cursive;
-    }
-    .field-input::placeholder { color: transparent; }
-    .field-textarea {
-      width: 100%;
-      border: 1px solid #1a4a48;
-      border-radius: 4px;
-      background: transparent;
-      padding: 2px 5px;
-      font-size: clamp(8px, 2vw, 10px);
-      color: #1a4a48;
-      outline: none;
-      resize: none;
-      font-family: 'Belepotan', cursive;
-    }
-    .field-textarea::placeholder { color: transparent; }
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3px;
-    }
-    .chip {
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(8px, 2vw, 10px);
-      color: #1a4a48;
-      background: transparent;
-      border: 1px solid #1a4a48;
-      border-radius: 6px;
-      padding: 1px 6px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .chip.active {
-      background: #1a4a48;
-      color: #f0ede6;
-    }
-    .form-submit {
-      text-align: left;
-      margin-top: 4%;
-      font-family: 'Belepotan', cursive;
-      font-size: clamp(10px, 2.5vw, 13px);
-      color: var(--accent);
-      cursor: pointer;
-    }
+        /* ===== ЗОНА КНОПОК — жидкое стекло ===== */
+        .contacts-zone {
+            width: 100%;
+            flex-shrink: 0;
+            margin-bottom: 5px;
+            position: relative;
+        }
 
-    /* ─── BUSINESS CARDS ─── */
-    .cards-section {
-      padding: var(--pad);
-      padding-bottom: 60px;
-    }
-    .cards-row {
-      display: flex;
-      justify-content: center;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
+        /* Большая кнопка */
+        .btn-main {
+            width: 100%;
+            height: 58px;
+            border: none;
+            cursor: pointer;
+            border-radius: 18px;
+            font-size: 0.85rem;
+            font-weight: 400;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition:
+                height 0.55s cubic-bezier(0.4,0,0.2,1),
+                border-radius 0.55s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.3s ease;
+            will-change: height, border-radius;
+            overflow: hidden;
+        }
 
-    @keyframes floatCard1 {
-      0%, 100% { transform: rotate(-3deg) translateY(0px); }
-      50%       { transform: rotate(-3deg) translateY(-5px); }
-    }
-    @keyframes floatCard2 {
-      0%, 100% { transform: rotate(2deg) translateY(0px); }
-      50%       { transform: rotate(2deg) translateY(-5px); }
-    }
+        .btn-main.expanding {
+            height: 140px;
+            border-radius: 28px 28px 0 0;
+        }
 
-    .biz-card {
-      width: min(44vw, 200px);
-      animation-duration: 4.5s;
-      animation-timing-function: ease-in-out;
-      animation-iteration-count: infinite;
-      display: block;
-    }
-    .biz-card:nth-child(1) { animation-name: floatCard1; animation-delay: 0s; }
-    .biz-card:nth-child(2) { animation-name: floatCard2; animation-delay: 0.6s; }
-    .biz-card img {
-      width: 100%;
-      display: block;
-      border-radius: 0;
-      box-shadow: none;
-      background: transparent;
-    }
+        .btn-main-label {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            white-space: nowrap;
+        }
+        .btn-main.expanding .btn-main-label {
+            opacity: 0;
+            transform: scale(0.85);
+        }
 
-    /* ─── TOAST NOTIFICATION ─── */
-    .toast-container {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #2a2520;
-      color: #ede9e3;
-      padding: 12px 24px;
-      border-radius: 30px;
-      font-family: var(--font);
-      font-size: 13px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-      z-index: 1000;
-      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      text-align: center;
-      width: max-content;
-      max-width: 90vw;
-      pointer-events: none;
-    }
-    .toast-container.show {
-      transform: translateX(-50%) translateY(0);
-    }
+        /* Сетка 5 кнопок — вырастает снизу */
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0;
+            width: 100%;
+            height: 0;
+            overflow: hidden;
+            transition: height 0.55s cubic-bezier(0.4,0,0.2,1);
+        }
+        .links-grid.visible {
+            height: 72px;
+        }
 
-    /* ─── DESKTOP ─── */
-    @media (min-width: 600px) {
-      :root { --pad: 24px; }
-      .services, .price-section, .cards-section { padding: 24px; }
-      .services-grid { gap: 14px; }
-      .service-name { font-size: 13px; }
-      .service-dur  { font-size: 9px; }
-      .service-desc { font-size: 9px; }
-      .bg-layer { background-size: 100% auto; }
-    }
+        .grid-btn {
+            height: 72px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-decoration: none;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: rgba(255,255,255,0.75);
+            letter-spacing: 0.5px;
+            border-radius: 0;
+            backdrop-filter: blur(1.5px);
+            -webkit-backdrop-filter: blur(1.5px);
+            background: rgba(255,255,255,0.03);
+            position: relative;
+            overflow: hidden;
+            transition: background 0.2s ease, transform 0.15s ease;
+            border-top: 1px solid rgba(255,255,255,0.07);
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .grid-btn:last-child { border-right: none; }
 
-    /* ─── MOBILE ZOOM OUT ─── */
-    @media (max-width: 599px) {
-      html { zoom: 0.82; }
-    }
-  </style>
+        /* Скруглённые углы у крайних нижних кнопок */
+        .grid-btn:first-child {
+            border-radius: 0 0 0 20px;
+        }
+        .grid-btn:last-child {
+            border-radius: 0 0 20px 0;
+        }
+
+        .grid-btn:active {
+            transform: scale(0.93);
+            background: rgba(255,255,255,0.07);
+        }
+
+        /* Разделитель — единый контейнер с общим стеклом */
+        .contacts-glass {
+            border-radius: 18px;
+            overflow: hidden;
+            backdrop-filter: blur(1.5px) saturate(120%);
+            -webkit-backdrop-filter: blur(1.5px) saturate(120%);
+            background: rgba(255,255,255,0.04);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+            position: relative;
+            transition: border-radius 0.55s cubic-bezier(0.4,0,0.2,1);
+        }
+        .contacts-glass.expanded {
+            border-radius: 28px;
+        }
+
+        /* Oil canvas на весь contacts-glass */
+        .contacts-glass > .oil-canvas {
+            border-radius: inherit;
+            z-index: 0;
+        }
+        .contacts-glass > *:not(.oil-canvas) {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Капля жидкости — SVG-фильтр gooey */
+        .gooey-wrap {
+            filter: url(#gooey);
+        }
+    </style>
 </head>
 <body>
 
-  <!-- SVG фильтр фрактального шума для текста -->
-  <svg width="0" height="0" style="position:absolute;">
-    <defs>
-      <filter id="inkNoise" x="0%" y="0%" width="100%" height="100%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="5" seed="7" result="noise"/>
-        <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
-        <feComponentTransfer in="grayNoise" result="maskedNoise">
-          <feFuncA type="linear" slope="0.45" intercept="0.55"/>
-        </feComponentTransfer>
-        <feComposite in="SourceGraphic" in2="maskedNoise" operator="in"/>
-      </filter>
-    </defs>
-  </svg>
+    <!-- SVG-фильтр для эффекта жидкого слияния -->
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <filter id="gooey" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+                <feColorMatrix in="blur" mode="matrix"
+                    values="1 0 0 0 0
+                            0 1 0 0 0
+                            0 0 1 0 0
+                            0 0 0 22 -9" result="goo"/>
+                <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+            </filter>
+        </defs>
+    </svg>
 
-  <!-- LAYER FOR SCROLLABLE AND ZOOMABLE BACKGROUND -->
-  <div class="bg-layer">
-    <video src="https://cdn.jsdelivr.net/gh/CakeBoxDeveloper/massage@main/Layout3.mp4" autoplay loop muted playsinline preload="auto"></video>
-  </div>
+    <header class="header glass-element">
+        <canvas class="oil-canvas"></canvas>
+        <h1>Час для себе</h1>
+    </header>
 
-  <!-- TOAST NOTIFICATION -->
-  <div class="toast-container" id="toast">Повідомлення відправлено!</div>
+    <main class="container">
 
-  <!-- HEADER -->
-  <header class="site-header">
-    <div>
-      <video
-        class="header-video"
-        src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/LiteAq.webm"
-        autoplay loop muted playsinline
-      ></video>
-    </div>
-  </header>
+        <section class="info-card glass-element" id="main-card">
+            <canvas class="oil-canvas"></canvas>
+            <h2>Твій простір повного релаксу</h2>
 
-  <!-- BOOKING BOARD -->
-  <section class="price-section" style="position:relative;">
-
-    <!-- таблички слева -->
-    <div class="side-card sc1">
-      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
-      <div class="side-card-body">
-        <span class="service-name">Стоун</span>
-        <p class="service-desc">Гарячі базальтові камені вздовж хребта. Знімає хронічне напруження і покращує кровообіг.</p>
-        <span class="service-dur">90 хв · 1200</span>
-      </div>
-    </div>
-    <div class="side-card sc2">
-      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
-      <div class="side-card-body">
-        <span class="service-name">СПА</span>
-        <p class="service-desc">Олії, обгортання, пілінг і масаж. Шкіра м'яка, тіло легке.</p>
-        <span class="service-dur">120 хв · 1800</span>
-      </div>
-    </div>
-    <div class="side-card sc3">
-      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
-      <div class="side-card-body">
-        <span class="service-name">Загальний</span>
-        <p class="service-desc">Класичний масаж усього тіла. Знімає м'язове напруження.</p>
-        <span class="service-dur">60–90 хв · 900</span>
-      </div>
-    </div>
-
-    <!-- таблички справа -->
-    <div class="side-card sc4">
-      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
-      <div class="side-card-body">
-        <span class="service-name">Спорт</span>
-        <p class="service-desc">Глибока робота з м'язами. Усуває тригерні точки.</p>
-        <span class="service-dur">60 хв · 950</span>
-      </div>
-    </div>
-    <div class="side-card sc5">
-      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
-      <div class="side-card-body">
-        <span class="service-name">Обличчя</span>
-        <p class="service-desc">Ліфтинг-масаж. Знімає набряклість, покращує овал.</p>
-        <span class="service-dur">45 хв · 700</span>
-      </div>
-    </div>
-    <div class="side-card sc6">
-      <img class="side-card-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Deck.png" alt="" />
-      <div class="side-card-body">
-        <span class="service-name">Тайський</span>
-        <p class="service-desc">Акупресура, пасивна йога, енергетичні лінії тіла.</p>
-        <span class="service-dur">90 хв · 1100</span>
-      </div>
-    </div>
-
-    <div class="wrap">
-      <div class="price-stack">
-        <img class="board-img" src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/LiteBoard.webp" alt="" />
-        <div class="board-content">
-          <div class="panel" id="panelForm" style="opacity:1;visibility:visible;pointer-events:auto;transform:rotate(-2deg);">
-            <div class="form-header" style="justify-content:center;">
-              <span class="form-title">Запис на сеанс</span>
-            </div>
-            <div class="form-fields">
-              <div>
-                <div class="field-label">Ім'я</div>
-                <input id="fieldName" class="field-input" type="text" placeholder="" />
-              </div>
-              <div>
-                <div class="field-label">Телефон</div>
-                <input id="fieldPhone" class="field-input" type="tel" placeholder="" />
-              </div>
-              <div>
-                <div class="field-label">Зв'язок</div>
-                <div class="chips">
-                  <button class="chip contact-btn" onclick="toggleChip(this)">Instagram</button>
-                  <button class="chip contact-btn" onclick="toggleChip(this)">Telegram</button>
-                  <button class="chip contact-btn" onclick="toggleChip(this)">Телефон</button>
+            <div class="accordion-item">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span>Класичний масаж</span><span class="acc-icon">+</span>
+                </button>
+                <div class="accordion-body">
+                    <div class="accordion-content">
+                        Відновлює кровообіг, знімає м'язову напругу та покращує загальний тонус тіла.
+                        <div class="acc-meta"><span class="acc-tag">60 / 90 хв</span><span class="acc-tag">Релаксація</span></div>
+                    </div>
                 </div>
-              </div>
-              <div>
-                <div class="field-label">Вид масажу</div>
-                <div class="chips">
-                  <button class="chip massage-btn" onclick="toggleChip(this)">Стоун</button>
-                  <button class="chip massage-btn" onclick="toggleChip(this)">СПА</button>
-                  <button class="chip massage-btn" onclick="toggleChip(this)">Загальний</button>
-                  <button class="chip massage-btn" onclick="toggleChip(this)">Спорт</button>
-                  <button class="chip massage-btn" onclick="toggleChip(this)">Обличчя</button>
-                  <button class="chip massage-btn" onclick="toggleChip(this)">Тайський</button>
-                </div>
-              </div>
-              <div>
-                <div class="field-label">Побажання</div>
-                <textarea id="fieldWishes" class="field-textarea" rows="2" placeholder=""></textarea>
-              </div>
             </div>
-            <div class="form-submit" id="submitBtn" onclick="submitForm()">Відправити заявку</div>
-          </div>
-        </div><!-- /board-content -->
-      </div><!-- /price-stack -->
-    </div>
-  </section>
 
-  <!-- SPACER -->
-  <div style="height: 40vh;"></div>
+            <div class="accordion-item">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span>Глибокий тканинний</span><span class="acc-icon">+</span>
+                </button>
+                <div class="accordion-body">
+                    <div class="accordion-content">
+                        Інтенсивний вплив на глибокі шари м'язів. Допомагає при хронічних болях.
+                        <div class="acc-meta"><span class="acc-tag">60 / 90 хв</span><span class="acc-tag">Лікувальний</span></div>
+                    </div>
+                </div>
+            </div>
 
-  <!-- SCRIPTS -->
-  <script>
-    // ─── ZOOM CARD LOGIC (DISABLED) ───
-    let activeCard = null;
+            <div class="accordion-item">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span>Аромамасаж</span><span class="acc-icon">+</span>
+                </button>
+                <div class="accordion-body">
+                    <div class="accordion-content">
+                        М'які техніки з натуральними ефірними оліями. Заспокоює та наповнює легкістю.
+                        <div class="acc-meta"><span class="acc-tag">75 / 90 хв</span><span class="acc-tag">Розслаблення</span></div>
+                    </div>
+                </div>
+            </div>
 
-    function zoomCard(card, event) {
-      event.stopPropagation();
-      // zoom disabled
-    }
+            <div class="accordion-item">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span>Масаж спини та шиї</span><span class="acc-icon">+</span>
+                </button>
+                <div class="accordion-body">
+                    <div class="accordion-content">
+                        Знімає головний біль та напругу від сидячої роботи.
+                        <div class="acc-meta"><span class="acc-tag">30 / 45 хв</span><span class="acc-tag">Точковий</span></div>
+                    </div>
+                </div>
+            </div>
 
-    function closeZoom() {
-      // zoom disabled
-    }
+            <div class="accordion-item">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span>Антицелюлітний</span><span class="acc-icon">+</span>
+                </button>
+                <div class="accordion-body">
+                    <div class="accordion-content">
+                        Лімфодренаж та мікроциркуляція. Шкіра пружніша, контури чіткіші.
+                        <div class="acc-meta"><span class="acc-tag">45 / 60 хв</span><span class="acc-tag">Моделювання</span></div>
+                    </div>
+                </div>
+            </div>
 
-    /*
-    // любой клик в зум-режиме → zoom out
-    document.addEventListener('click', function(e) {
-      if (document.body.classList.contains('is-zoomed')) {
-        closeZoom();
-      }
-    });
+            <div class="accordion-item">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span>Спортивний масаж</span><span class="acc-icon">+</span>
+                </button>
+                <div class="accordion-body">
+                    <div class="accordion-content">
+                        Відновлення після тренувань, профілактика травм, гнучкість.
+                        <div class="acc-meta"><span class="acc-tag">60 хв</span><span class="acc-tag">Відновлення</span></div>
+                    </div>
+                </div>
+            </div>
 
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeZoom();
-    });
+        </section>
 
-    // блокируем скролл touch в зуме
-    document.addEventListener('touchmove', function(e) {
-      if (e.touches.length > 1) e.preventDefault();
-      if (document.body.classList.contains('is-zoomed')) e.preventDefault();
-    }, { passive: false });
-    */
+        <!-- Единый стеклянный блок кнопок -->
+        <div class="contacts-zone">
+            <div class="contacts-glass" id="contactsGlass">
+                <canvas class="oil-canvas" id="contactsOil"></canvas>
 
+                <button class="btn-main" id="btnMain">
+                    <span class="btn-main-label">Записатися на масаж</span>
+                </button>
 
-    // ─── BOOKING PANEL TOGGLE ───
-    function showForm() {
-      const pricePanel = document.getElementById('panelPrice');
-      const formPanel = document.getElementById('panelForm');
-      
-      pricePanel.style.opacity = '0';
-      pricePanel.style.visibility = 'hidden';
-      pricePanel.style.pointerEvents = 'none';
-      
-      formPanel.style.opacity = '1';
-      formPanel.style.visibility = 'visible';
-      formPanel.style.pointerEvents = 'auto';
-    }
+                <div class="links-grid" id="linksGrid">
+                    <a href="https://diia.fo/" target="_blank" class="grid-btn">1</a>
+                    <a href="https://t.me/username" target="_blank" class="grid-btn">2</a>
+                    <a href="https://instagram.com/username" target="_blank" class="grid-btn">3</a>
+                    <a href="viber://chat?number=%2B380000000000" class="grid-btn">4</a>
+                    <a href="tel:+380000000000" class="grid-btn">5</a>
+                </div>
+            </div>
+        </div>
 
-    function hideForm() {
-      const pricePanel = document.getElementById('panelPrice');
-      const formPanel = document.getElementById('panelForm');
-      
-      formPanel.style.opacity = '0';
-      formPanel.style.visibility = 'hidden';
-      formPanel.style.pointerEvents = 'none';
-      
-      pricePanel.style.opacity = '1';
-      pricePanel.style.visibility = 'visible';
-      pricePanel.style.pointerEvents = 'auto';
-    }
+    </main>
 
-    // ─── CHIP TOGGLE ───
-    function toggleChip(button) {
-      const isContact = button.classList.contains('contact-btn');
-      
-      if (isContact) {
-        const parent = button.parentElement;
-        parent.querySelectorAll('.contact-btn').forEach(btn => {
-          if (btn !== button) btn.classList.remove('active');
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+
+        // ФОНЫ
+        const mobileBackgrounds = [
+            'https://i.ibb.co/kVk49xbf/Replace-flowers-with-poppies-202605252125.jpg',
+            'https://i.ibb.co/dw0pc7JD/2-K-202605252124.jpg',
+            'https://i.ibb.co/DDCGZ2gd/Replace-flowers-with-poppies-202605252119.jpg'
+        ];
+        const pcBackgrounds = [
+            'https://i.ibb.co/gZcx8kMZ/202605252338.jpg',
+            'https://i.ibb.co/pjDWm12T/202605252340.jpg',
+            'https://i.ibb.co/rfsqfgPw/202605252340.jpg'
+        ];
+        const glassTones = [
+            'rgba(46, 42, 32, 0.13)',
+            'rgba(24, 29, 38, 0.13)',
+            'rgba(40, 26, 32, 0.13)'
+        ];
+
+        const isPC = window.innerWidth >= 768;
+        const arr = isPC ? pcBackgrounds : mobileBackgrounds;
+        const idx = Math.floor(Math.random() * arr.length);
+
+        document.body.style.backgroundImage = `url('${arr[idx]}')`;
+
+        const tone = glassTones[idx];
+        document.querySelectorAll('.glass-element').forEach(el => {
+            el.style.background = tone;
         });
-      }
-      
-      button.classList.toggle('active');
-    }
+        document.getElementById('contactsGlass').style.background = tone;
 
-    // ─── TOAST NOTIFICATION ───
-    function showToast(text) {
-      const toast = document.getElementById('toast');
-      toast.innerText = text;
-      toast.classList.add('show');
-      
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3500);
-    }
+        // АККОРДЕОН
+        document.querySelectorAll('.accordion-trigger').forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+                document.querySelectorAll('.accordion-trigger').forEach(t => {
+                    t.setAttribute('aria-expanded', 'false');
+                    t.nextElementSibling.classList.remove('open');
+                });
+                if (!isOpen) {
+                    trigger.setAttribute('aria-expanded', 'true');
+                    trigger.nextElementSibling.classList.add('open');
+                }
+            });
+        });
 
-    // ─── FORM SUBMISSION ───
-    function submitForm() {
-      const name = document.getElementById('fieldName').value.trim();
-      const phone = document.getElementById('fieldPhone').value.trim();
-      const wishes = document.getElementById('fieldWishes').value.trim();
-      
-      const selectedContacts = Array.from(document.querySelectorAll('.contact-btn.active')).map(btn => btn.innerText);
-      const selectedMassages = Array.from(document.querySelectorAll('.massage-btn.active')).map(btn => btn.innerText);
+        // ЖИДКОЕ РАСКРЫТИЕ
+        const btnMain      = document.getElementById('btnMain');
+        const linksGrid    = document.getElementById('linksGrid');
+        const contactsGlass = document.getElementById('contactsGlass');
+        let expanded = false;
 
-      if (!name) {
-        showToast('Будь ласка, вкажіть ваше ім\'я');
-        return;
-      }
-      if (!phone) {
-        showToast('Будь ласка, вкажіть контактний телефон');
-        return;
-      }
+        btnMain.addEventListener('click', () => {
+            if (expanded) return;
+            expanded = true;
+            btnMain.classList.add('expanding');
+            contactsGlass.classList.add('expanded');
+            // Небольшая задержка чтоб кнопка успела вырасти, потом появляются ячейки
+            setTimeout(() => {
+                linksGrid.classList.add('visible');
+            }, 180);
+        });
 
-      console.log('Заявка на сеанс:', {
-        name,
-        phone,
-        contacts: selectedContacts,
-        massages: selectedMassages,
-        wishes
-      });
+        document.addEventListener('click', (e) => {
+            if (expanded && !e.target.closest('.contacts-zone')) {
+                expanded = false;
+                linksGrid.classList.remove('visible');
+                setTimeout(() => {
+                    btnMain.classList.remove('expanding');
+                    contactsGlass.classList.remove('expanded');
+                }, 120);
+            }
+        });
 
-      showToast('Заявку надіслано! Скоро зв\'яжемось.');
-      
-      document.getElementById('fieldName').value = '';
-      document.getElementById('fieldPhone').value = '';
-      document.getElementById('fieldWishes').value = '';
-      document.querySelectorAll('.chip.active').forEach(chip => chip.classList.remove('active'));
-      
-      setTimeout(() => {
-        hideForm();
-      }, 1500);
-    }
-  </script>
+        // БЕНЗИНОВЫЕ РАЗВОДЫ
+        function initOilCanvas(canvas) {
+            const parent = canvas.parentElement;
+            canvas.width  = parent.offsetWidth  * 2;
+            canvas.height = parent.offsetHeight * 2;
+            canvas.style.width  = '100%';
+            canvas.style.height = '100%';
+            canvas.style.filter = 'blur(18px)';
+            canvas.style.transform = 'scale(1.15)';
+
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+
+            function makeBlob(cx, cy, baseR, jitter, points) {
+                const pts = [];
+                for (let i = 0; i < points; i++) {
+                    const angle = (i / points) * Math.PI * 2 + (Math.random() - 0.5) * 0.7;
+                    const r = baseR * (0.5 + Math.random() * 0.9) + (Math.random() - 0.5) * jitter;
+                    pts.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r });
+                }
+                return pts;
+            }
+
+            function drawSmooth(ctx, pts) {
+                const n = pts.length;
+                ctx.beginPath();
+                for (let i = 0; i < n; i++) {
+                    const p0 = pts[(i - 1 + n) % n];
+                    const p1 = pts[i];
+                    const p2 = pts[(i + 1) % n];
+                    const p3 = pts[(i + 2) % n];
+                    if (i === 0) ctx.moveTo(p1.x, p1.y);
+                    const cp1x = p1.x + (p2.x - p0.x) / 5;
+                    const cp1y = p1.y + (p2.y - p0.y) / 5;
+                    const cp2x = p2.x - (p3.x - p1.x) / 5;
+                    const cp2y = p2.y - (p3.y - p1.y) / 5;
+                    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+                }
+                ctx.closePath();
+            }
+
+            const blobs = Array.from({length: 5}, (_, i) => {
+                const minR = Math.min(W, H);
+                const points = 8 + Math.floor(Math.random() * 10);
+                const baseR  = minR * (0.22 + Math.random() * 0.32);
+                const cx = W * (0.1 + Math.random() * 0.8);
+                const cy = H * (0.1 + Math.random() * 0.8);
+                return {
+                    cx, cy, baseR,
+                    jitter: minR * (0.18 + Math.random() * 0.22),
+                    points,
+                    hue:  (i / 5) * 360 + Math.random() * 60,
+                    vx:   (Math.random() - 0.5) * 0.35,
+                    vy:   (Math.random() - 0.5) * 0.28,
+                    vh:   0.05 + Math.random() * 0.08,
+                    pts:  null, ptV: null,
+                };
+            });
+
+            blobs.forEach(b => {
+                b.pts = makeBlob(b.cx, b.cy, b.baseR, b.jitter, b.points);
+                b.ptV = b.pts.map(() => ({
+                    x: (Math.random() - 0.5) * 0.5,
+                    y: (Math.random() - 0.5) * 0.5,
+                }));
+            });
+
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+                blobs.forEach(b => {
+                    b.cx += b.vx; b.cy += b.vy;
+                    if (b.cx < -b.baseR) b.vx =  Math.abs(b.vx);
+                    if (b.cx >  W + b.baseR) b.vx = -Math.abs(b.vx);
+                    if (b.cy < -b.baseR) b.vy =  Math.abs(b.vy);
+                    if (b.cy >  H + b.baseR) b.vy = -Math.abs(b.vy);
+
+                    b.pts.forEach((p, i) => {
+                        p.x += b.ptV[i].x; p.y += b.ptV[i].y;
+                        const dx = b.cx - p.x, dy = b.cy - p.y;
+                        const dist = Math.hypot(dx, dy) || 1;
+                        const pull = (dist - b.baseR) * 0.003;
+                        b.ptV[i].x += (dx / dist) * pull + (Math.random() - 0.5) * 0.06;
+                        b.ptV[i].y += (dy / dist) * pull + (Math.random() - 0.5) * 0.06;
+                        b.ptV[i].x *= 0.96; b.ptV[i].y *= 0.96;
+                    });
+
+                    b.hue = (b.hue + b.vh) % 360;
+                    const grad = ctx.createRadialGradient(b.cx, b.cy, 0, b.cx, b.cy, b.baseR * 1.1);
+                    grad.addColorStop(0,    `hsla(${b.hue}, 100%, 72%, 0.55)`);
+                    grad.addColorStop(0.5,  `hsla(${(b.hue + 80) % 360}, 100%, 65%, 0.35)`);
+                    grad.addColorStop(0.85, `hsla(${(b.hue + 160) % 360}, 90%, 60%, 0.15)`);
+                    grad.addColorStop(1,    `hsla(${b.hue}, 80%, 50%, 0)`);
+
+                    ctx.globalCompositeOperation = 'screen';
+                    drawSmooth(ctx, b.pts);
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                });
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        // Инициализируем все canvas кроме contactsOil (он особый — большой)
+        document.querySelectorAll('.oil-canvas').forEach(c => {
+            // contactsOil — canvas внутри contacts-glass, его размер будет расти
+            // поэтому инициализируем после небольшой задержки
+            initOilCanvas(c);
+        });
+
+    });
+    </script>
 </body>
 </html>
