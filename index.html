@@ -17,37 +17,17 @@
             padding: 25px 20px 30px 20px;
             overflow: hidden;
             background-color: #0d0e12;
-            background-position: center center;
-            background-repeat: no-repeat;
-            background-size: cover;
-            background-attachment: fixed;
         }
 
-        .glass-element {
+        /* ===== GLASS BASE ===== */
+        .glass {
             backdrop-filter: blur(1.5px) saturate(120%);
             -webkit-backdrop-filter: blur(1.5px) saturate(120%);
             background: rgba(255,255,255,0.04);
             box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.12);
             position: relative;
-            overflow: hidden;
         }
-
-        .oil-canvas {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-            border-radius: inherit;
-        }
-
-        .glass-element > *:not(.oil-canvas) {
-            position: relative;
-            z-index: 2;
-        }
-
-        .glass-element::before {
+        .glass::before {
             content: "";
             position: absolute;
             inset: 0;
@@ -66,19 +46,31 @@
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
-            z-index: 3;
             pointer-events: none;
+            z-index: 3;
             animation: shimmer 14s cubic-bezier(0.25,1,0.5,1) infinite;
         }
-
-        .header.glass-element::before   { animation-delay: -2s; }
-        #main-card.glass-element::before { animation-delay: -5s; }
-
         @keyframes shimmer {
             0%   { background-position: 150% 0; }
             100% { background-position: -150% 0; }
         }
 
+        .oil-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            border-radius: inherit;
+        }
+        /* Контент поверх canvas */
+        .glass > *:not(.oil-canvas):not(.oil-canvas) {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ===== HEADER ===== */
         .header {
             width: 100%;
             max-width: 400px;
@@ -87,14 +79,19 @@
             text-align: center;
             flex-shrink: 0;
             margin-bottom: 20px;
+            overflow: hidden;
         }
+        .header::before { animation-delay: -2s; }
         .header h1 {
             font-size: 1.45rem;
             font-weight: 500;
             letter-spacing: 2.5px;
             text-transform: uppercase;
+            position: relative;
+            z-index: 2;
         }
 
+        /* ===== LAYOUT ===== */
         .container {
             width: 100%;
             max-width: 400px;
@@ -106,30 +103,36 @@
             min-height: 0;
         }
 
+        /* ===== CARD ===== */
         .info-card {
             padding: 24px 20px;
             border-radius: 28px;
             flex-shrink: 1;
             min-height: 0;
+            overflow: hidden;
             overflow-y: auto;
             scrollbar-width: none;
         }
         .info-card::-webkit-scrollbar { display: none; }
-
+        .info-card::before { animation-delay: -5s; }
         .info-card h2 {
             font-size: 1.2rem;
             font-weight: 600;
             margin-bottom: 16px;
             letter-spacing: 0.3px;
             text-align: center;
+            position: relative;
+            z-index: 2;
         }
 
+        /* ===== ACCORDION ===== */
         .accordion-item {
             border-bottom: 1px solid rgba(255,255,255,0.10);
             overflow: hidden;
+            position: relative;
+            z-index: 2;
         }
         .accordion-item:last-child { border-bottom: none; }
-
         .accordion-trigger {
             width: 100%;
             background: none;
@@ -146,16 +149,12 @@
             text-align: left;
             gap: 8px;
         }
-
         .acc-icon {
             flex-shrink: 0;
-            width: 20px;
-            height: 20px;
+            width: 20px; height: 20px;
             border-radius: 50%;
             border: 1px solid rgba(255,255,255,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), border-color 0.3s;
             font-size: 0.75rem;
         }
@@ -163,21 +162,18 @@
             transform: rotate(45deg);
             border-color: rgba(255,255,255,0.6);
         }
-
         .accordion-body {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
         }
         .accordion-body.open { max-height: 200px; }
-
         .accordion-content {
             padding: 0 4px 14px 4px;
             font-size: 0.85rem;
             line-height: 1.65;
             color: rgba(255,255,255,0.82);
         }
-
         .acc-meta { display: flex; gap: 10px; margin-top: 8px; }
         .acc-tag {
             background: rgba(255,255,255,0.08);
@@ -187,167 +183,167 @@
             color: rgba(255,255,255,0.5);
         }
 
-        /* ===== ЗОНА КНОПОК ===== */
+        /* ===== КНОПКИ — НОВА СИСТЕМА ===== */
         .contacts-zone {
             width: 100%;
             flex-shrink: 0;
             margin-bottom: 5px;
         }
 
-        /* Обёртка — стекло */
-        .contacts-glass {
-            border-radius: 18px;
-            overflow: hidden;
-            backdrop-filter: blur(1.5px) saturate(120%);
-            -webkit-backdrop-filter: blur(1.5px) saturate(120%);
-            background: rgba(255,255,255,0.04);
-            box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.12);
+        /* Обгортка — відносне позиціонування */
+        .btn-wrap {
             position: relative;
+            width: 100%;
+            height: 58px;
         }
 
-        /* Shimmer border для contacts-glass */
-        .contacts-glass::before {
+        /* ---- ГОЛОВНА КНОПКА ---- */
+        .btn-main {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 58px;
+            border: none;
+            cursor: pointer;
+            border-radius: 18px;
+            font-size: 0.82rem;
+            font-weight: 400;
+            letter-spacing: 1.8px;
+            color: rgba(255,255,255,0.65);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            z-index: 10;
+            transition:
+                width 0.48s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.3s ease;
+        }
+        .btn-main.collapsed {
+            width: 58px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .btn-main-label {
+            pointer-events: none;
+            position: relative;
+            z-index: 2;
+            white-space: nowrap;
+            transition: opacity 0.2s ease;
+        }
+        .btn-main.collapsed .btn-main-label { opacity: 0; }
+
+        /* ---- 5 КНОПОК СОЦМЕРЕЖ ---- */
+        .social-row {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .social-row.visible { pointer-events: auto; }
+
+        .soc-btn {
+            flex: 1;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            /* Анімація: від центру розлітаються */
+            transform: scaleX(0);
+            opacity: 0;
+            transform-origin: center;
+            transition:
+                transform 0.44s cubic-bezier(0.34,1.3,0.64,1),
+                opacity 0.3s ease;
+        }
+        /* Shimmer border */
+        .soc-btn::before {
             content: "";
             position: absolute;
             inset: 0;
             border-radius: inherit;
             padding: 1px;
-            background: linear-gradient(
-                45deg,
-                rgba(255,255,255,0.02) 0%,
-                rgba(255,255,255,0.02) 40%,
-                rgba(255,255,255,0.45) 50%,
-                rgba(255,255,255,0.02) 60%,
-                rgba(255,255,255,0.02) 100%
-            );
+            background: linear-gradient(45deg,rgba(255,255,255,0.02) 0%,rgba(255,255,255,0.02) 40%,rgba(255,255,255,0.45) 50%,rgba(255,255,255,0.02) 60%,rgba(255,255,255,0.02) 100%);
             background-size: 300% 100%;
             background-position: 150% 0;
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
+            pointer-events: none;
             z-index: 3;
-            pointer-events: none;
             animation: shimmer 14s cubic-bezier(0.25,1,0.5,1) infinite;
-            animation-delay: -8s;
         }
+        .soc-btn:nth-child(1)::before { animation-delay: -1s; }
+        .soc-btn:nth-child(2)::before { animation-delay: -4s; }
+        .soc-btn:nth-child(3)::before { animation-delay: -7s; }
+        .soc-btn:nth-child(4)::before { animation-delay: -10s; }
+        .soc-btn:nth-child(5)::before { animation-delay: -13s; }
 
-        .contacts-glass > .oil-canvas {
-            border-radius: inherit;
-            z-index: 0;
-            pointer-events: none;
-        }
-        .contacts-glass > *:not(.oil-canvas) {
-            position: relative;
-            z-index: 2;
-        }
-
-        /* ===== НОВАЯ СИСТЕМА КНОПОК ===== */
-        .btn-row {
-            display: flex;
-            align-items: stretch;
-            height: 58px;
-            width: 100%;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* Каждая кнопка — стеклянная ячейка */
-        .cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border: none;
-            background: rgba(255,255,255,0.03);
-            color: rgba(255,255,255,0.65);
-            font-size: 0.82rem;
-            font-weight: 400;
-            letter-spacing: 1.8px;
-            text-transform: uppercase;
-            text-decoration: none;
-            transition:
-                flex 0.52s cubic-bezier(0.4,0,0.2,1),
-                opacity 0.25s ease,
-                background 0.2s ease;
-            overflow: hidden;
-            white-space: nowrap;
-            border-right: 1px solid rgba(255,255,255,0.06);
-            position: relative;
-        }
-        .cell:last-child { border-right: none; }
-
-        /* Главная кнопка — занимает всё */
-        .cell-main {
-            flex: 1 1 100%;
-            border-right: none;
-        }
-
-        /* Боковые кнопки — скрыты (flex: 0, ширина 0) */
-        .cell-side {
-            flex: 0 0 0px;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* Состояние expanded */
-        .btn-row.expanded .cell-main {
-            flex: 1 1 0%;
-        }
-        .btn-row.expanded .cell-side {
-            flex: 1 1 0%;
+        /* Видимий стан — з'являються від центру */
+        .social-row.visible .soc-btn {
+            transform: scaleX(1);
             opacity: 1;
-            pointer-events: auto;
         }
+        /* Центральна (3) перша, потім 2 і 4, потім 1 і 5 */
+        .social-row.visible .soc-btn:nth-child(3) { transition-delay: 0s; }
+        .social-row.visible .soc-btn:nth-child(2) { transition-delay: 0.07s; }
+        .social-row.visible .soc-btn:nth-child(4) { transition-delay: 0.07s; }
+        .social-row.visible .soc-btn:nth-child(1) { transition-delay: 0.14s; }
+        .social-row.visible .soc-btn:nth-child(5) { transition-delay: 0.14s; }
 
-        /* Текст внутри главной кнопки */
-        .cell-main-label {
-            transition: opacity 0.18s ease, transform 0.18s ease;
-            pointer-events: none;
+        .soc-btn svg {
+            width: 20px; height: 20px;
+            color: rgba(255,255,255,0.65);
+            position: relative;
+            z-index: 2;
+            transition: color 0.2s, transform 0.2s;
         }
-        .btn-row.expanded .cell-main-label {
-            opacity: 0;
-            transform: scale(0.75);
+        .soc-btn:hover svg {
+            color: rgba(255,255,255,1);
+            transform: scale(1.12);
         }
+        .soc-btn:active { filter: brightness(1.3); }
 
-        /* Иконки соцсетей */
-        .cell-side svg {
-            width: 20px;
-            height: 20px;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        .cell-side:hover svg { opacity: 1; }
-        .cell-side:active {
-            background: rgba(255,255,255,0.08);
-            transform: scale(0.93);
-        }
-        .cell-main:active {
-            background: rgba(255,255,255,0.07);
-        }
-
-        /* Иконка главной кнопки в свёрнутом виде — невидима */
-        .cell-main-icon {
-            position: absolute;
-            opacity: 0;
-            transform: scale(0.5);
-            transition: opacity 0.22s ease 0.1s, transform 0.22s ease 0.1s;
-        }
-        .btn-row.expanded .cell-main-icon {
-            opacity: 0.65;
-            transform: scale(1);
+        #bgVideo {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 0;
+            min-height: 0;
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: 100%;
+            z-index: -1;
+            object-fit: contain;
+            background: #0d0e12;
         }
     </style>
 </head>
 <body>
 
-    <header class="header glass-element">
+    <video id="bgVideo" autoplay muted loop playsinline>
+        <source src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Sweet%20cozy%20romance%20vibes%20for%20people%20who%20love%20beauty%20with%20soft%20aesthetic%20charm%20that%20feel%20deeply%20perso%20-%20Pin-784893041333041558.mp4" type="video/mp4">
+    </video>
+
+    <header class="header glass">
         <canvas class="oil-canvas"></canvas>
         <h1>Час для себе</h1>
     </header>
 
     <main class="container">
 
-        <section class="info-card glass-element" id="main-card">
+        <section class="info-card glass" id="main-card">
             <canvas class="oil-canvas"></canvas>
             <h2>Твій простір повного релаксу</h2>
 
@@ -422,52 +418,59 @@
                     </div>
                 </div>
             </div>
-
         </section>
 
-        <!-- Стеклянный блок кнопок -->
+        <!-- КНОПКИ -->
         <div class="contacts-zone">
-            <div class="contacts-glass" id="contactsGlass">
-                <canvas class="oil-canvas" id="contactsOil"></canvas>
+            <div class="btn-wrap" id="btnWrap">
 
-                <div class="btn-row" id="btnRow">
+                <!-- Головна кнопка — glass вручну -->
+                <button class="btn-main glass" id="btnMain">
+                    <canvas class="oil-canvas" id="oilMain"></canvas>
+                    <span class="btn-main-label">Записатися на масаж</span>
+                </button>
 
-                    <!-- Левые 2 кнопки -->
-                    <a href="https://diia.fo/" target="_blank" class="cell cell-side">
-                        <!-- Сайт / глобус -->
+                <!-- 5 кнопок соцмереж -->
+                <div class="social-row" id="socialRow">
+
+                    <!-- 1: Сайт -->
+                    <a href="https://diia.fo/" target="_blank" class="soc-btn glass">
+                        <canvas class="oil-canvas"></canvas>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
                         </svg>
                     </a>
 
-                    <a href="https://t.me/username" target="_blank" class="cell cell-side">
-                        <!-- Telegram -->
-                        <svg viewBox="0 0 24 24" fill="currentColor">
+                    <!-- 2: Telegram -->
+                    <a href="https://t.me/username" target="_blank" class="soc-btn glass">
+                        <canvas class="oil-canvas"></canvas>
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
                             <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
                         </svg>
                     </a>
 
-                    <!-- Главная кнопка — по центру -->
-                    <button class="cell cell-main" id="btnMain">
-                        <span class="cell-main-label">Записатися</span>
-                        <!-- Иконка-крест когда expanded -->
-                        <span class="cell-main-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="18" height="18">
-                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                            </svg>
-                        </span>
-                    </button>
-
-                    <!-- Правые 2 кнопки -->
-                    <a href="https://instagram.com/username" target="_blank" class="cell cell-side">
-                        <!-- Instagram -->
+                    <!-- 3: Instagram (центральна) -->
+                    <a href="https://instagram.com/username" target="_blank" class="soc-btn glass">
+                        <canvas class="oil-canvas"></canvas>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
                         </svg>
                     </a>
 
-                    <a href="tel:+380000000000" class="cell cell-side">
-                        <!-- Телефон -->
+                    <!-- 4: Viber -->
+                    <a href="viber://chat?number=%2B380000000000" class="soc-btn glass">
+                        <canvas class="oil-canvas"></canvas>
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                            <path d="M11.4 0C5.5 0 .9 4.4.9 9.9c0 2.8 1.2 5.4 3.2 7.2v3.4c0 .3.3.5.5.4l3.3-1.2c1.1.3 2.3.5 3.5.5 5.9 0 10.5-4.4 10.5-9.9C23.9 4.4 19.3 0 11.4 0zM7.7 13.9c-.2.2-.5.3-.7.3s-.5-.1-.7-.3L4.1 11.7c-.4-.4-.4-1 0-1.4.4-.4 1-.4 1.4 0l1.5 1.5 5.8-5.8c.4-.4 1-.4 1.4 0 .4.4.4 1 0 1.4L7.7 13.9z"/>
+                        </svg>
+                    </a>
+
+                    <!-- 5: Телефон -->
+                    <a href="tel:+380000000000" class="soc-btn glass">
+                        <canvas class="oil-canvas"></canvas>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.29h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.84a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/>
                         </svg>
@@ -482,34 +485,10 @@
     <script>
     document.addEventListener("DOMContentLoaded", () => {
 
-        // ФОНЫ
-        const mobileBackgrounds = [
-            'https://i.ibb.co/kVk49xbf/Replace-flowers-with-poppies-202605252125.jpg',
-            'https://i.ibb.co/dw0pc7JD/2-K-202605252124.jpg',
-            'https://i.ibb.co/DDCGZ2gd/Replace-flowers-with-poppies-202605252119.jpg'
-        ];
-        const pcBackgrounds = [
-            'https://i.ibb.co/gZcx8kMZ/202605252338.jpg',
-            'https://i.ibb.co/pjDWm12T/202605252340.jpg',
-            'https://i.ibb.co/rfsqfgPw/202605252340.jpg'
-        ];
-        const glassTones = [
-            'rgba(46, 42, 32, 0.13)',
-            'rgba(24, 29, 38, 0.13)',
-            'rgba(40, 26, 32, 0.13)'
-        ];
+        // ФОНИ
 
-        const isPC = window.innerWidth >= 768;
-        const arr = isPC ? pcBackgrounds : mobileBackgrounds;
-        const idx = Math.floor(Math.random() * arr.length);
-
-        document.body.style.backgroundImage = `url('${arr[idx]}')`;
-
-        const tone = glassTones[idx];
-        document.querySelectorAll('.glass-element').forEach(el => {
-            el.style.background = tone;
-        });
-        document.getElementById('contactsGlass').style.background = tone;
+        const tone = 'rgba(20, 15, 25, 0.13)';
+        document.querySelectorAll('.glass').forEach(el => el.style.background = tone);
 
         // АККОРДЕОН
         document.querySelectorAll('.accordion-trigger').forEach(trigger => {
@@ -526,33 +505,34 @@
             });
         });
 
-        // РАСКРЫТИЕ КНОПОК
+        // РОЗКРИТТЯ КНОПОК
         const btnMain   = document.getElementById('btnMain');
-        const btnRow    = document.getElementById('btnRow');
-        let expanded    = false;
+        const socialRow = document.getElementById('socialRow');
+        let expanded = false;
 
         btnMain.addEventListener('click', () => {
-            expanded = !expanded;
-            btnRow.classList.toggle('expanded', expanded);
+            expanded = true;
+            btnMain.classList.add('collapsed');
+            socialRow.classList.add('visible');
         });
 
-        // Клик вне — закрыть
         document.addEventListener('click', (e) => {
             if (expanded && !e.target.closest('.contacts-zone')) {
                 expanded = false;
-                btnRow.classList.remove('expanded');
+                socialRow.classList.remove('visible');
+                setTimeout(() => btnMain.classList.remove('collapsed'), 150);
             }
         });
 
-        // БЕНЗИНОВЫЕ РАЗВОДЫ
+        // OIL CANVAS
         function initOilCanvas(canvas) {
             const parent = canvas.parentElement;
             canvas.width  = parent.offsetWidth  * 2;
             canvas.height = parent.offsetHeight * 2;
             canvas.style.width  = '100%';
             canvas.style.height = '100%';
-            canvas.style.filter = 'blur(18px)';
-            canvas.style.transform = 'scale(1.15)';
+            canvas.style.filter = 'blur(22px)';
+            canvas.style.transform = 'scale(1.2)';
 
             const ctx = canvas.getContext('2d');
             const W = canvas.width, H = canvas.height;
@@ -585,19 +565,19 @@
                 ctx.closePath();
             }
 
-            const blobs = Array.from({length: 5}, (_, i) => {
+            const blobs = Array.from({length: 4}, (_, i) => {
                 const minR = Math.min(W, H);
-                const points = 8 + Math.floor(Math.random() * 10);
-                const baseR  = minR * (0.22 + Math.random() * 0.32);
+                const points = 8 + Math.floor(Math.random() * 8);
+                const baseR  = minR * (0.25 + Math.random() * 0.35);
                 const cx = W * (0.1 + Math.random() * 0.8);
                 const cy = H * (0.1 + Math.random() * 0.8);
                 return {
                     cx, cy, baseR,
-                    jitter: minR * (0.18 + Math.random() * 0.22),
+                    jitter: minR * (0.15 + Math.random() * 0.2),
                     points,
-                    hue:  (i / 5) * 360 + Math.random() * 60,
-                    vx:   (Math.random() - 0.5) * 0.35,
-                    vy:   (Math.random() - 0.5) * 0.28,
+                    hue:  (i / 4) * 360 + Math.random() * 60,
+                    vx:   (Math.random() - 0.5) * 0.4,
+                    vy:   (Math.random() - 0.5) * 0.3,
                     vh:   0.05 + Math.random() * 0.08,
                     pts:  null, ptV: null,
                 };
@@ -632,10 +612,10 @@
 
                     b.hue = (b.hue + b.vh) % 360;
                     const grad = ctx.createRadialGradient(b.cx, b.cy, 0, b.cx, b.cy, b.baseR * 1.1);
-                    grad.addColorStop(0,    `hsla(${b.hue}, 100%, 72%, 0.55)`);
-                    grad.addColorStop(0.5,  `hsla(${(b.hue + 80) % 360}, 100%, 65%, 0.35)`);
-                    grad.addColorStop(0.85, `hsla(${(b.hue + 160) % 360}, 90%, 60%, 0.15)`);
-                    grad.addColorStop(1,    `hsla(${b.hue}, 80%, 50%, 0)`);
+                    grad.addColorStop(0,    `hsla(${b.hue}, 80%, 65%, 0.22)`);
+                    grad.addColorStop(0.5,  `hsla(${(b.hue + 80) % 360}, 80%, 60%, 0.14)`);
+                    grad.addColorStop(0.85, `hsla(${(b.hue + 160) % 360}, 70%, 55%, 0.06)`);
+                    grad.addColorStop(1,    `hsla(${b.hue}, 60%, 45%, 0)`);
 
                     ctx.globalCompositeOperation = 'screen';
                     drawSmooth(ctx, b.pts);
@@ -647,10 +627,10 @@
             draw();
         }
 
-        document.querySelectorAll('.oil-canvas').forEach(c => {
-            initOilCanvas(c);
+        // Для абсолютно позиціонованих елементів — ініціалізуємо після рендеру
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.oil-canvas').forEach(c => initOilCanvas(c));
         });
-
     });
     </script>
 </body>
