@@ -491,7 +491,6 @@
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 0, 0.001);
 
-    // Сфера, вывернутая наизнанку — камера внутри
     const geometry = new THREE.SphereGeometry(500, 60, 40);
     geometry.scale(-1, 1, 1);
 
@@ -501,72 +500,124 @@
     texture.colorSpace = THREE.SRGBColorSpace;
 
     const material = new THREE.MeshBasicMaterial({ map: texture });
-    const sphere   = new THREE.Mesh(geometry, material);
-    scene.add(sphere);
+    scene.add(new THREE.Mesh(geometry, material));
 
-    // Параметры движения
-    const AUTO_SPEED = 0.00018;   // скорость автовращения
-    const MAX_PITCH  = 0.25;      // ограничение наклона (рад)
-    const LERP       = 0.04;      // сглаживание
+    const LERP = 0.08;
 
-    let targetYaw = 0, targetPitch = 0;
-    let curYaw    = 0, curPitch    = 0;
-    let autoYaw   = 0;
-    let gyro      = false;
+    // Текущие углы камеры (радианы)
+    let yaw   = 0;   // горизонталь
+    let pitch = 0;   // вертикаль
+    let targetYaw   = 0;
+    let targetPitch = 0;
 
-    // Мышь
+    const MAX_PITCH = 0.5;
+
+    /* ─── МЫШЬ (десктоп) ─── */
+    let gyroActive = false;
+    let lastMouseX = null;
+    let lastMouseY = null;
+
     document.addEventListener('mousemove', (e) => {
-        if (gyro) return;
-        const cx = window.innerWidth  / 2;
-        const cy = window.innerHeight / 2;
-        targetYaw   = -((e.clientX - cx) / cx) * 0.35;
-        targetPitch =  ((e.clientY - cy) / cy) * 0.18;
-    });
-    document.addEventListener('mouseleave', () => {
-        if (gyro) return;
-        targetYaw = 0; targetPitch = 0;
+        if (gyroActive) return;
+        if (lastMouseX === null) { lastMouseX = e.clientX; lastMouseY = e.clientY; return; }
+
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+
+        targetYaw   -= dx * 0.003;
+        targetPitch -= dy * 0.002;
+        targetPitch  = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
     });
 
-    // Гироскоп (мобильный)
-    function onGyro(e) {
-        gyro = true;
-        const g = Math.max(-45, Math.min(45, e.gamma || 0));
-        const b = Math.max(-45, Math.min(45, e.beta  || 0));
-        targetYaw   = -(g / 45) * 0.45;
-        targetPitch =  (b / 45) * 0.22;
-    }
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-        document.addEventListener('touchstart', async function ask() {
-            try {
-                if (await DeviceOrientationEvent.requestPermission() === 'granted')
-                    window.addEventListener('deviceorientation', onGyro, true);
-            } catch (e) {}
-            document.removeEventListener('touchstart', ask);
-        }, { once: true });
-    } else {
-        window.addEventListener('deviceorientation', onGyro, true);
+    /* ─── ГИРОСКОП (мобильный) ─── */
+    // Используем DeviceMotionEvent + интегрируем угловую скорость —
+    // это даёт плавное «крути телефон → крутится картинка» как на Kuula
+
+    let lastTime = null;
+
+    function onMotion(e) {
+        gyroActive = true;
+
+        const rate = e.rotationRate;
+        if (!rate) return;
+
+        const now = e.timeStamp || performance.now();
+        if (lastTime === null) { lastTime = now; return; }
+
+        const dt = (now - lastTime) / 1000; // секунды
+        lastTime = now;
+
+        // rotationRate.alpha — вокруг Z (портрет: поворот по горизонту)
+        // rotationRate.beta  — вокруг X (наклон вперёд/назад → pitch)
+        // rotationRate.gamma — вокруг Y (наклон влево/вправо → доп. yaw в ландшафте)
+
+        // Определяем ориентацию экрана
+        const orient = (screen.orientation && screen.orientation.angle) ||
+                       window.orientation || 0;
+
+        let dYaw, dPitch;
+
+        if (Math.abs(orient) === 90 || Math.abs(orient) === 270) {
+            // Ландшафт
+            dYaw   = rate.beta  * dt * (orient > 0 ? -1 : 1);
+            dPitch = rate.gamma * dt * -0.5;
+        } else {
+            // Портрет (основной режим)
+            dYaw   = -rate.alpha * dt;   // alpha — вращение вокруг оси Z (как компас)
+            dPitch = -rate.beta  * dt * 0.5;
+        }
+
+        targetYaw   += dYaw   * (Math.PI / 180);
+        targetPitch += dPitch * (Math.PI / 180);
+        targetPitch  = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
     }
 
-    // Ресайз
+    function requestGyro() {
+        if (typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function') {
+            // iOS 13+
+            DeviceMotionEvent.requestPermission()
+                .then(res => {
+                    if (res === 'granted')
+                        window.addEventListener('devicemotion', onMotion, true);
+                })
+                .catch(() => {});
+        } else {
+            window.addEventListener('devicemotion', onMotion, true);
+        }
+    }
+
+    // На iOS нужен жест пользователя — запрашиваем при первом касании
+    document.addEventListener('touchstart', function ask() {
+        requestGyro();
+        document.removeEventListener('touchstart', ask);
+    }, { once: true });
+
+    // Android — можно сразу
+    if (!/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        requestGyro();
+    }
+
+    /* ─── РЕСАЙЗ ─── */
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
+    /* ─── РЕНДЕР ─── */
     const euler = new THREE.Euler(0, 0, 0, 'YXZ');
 
     function animate() {
         requestAnimationFrame(animate);
 
-        autoYaw += AUTO_SPEED;
+        // Плавное сглаживание
+        yaw   += (targetYaw   - yaw)   * LERP;
+        pitch += (targetPitch - pitch) * LERP;
 
-        curYaw   += (targetYaw   - curYaw)   * LERP;
-        curPitch += (targetPitch - curPitch) * LERP;
-        curPitch  = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, curPitch));
-
-        euler.set(curPitch, autoYaw + curYaw, 0);
+        euler.set(pitch, yaw, 0);
         camera.quaternion.setFromEuler(euler);
 
         renderer.render(scene, camera);
