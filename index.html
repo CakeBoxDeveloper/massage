@@ -503,6 +503,7 @@
 </main>
 
 <!-- ===== PANORAMA ===== -->
+<!-- ===== PANORAMA ===== -->
 <script>
 (function () {
     const canvas   = document.getElementById('panoramaCanvas');
@@ -517,10 +518,19 @@
     const geometry = new THREE.SphereGeometry(500, 60, 40);
     geometry.scale(-1, 1, 1);
 
-    const texture = new THREE.TextureLoader().load(
-        'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Lite2SeamlessHDRI.webp'
-    );
+    // ── Видео-текстура вместо webp ──
+    const video = document.createElement('video');
+    video.src = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/SpaceSeamless.mp4';
+    video.crossOrigin = 'anonymous';
+    video.loop    = true;
+    video.muted   = true;
+    video.playsInline = true;
+    video.autoplay    = true;
+    video.play().catch(() => {});
+
+    const texture = new THREE.VideoTexture(video);
     texture.colorSpace = THREE.SRGBColorSpace;
+
     scene.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })));
 
     const LERP = 0.12;
@@ -547,10 +557,6 @@
     let gyroActive = false;
     let gyroOffset = null;
 
-    // Поправка экрана: телефон в портрете держат с Z вверх,
-    // нам нужно "повернуть мир" на -90° по X чтобы Z стал Y (вперёд)
-    const qFix = new THREE.Quaternion(- Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
-
     function getScreenAngle() {
         return THREE.MathUtils.degToRad(
             (screen.orientation && screen.orientation.angle != null)
@@ -559,42 +565,38 @@
         );
     }
 
-    // Убрать qFix — он больше не нужен
+    function onDeviceOrientation(e) {
+        if (e.alpha == null || e.beta == null || e.gamma == null) return;
+        gyroActive = true;
 
-function onDeviceOrientation(e) {
-    if (e.alpha == null || e.beta == null || e.gamma == null) return;
-    gyroActive = true;
+        const alpha = THREE.MathUtils.degToRad(e.alpha);
+        const beta  = THREE.MathUtils.degToRad(e.beta);
+        const gamma = THREE.MathUtils.degToRad(e.gamma);
 
-    const alpha = THREE.MathUtils.degToRad(e.alpha);
-    const beta  = THREE.MathUtils.degToRad(e.beta);
-    const gamma = THREE.MathUtils.degToRad(e.gamma);
+        const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), alpha);
+        const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), beta);
+        const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), gamma);
 
-    const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), alpha);
-    const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), beta);
-    const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), gamma);
+        const qDevice = new THREE.Quaternion()
+            .multiply(qZ)
+            .multiply(qX)
+            .multiply(qY);
 
-    const qDevice = new THREE.Quaternion()
-        .multiply(qZ)
-        .multiply(qX)
-        .multiply(qY);
+        const qWorld = new THREE.Quaternion()
+            .setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+        qDevice.premultiply(qWorld);
 
-    const qWorld = new THREE.Quaternion()
-        .setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
-    qDevice.premultiply(qWorld);
+        // Убираем крен — горизонт всегда прямой
+        const euler = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
+        euler.z = 0;
+        qDevice.setFromEuler(euler);
 
-    // Убираем крен — горизонт всегда прямой
-    const euler = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
-    euler.z = 0;
-    qDevice.setFromEuler(euler);
+        if (!gyroOffset) {
+            gyroOffset = qDevice.clone().invert();
+        }
 
-    if (!gyroOffset) {
-        gyroOffset = qDevice.clone().invert();
+        qTarget.copy(qDevice).premultiply(gyroOffset);
     }
-
-    qTarget.copy(qDevice).premultiply(gyroOffset);
-}
-
-    
 
     // Сброс по двойному тапу
     document.addEventListener('dblclick', () => { gyroOffset = null; });
@@ -620,6 +622,7 @@ function onDeviceOrientation(e) {
 
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         document.addEventListener('touchstart', function ask() {
+            video.play().catch(() => {});  // iOS требует user gesture для видео
             startGyro();
             document.removeEventListener('touchstart', ask);
         }, { once: true });
@@ -636,6 +639,10 @@ function onDeviceOrientation(e) {
 
     (function animate() {
         requestAnimationFrame(animate);
+        // VideoTexture нужно обновлять вручную
+        if (video.readyState >= video.HAVE_CURRENT_DATA) {
+            texture.needsUpdate = true;
+        }
         qCurrent.slerp(qTarget, LERP);
         camera.quaternion.copy(qCurrent);
         renderer.render(scene, camera);
