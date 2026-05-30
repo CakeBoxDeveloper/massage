@@ -18,21 +18,20 @@
             inset: 0;
             z-index: 0;
             pointer-events: none;
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             -webkit-mask-image:
-                radial-gradient(ellipse 75% 75% at 50% 50%,
-                    transparent 50%,
-                    rgba(0,0,0,0.5) 70%,
-                    black 90%);
+                radial-gradient(ellipse 80% 80% at 50% 50%,
+                    transparent 45%,
+                    rgba(0,0,0,0.4) 65%,
+                    black 85%);
             mask-image:
-                radial-gradient(ellipse 75% 75% at 50% 50%,
-                    transparent 50%,
-                    rgba(0,0,0,0.5) 70%,
-                    black 90%);
+                radial-gradient(ellipse 80% 80% at 50% 50%,
+                    transparent 45%,
+                    rgba(0,0,0,0.4) 65%,
+                    black 85%);
         }
-    </style>
-    <style>
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -63,36 +62,31 @@
         /* ── Liquid Glass ── */
         .glass {
             position: relative;
-            /* Сильный блюр фона */
-            backdrop-filter: blur(28px) saturate(180%) brightness(1.08);
-            -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.08);
-            /* Полупрозрачная подложка */
-            background: rgba(255,255,255,0.06);
-            /* Внешняя тень — глубина */
+            backdrop-filter: blur(12px) saturate(160%) brightness(1.06);
+            -webkit-backdrop-filter: blur(12px) saturate(160%) brightness(1.06);
+            background: rgba(255,255,255,0.07);
             box-shadow:
-                0 8px 32px rgba(0,0,0,0.28),
-                0 1px 0px rgba(255,255,255,0.08) inset,
-                0 -1px 0px rgba(0,0,0,0.18) inset;
-            /* Граница через outline чтобы не влиять на border-radius */
+                0 8px 32px rgba(0,0,0,0.30),
+                0 1px 0px rgba(255,255,255,0.12) inset,
+                0 -1px 0px rgba(0,0,0,0.20) inset;
             isolation: isolate;
             overflow: hidden;
         }
 
-        /* Верхний световой блик — главный признак жидкого стекла */
+        /* Градиентная граница — имитация преломления стекла */
         .glass::after {
             content: "";
             position: absolute;
             inset: 0;
             border-radius: inherit;
-            /* Тонкая граница 2px с градиентом: светлая сверху, тёмная снизу */
             border: 2px solid transparent;
             background:
-                linear-gradient(160deg,
-                    rgba(255,255,255,0.55) 0%,
-                    rgba(255,255,255,0.18) 25%,
-                    rgba(255,255,255,0.04) 50%,
-                    rgba(255,255,255,0.00) 75%,
-                    rgba(0,0,0,0.10) 100%
+                linear-gradient(145deg,
+                    rgba(255,255,255,0.60) 0%,
+                    rgba(255,255,255,0.20) 20%,
+                    rgba(255,255,255,0.05) 45%,
+                    rgba(255,255,255,0.00) 60%,
+                    rgba(0,0,0,0.12) 100%
                 ) border-box;
             -webkit-mask:
                 linear-gradient(#fff 0 0) padding-box,
@@ -103,7 +97,7 @@
             z-index: 2;
         }
 
-        /* Shimmer поверх границы — бегущий блик */
+        /* Shimmer — бегущий блик по границе */
         .glass::before {
             content: "";
             position: absolute;
@@ -111,11 +105,11 @@
             border-radius: inherit;
             padding: 2px;
             background: linear-gradient(
-                100deg,
+                105deg,
                 rgba(255,255,255,0.00) 0%,
-                rgba(255,255,255,0.00) 35%,
-                rgba(255,255,255,0.70) 50%,
-                rgba(255,255,255,0.00) 65%,
+                rgba(255,255,255,0.00) 30%,
+                rgba(255,255,255,0.80) 50%,
+                rgba(255,255,255,0.00) 70%,
                 rgba(255,255,255,0.00) 100%
             );
             background-size: 300% 100%;
@@ -142,7 +136,7 @@
             border-radius: 20px;
             text-align: center;
             flex-shrink: 0;
-            margin-bottom: 10px;
+            margin-bottom: 0;
         }
         .header::before { animation-delay: -2s; }
         .header h1 {
@@ -154,39 +148,43 @@
             z-index: 2;
         }
 
+        /* Контейнер: flex с space-between чтобы карточка была по центру */
         .container {
             width: 100%;
             max-width: 400px;
-            height: 100%;
+            flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            gap: 8px;
+            justify-content: space-between;
+            gap: 0;
             min-height: 0;
+            padding: 16px 0 0 0;
         }
 
         .info-card {
             padding: 20px;
             border-radius: 28px;
-            flex-shrink: 0;
+            flex: 1;
+            overflow: hidden;
             transition: filter 0.3s ease;
-            display: grid;
-            grid-template-rows: 1fr;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
         .info-card::before { animation-delay: -5s; }
         .info-card.card-blurring { filter: blur(8px); }
 
         .card-switcher {
-            display: grid;
-            grid-template-rows: 1fr;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             min-height: 0;
             position: relative;
             z-index: 2;
         }
 
         .view-panel {
-            grid-row: 1;
-            grid-column: 1;
+            flex: 1;
             overflow-y: auto;
             scrollbar-width: none;
             transition: opacity 0.3s ease;
@@ -300,7 +298,7 @@
         .contacts-zone {
             width: 100%;
             flex-shrink: 0;
-            margin-bottom: 5px;
+            padding-top: 16px;
         }
         .btn-wrap {
             position: relative;
@@ -362,7 +360,6 @@
             transform-origin: center;
             transition: transform 0.44s cubic-bezier(0.34,1.3,0.64,1), opacity 0.3s ease;
         }
-        .soc-btn::before { animation-delay: calc(var(--i, 0) * -3s); }
 
         .social-row.visible .soc-btn { transform: scaleX(1); opacity: 1; }
         .social-row.visible .soc-btn:nth-child(3) { transition-delay: 0s; }
@@ -371,21 +368,25 @@
         .social-row.visible .soc-btn:nth-child(1) { transition-delay: 0.14s; }
         .social-row.visible .soc-btn:nth-child(5) { transition-delay: 0.14s; }
 
-        .soc-btn svg {
-            width: 20px; height: 20px;
-            color: rgba(255,255,255,0.72);
+        .soc-btn::before { animation-delay: calc(var(--sd, 0) * 1s); }
+        .soc-btn:nth-child(1)::before { --sd: -1; }
+        .soc-btn:nth-child(2)::before { --sd: -4; }
+        .soc-btn:nth-child(3)::before { --sd: -7; }
+        .soc-btn:nth-child(4)::before { --sd: -10; }
+        .soc-btn:nth-child(5)::before { --sd: -13; }
+
+        .soc-btn img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
             position: relative;
             z-index: 4;
-            transition: color 0.2s, transform 0.2s;
+            opacity: 0.72;
+            filter: brightness(0) invert(1);
+            transition: opacity 0.2s, transform 0.2s;
         }
-        .soc-btn:hover svg { color: rgba(255,255,255,1); transform: scale(1.12); }
+        .soc-btn:hover img { opacity: 1; transform: scale(1.12); }
         .soc-btn:active { filter: brightness(1.3); }
-
-        .soc-btn:nth-child(1)::before { animation-delay: -1s; }
-        .soc-btn:nth-child(2)::before { animation-delay: -4s; }
-        .soc-btn:nth-child(3)::before { animation-delay: -7s; }
-        .soc-btn:nth-child(4)::before { animation-delay: -10s; }
-        .soc-btn:nth-child(5)::before { animation-delay: -13s; }
     </style>
 </head>
 <body>
@@ -477,33 +478,20 @@
                 <span class="btn-main-label">Записатися на масаж</span>
             </button>
             <div class="social-row" id="socialRow">
-                <a href="https://diia.fo/" target="_blank" class="soc-btn glass">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                    </svg>
+                <a href="https://threads.net/" target="_blank" class="soc-btn glass">
+                    <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/hreads.svg" alt="Threads">
                 </a>
                 <a href="https://t.me/username" target="_blank" class="soc-btn glass">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                    </svg>
+                    <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/telegram.svg" alt="Telegram">
                 </a>
                 <a href="https://instagram.com/username" target="_blank" class="soc-btn glass">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                    </svg>
+                    <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/insta.svg" alt="Instagram">
                 </a>
-                <a href="viber://chat?number=%2B380000000000" class="soc-btn glass">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                        <path d="M11.4 0C5.5 0 .9 4.4.9 9.9c0 2.8 1.2 5.4 3.2 7.2v3.4c0 .3.3.5.5.4l3.3-1.2c1.1.3 2.3.5 3.5.5 5.9 0 10.5-4.4 10.5-9.9C23.9 4.4 19.3 0 11.4 0zM7.7 13.9c-.2.2-.5.3-.7.3s-.5-.1-.7-.3L4.1 11.7c-.4-.4-.4-1 0-1.4.4-.4 1-.4 1.4 0l1.5 1.5 5.8-5.8c.4-.4 1-.4 1.4 0 .4.4.4 1 0 1.4L7.7 13.9z"/>
-                    </svg>
+                <a href="https://wa.me/380000000000" target="_blank" class="soc-btn glass">
+                    <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/wa.svg" alt="WhatsApp">
                 </a>
                 <a href="tel:+380000000000" class="soc-btn glass">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.29h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.84a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/>
-                    </svg>
+                    <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/call.svg" alt="Дзвінок">
                 </a>
             </div>
         </div>
@@ -642,7 +630,7 @@
 })();
 </script>
 
-<!-- ===== ОСНОВНАЯ ЛОГИКА ===== -->
+<!-- ===== ЛОГИКА ===== -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -661,11 +649,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const detailPrice    = document.getElementById('detailPrice');
     const btnBack        = document.getElementById('btnBack');
     const BLUR_DUR       = 300;
-
-    requestAnimationFrame(() => {
-        const h = card.offsetHeight;
-        card.style.height = h + 'px';
-    });
 
     function blurSwitch(fn) {
         card.classList.add('card-blurring');
