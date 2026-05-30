@@ -60,41 +60,79 @@
             background-color: #0d0e12;
         }
 
+        /* ── Liquid Glass ── */
         .glass {
-            backdrop-filter: blur(1.5px) saturate(120%);
-            -webkit-backdrop-filter: blur(1.5px) saturate(120%);
-            background: rgba(255,255,255,0.04);
-            box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.12);
             position: relative;
+            /* Сильный блюр фона */
+            backdrop-filter: blur(28px) saturate(180%) brightness(1.08);
+            -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.08);
+            /* Полупрозрачная подложка */
+            background: rgba(255,255,255,0.06);
+            /* Внешняя тень — глубина */
+            box-shadow:
+                0 8px 32px rgba(0,0,0,0.28),
+                0 1px 0px rgba(255,255,255,0.08) inset,
+                0 -1px 0px rgba(0,0,0,0.18) inset;
+            /* Граница через outline чтобы не влиять на border-radius */
+            isolation: isolate;
+            overflow: hidden;
         }
+
+        /* Верхний световой блик — главный признак жидкого стекла */
+        .glass::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            /* Тонкая граница 2px с градиентом: светлая сверху, тёмная снизу */
+            border: 2px solid transparent;
+            background:
+                linear-gradient(160deg,
+                    rgba(255,255,255,0.55) 0%,
+                    rgba(255,255,255,0.18) 25%,
+                    rgba(255,255,255,0.04) 50%,
+                    rgba(255,255,255,0.00) 75%,
+                    rgba(0,0,0,0.10) 100%
+                ) border-box;
+            -webkit-mask:
+                linear-gradient(#fff 0 0) padding-box,
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Shimmer поверх границы — бегущий блик */
         .glass::before {
             content: "";
             position: absolute;
             inset: 0;
             border-radius: inherit;
-            padding: 1px;
-            background: linear-gradient(45deg,rgba(255,255,255,0.02) 0%,rgba(255,255,255,0.02) 40%,rgba(255,255,255,0.45) 50%,rgba(255,255,255,0.02) 60%,rgba(255,255,255,0.02) 100%);
+            padding: 2px;
+            background: linear-gradient(
+                100deg,
+                rgba(255,255,255,0.00) 0%,
+                rgba(255,255,255,0.00) 35%,
+                rgba(255,255,255,0.70) 50%,
+                rgba(255,255,255,0.00) 65%,
+                rgba(255,255,255,0.00) 100%
+            );
             background-size: 300% 100%;
             background-position: 150% 0;
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask:
+                linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             pointer-events: none;
             z-index: 3;
-            animation: shimmer 14s cubic-bezier(0.25,1,0.5,1) infinite;
+            animation: shimmer 10s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+
         @keyframes shimmer {
             0%   { background-position: 150% 0; }
             100% { background-position: -150% 0; }
-        }
-
-        .oil-canvas {
-            position: absolute;
-            inset: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 1;
-            border-radius: inherit;
         }
 
         .header {
@@ -105,7 +143,6 @@
             text-align: center;
             flex-shrink: 0;
             margin-bottom: 10px;
-            overflow: hidden;
         }
         .header::before { animation-delay: -2s; }
         .header h1 {
@@ -132,7 +169,6 @@
             padding: 20px;
             border-radius: 28px;
             flex-shrink: 0;
-            overflow: hidden;
             transition: filter 0.3s ease;
             display: grid;
             grid-template-rows: 1fr;
@@ -144,6 +180,8 @@
             display: grid;
             grid-template-rows: 1fr;
             min-height: 0;
+            position: relative;
+            z-index: 2;
         }
 
         .view-panel {
@@ -162,8 +200,6 @@
             position: absolute;
             inset: 0;
         }
-
-        .massage-list { position: relative; z-index: 2; }
 
         .massage-item {
             border-bottom: 1px solid rgba(255,255,255,0.10);
@@ -202,8 +238,6 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            position: relative;
-            z-index: 2;
         }
 
         .detail-header {
@@ -286,12 +320,11 @@
             font-size: 0.82rem;
             font-weight: 400;
             letter-spacing: 1.8px;
-            color: rgba(255,255,255,0.65);
+            color: rgba(255,255,255,0.75);
             text-transform: uppercase;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
             z-index: 10;
             transition: width 0.48s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
         }
@@ -299,7 +332,7 @@
         .btn-main-label {
             pointer-events: none;
             position: relative;
-            z-index: 2;
+            z-index: 4;
             white-space: nowrap;
             transition: opacity 0.2s ease;
         }
@@ -323,34 +356,13 @@
             justify-content: center;
             text-decoration: none;
             border-radius: 16px;
-            overflow: hidden;
             position: relative;
             transform: scaleX(0);
             opacity: 0;
             transform-origin: center;
             transition: transform 0.44s cubic-bezier(0.34,1.3,0.64,1), opacity 0.3s ease;
         }
-        .soc-btn::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            padding: 1px;
-            background: linear-gradient(45deg,rgba(255,255,255,0.02) 0%,rgba(255,255,255,0.02) 40%,rgba(255,255,255,0.45) 50%,rgba(255,255,255,0.02) 60%,rgba(255,255,255,0.02) 100%);
-            background-size: 300% 100%;
-            background-position: 150% 0;
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            pointer-events: none;
-            z-index: 3;
-            animation: shimmer 14s cubic-bezier(0.25,1,0.5,1) infinite;
-        }
-        .soc-btn:nth-child(1)::before { animation-delay: -1s; }
-        .soc-btn:nth-child(2)::before { animation-delay: -4s; }
-        .soc-btn:nth-child(3)::before { animation-delay: -7s; }
-        .soc-btn:nth-child(4)::before { animation-delay: -10s; }
-        .soc-btn:nth-child(5)::before { animation-delay: -13s; }
+        .soc-btn::before { animation-delay: calc(var(--i, 0) * -3s); }
 
         .social-row.visible .soc-btn { transform: scaleX(1); opacity: 1; }
         .social-row.visible .soc-btn:nth-child(3) { transition-delay: 0s; }
@@ -361,30 +373,33 @@
 
         .soc-btn svg {
             width: 20px; height: 20px;
-            color: rgba(255,255,255,0.65);
+            color: rgba(255,255,255,0.72);
             position: relative;
-            z-index: 2;
+            z-index: 4;
             transition: color 0.2s, transform 0.2s;
         }
         .soc-btn:hover svg { color: rgba(255,255,255,1); transform: scale(1.12); }
         .soc-btn:active { filter: brightness(1.3); }
+
+        .soc-btn:nth-child(1)::before { animation-delay: -1s; }
+        .soc-btn:nth-child(2)::before { animation-delay: -4s; }
+        .soc-btn:nth-child(3)::before { animation-delay: -7s; }
+        .soc-btn:nth-child(4)::before { animation-delay: -10s; }
+        .soc-btn:nth-child(5)::before { animation-delay: -13s; }
     </style>
 </head>
 <body>
 
 <canvas id="panoramaCanvas"></canvas>
-
 <div id="edgeBlur"></div>
 
 <header class="header glass">
-    <canvas class="oil-canvas"></canvas>
     <h1>Час для себе</h1>
 </header>
 
 <main class="container">
 
     <section class="info-card glass" id="main-card">
-        <canvas class="oil-canvas"></canvas>
         <div class="card-switcher">
             <div class="view-panel" id="listView">
                 <div class="massage-list">
@@ -459,25 +474,21 @@
     <div class="contacts-zone">
         <div class="btn-wrap">
             <button class="btn-main glass" id="btnMain">
-                <canvas class="oil-canvas"></canvas>
                 <span class="btn-main-label">Записатися на масаж</span>
             </button>
             <div class="social-row" id="socialRow">
                 <a href="https://diia.fo/" target="_blank" class="soc-btn glass">
-                    <canvas class="oil-canvas"></canvas>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"/>
                         <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
                     </svg>
                 </a>
                 <a href="https://t.me/username" target="_blank" class="soc-btn glass">
-                    <canvas class="oil-canvas"></canvas>
                     <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
                         <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
                     </svg>
                 </a>
                 <a href="https://instagram.com/username" target="_blank" class="soc-btn glass">
-                    <canvas class="oil-canvas"></canvas>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
                         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
@@ -485,13 +496,11 @@
                     </svg>
                 </a>
                 <a href="viber://chat?number=%2B380000000000" class="soc-btn glass">
-                    <canvas class="oil-canvas"></canvas>
                     <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
                         <path d="M11.4 0C5.5 0 .9 4.4.9 9.9c0 2.8 1.2 5.4 3.2 7.2v3.4c0 .3.3.5.5.4l3.3-1.2c1.1.3 2.3.5 3.5.5 5.9 0 10.5-4.4 10.5-9.9C23.9 4.4 19.3 0 11.4 0zM7.7 13.9c-.2.2-.5.3-.7.3s-.5-.1-.7-.3L4.1 11.7c-.4-.4-.4-1 0-1.4.4-.4 1-.4 1.4 0l1.5 1.5 5.8-5.8c.4-.4 1-.4 1.4 0 .4.4.4 1 0 1.4L7.7 13.9z"/>
                     </svg>
                 </a>
                 <a href="tel:+380000000000" class="soc-btn glass">
-                    <canvas class="oil-canvas"></canvas>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.29h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.84a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/>
                     </svg>
@@ -502,7 +511,6 @@
 
 </main>
 
-<!-- ===== PANORAMA ===== -->
 <!-- ===== PANORAMA ===== -->
 <script>
 (function () {
@@ -518,14 +526,13 @@
     const geometry = new THREE.SphereGeometry(500, 60, 40);
     geometry.scale(-1, 1, 1);
 
-    // ── Видео-текстура вместо webp ──
     const video = document.createElement('video');
     video.src = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/SpaceSeamless.mp4';
     video.crossOrigin = 'anonymous';
-    video.loop    = true;
-    video.muted   = true;
+    video.loop = true;
+    video.muted = true;
     video.playsInline = true;
-    video.autoplay    = true;
+    video.autoplay = true;
     video.play().catch(() => {});
 
     const texture = new THREE.VideoTexture(video);
@@ -537,12 +544,13 @@
     const qTarget  = new THREE.Quaternion();
     const qCurrent = new THREE.Quaternion();
 
-    /* ── Десктоп: мышь ── */
     const eulerMouse = new THREE.Euler(0.6, 0, 0, 'YXZ');
     qTarget.setFromEuler(eulerMouse);
     qCurrent.copy(qTarget);
 
+    let gyroActive = false;
     let lastMX = null, lastMY = null;
+
     document.addEventListener('mousemove', (e) => {
         if (gyroActive) return;
         if (lastMX === null) { lastMX = e.clientX; lastMY = e.clientY; return; }
@@ -553,8 +561,6 @@
         lastMX = e.clientX; lastMY = e.clientY;
     });
 
-    /* ── Гироскоп ── */
-    let gyroActive = false;
     let gyroOffset = null;
 
     function getScreenAngle() {
@@ -577,28 +583,19 @@
         const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), beta);
         const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), gamma);
 
-        const qDevice = new THREE.Quaternion()
-            .multiply(qZ)
-            .multiply(qX)
-            .multiply(qY);
+        const qDevice = new THREE.Quaternion().multiply(qZ).multiply(qX).multiply(qY);
 
-        const qWorld = new THREE.Quaternion()
-            .setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+        const qWorld = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
         qDevice.premultiply(qWorld);
 
-        // Убираем крен — горизонт всегда прямой
         const euler = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
         euler.z = 0;
         qDevice.setFromEuler(euler);
 
-        if (!gyroOffset) {
-            gyroOffset = qDevice.clone().invert();
-        }
-
+        if (!gyroOffset) gyroOffset = qDevice.clone().invert();
         qTarget.copy(qDevice).premultiply(gyroOffset);
     }
 
-    // Сброс по двойному тапу
     document.addEventListener('dblclick', () => { gyroOffset = null; });
     let lastTap = 0;
     document.addEventListener('touchend', () => {
@@ -611,10 +608,8 @@
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
             DeviceOrientationEvent.requestPermission()
-                .then(res => {
-                    if (res === 'granted')
-                        window.addEventListener('deviceorientation', onDeviceOrientation, true);
-                }).catch(() => {});
+                .then(res => { if (res === 'granted') window.addEventListener('deviceorientation', onDeviceOrientation, true); })
+                .catch(() => {});
         } else {
             window.addEventListener('deviceorientation', onDeviceOrientation, true);
         }
@@ -622,7 +617,7 @@
 
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         document.addEventListener('touchstart', function ask() {
-            video.play().catch(() => {});  // iOS требует user gesture для видео
+            video.play().catch(() => {});
             startGyro();
             document.removeEventListener('touchstart', ask);
         }, { once: true });
@@ -639,10 +634,7 @@
 
     (function animate() {
         requestAnimationFrame(animate);
-        // VideoTexture нужно обновлять вручную
-        if (video.readyState >= video.HAVE_CURRENT_DATA) {
-            texture.needsUpdate = true;
-        }
+        if (video.readyState >= video.HAVE_CURRENT_DATA) texture.needsUpdate = true;
         qCurrent.slerp(qTarget, LERP);
         camera.quaternion.copy(qCurrent);
         renderer.render(scene, camera);
@@ -654,15 +646,11 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Запрет зума и лишних жестов
     document.addEventListener('touchmove', (e) => {
         if (e.touches.length > 1) e.preventDefault();
     }, { passive: false });
     document.addEventListener('gesturestart',  (e) => e.preventDefault());
     document.addEventListener('gesturechange', (e) => e.preventDefault());
-
-    const tone = 'rgba(20, 15, 25, 0.13)';
-    document.querySelectorAll('.glass').forEach(el => el.style.background = tone);
 
     const card           = document.getElementById('main-card');
     const listView       = document.getElementById('listView');
@@ -674,7 +662,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnBack        = document.getElementById('btnBack');
     const BLUR_DUR       = 300;
 
-    // Фиксируем высоту карточки после рендера списка
     requestAnimationFrame(() => {
         const h = card.offsetHeight;
         card.style.height = h + 'px';
@@ -705,7 +692,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    /* ── Кнопки соцсетей ── */
     const btnMain   = document.getElementById('btnMain');
     const socialRow = document.getElementById('socialRow');
     let expanded = false;
@@ -724,111 +710,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    /* ── Oil canvas ── */
-    function initOilCanvas(canvas) {
-        const parent = canvas.parentElement;
-        canvas.width  = parent.offsetWidth  * 2;
-        canvas.height = parent.offsetHeight * 2;
-        canvas.style.width  = '100%';
-        canvas.style.height = '100%';
-        canvas.style.filter = 'blur(22px)';
-        canvas.style.transform = 'scale(1.2)';
-
-        const ctx = canvas.getContext('2d');
-        const W = canvas.width, H = canvas.height;
-
-        function makeBlob(cx, cy, baseR, jitter, points) {
-            const pts = [];
-            for (let i = 0; i < points; i++) {
-                const angle = (i / points) * Math.PI * 2 + (Math.random() - 0.5) * 0.7;
-                const r = baseR * (0.5 + Math.random() * 0.9) + (Math.random() - 0.5) * jitter;
-                pts.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r });
-            }
-            return pts;
-        }
-
-        function drawSmooth(ctx, pts) {
-            const n = pts.length;
-            ctx.beginPath();
-            for (let i = 0; i < n; i++) {
-                const p0 = pts[(i - 1 + n) % n];
-                const p1 = pts[i];
-                const p2 = pts[(i + 1) % n];
-                const p3 = pts[(i + 2) % n];
-                if (i === 0) ctx.moveTo(p1.x, p1.y);
-                const cp1x = p1.x + (p2.x - p0.x) / 5;
-                const cp1y = p1.y + (p2.y - p0.y) / 5;
-                const cp2x = p2.x - (p3.x - p1.x) / 5;
-                const cp2y = p2.y - (p3.y - p1.y) / 5;
-                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-            }
-            ctx.closePath();
-        }
-
-        const blobs = Array.from({ length: 4 }, (_, i) => {
-            const minR   = Math.min(W, H);
-            const points = 8 + Math.floor(Math.random() * 8);
-            const baseR  = minR * (0.25 + Math.random() * 0.35);
-            const cx     = W * (0.1 + Math.random() * 0.8);
-            const cy     = H * (0.1 + Math.random() * 0.8);
-            return {
-                cx, cy, baseR,
-                jitter: minR * (0.15 + Math.random() * 0.2),
-                points,
-                hue: (i / 4) * 360 + Math.random() * 60,
-                vx: (Math.random() - 0.5) * 0.4,
-                vy: (Math.random() - 0.5) * 0.3,
-                vh: 0.05 + Math.random() * 0.08,
-                pts: null, ptV: null,
-            };
-        });
-
-        blobs.forEach(b => {
-            b.pts = makeBlob(b.cx, b.cy, b.baseR, b.jitter, b.points);
-            b.ptV = b.pts.map(() => ({ x: (Math.random() - 0.5) * 0.5, y: (Math.random() - 0.5) * 0.5 }));
-        });
-
-        function draw() {
-            ctx.clearRect(0, 0, W, H);
-            blobs.forEach(b => {
-                b.cx += b.vx; b.cy += b.vy;
-                if (b.cx < -b.baseR)    b.vx =  Math.abs(b.vx);
-                if (b.cx > W + b.baseR) b.vx = -Math.abs(b.vx);
-                if (b.cy < -b.baseR)    b.vy =  Math.abs(b.vy);
-                if (b.cy > H + b.baseR) b.vy = -Math.abs(b.vy);
-
-                b.pts.forEach((p, i) => {
-                    p.x += b.ptV[i].x; p.y += b.ptV[i].y;
-                    const dx   = b.cx - p.x, dy = b.cy - p.y;
-                    const dist = Math.hypot(dx, dy) || 1;
-                    const pull = (dist - b.baseR) * 0.003;
-                    b.ptV[i].x += (dx / dist) * pull + (Math.random() - 0.5) * 0.06;
-                    b.ptV[i].y += (dy / dist) * pull + (Math.random() - 0.5) * 0.06;
-                    b.ptV[i].x *= 0.96; b.ptV[i].y *= 0.96;
-                });
-
-                b.hue = (b.hue + b.vh) % 360;
-                const grad = ctx.createRadialGradient(b.cx, b.cy, 0, b.cx, b.cy, b.baseR * 1.1);
-                grad.addColorStop(0,    `hsla(${b.hue}, 80%, 65%, 0.22)`);
-                grad.addColorStop(0.5,  `hsla(${(b.hue + 80) % 360}, 80%, 60%, 0.14)`);
-                grad.addColorStop(0.85, `hsla(${(b.hue + 160) % 360}, 70%, 55%, 0.06)`);
-                grad.addColorStop(1,    `hsla(${b.hue}, 60%, 45%, 0)`);
-
-                ctx.globalCompositeOperation = 'screen';
-                drawSmooth(ctx, b.pts);
-                ctx.fillStyle = grad;
-                ctx.fill();
-            });
-            requestAnimationFrame(draw);
-        }
-        draw();
-    }
-
-    requestAnimationFrame(() => {
-        document.querySelectorAll('.oil-canvas').forEach(c => initOilCanvas(c));
-    });
-
-    /* ── Параллакс UI-элементов ── */
+    /* ── Параллакс UI ── */
     const MAX_SHIFT = 18;
     const LERP_UI   = 0.06;
     let uiTX = 0, uiTY = 0, uiCX = 0, uiCY = 0;
