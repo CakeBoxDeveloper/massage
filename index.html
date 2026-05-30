@@ -483,7 +483,6 @@
 </main>
 
 <!-- ===== PANORAMA ===== -->
-<!-- ===== PANORAMA ===== -->
 <script>
 (function () {
     const canvas   = document.getElementById('panoramaCanvas');
@@ -505,27 +504,11 @@
     scene.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })));
 
     const LERP = 0.12;
-
-    // Целевой кватернион камеры
-    const qTarget = new THREE.Quaternion();
+    const qTarget  = new THREE.Quaternion();
     const qCurrent = new THREE.Quaternion();
 
-    // Поправка: телефон в портрете смотрит "вверх" по оси Y,
-    // нам нужно повернуть систему координат на -90° по X
-    // чтобы камера смотрела "вперёд"
-    const qScreen = new THREE.Quaternion();
-    qScreen.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
-
-    // Поправка ориентации экрана (landscape)
-    const qOrient = new THREE.Quaternion();
-
-    let gyroActive = false;
-    let gyroOffset = null; // кватернион "нейтрального" положения
-
     /* ── Десктоп: мышь ── */
-    const eulerMouse = new THREE.Euler(0, 0, 0, 'YXZ');
-    // Начальный угол — смотрим немного вниз
-    eulerMouse.x = 0.6;
+    const eulerMouse = new THREE.Euler(0.6, 0, 0, 'YXZ');
     qTarget.setFromEuler(eulerMouse);
     qCurrent.copy(qTarget);
 
@@ -540,55 +523,58 @@
         lastMX = e.clientX; lastMY = e.clientY;
     });
 
-    /* ── Мобильный: кватернион из deviceorientation ── */
-    // Алгоритм: alpha/beta/gamma → кватернион устройства в мировых координатах
-    // Источник: W3C DeviceOrientation spec + Three.js DeviceOrientationControls
-    function setQuaternionFromEulerDevice(q, alpha, beta, gamma) {
-        const _euler = new THREE.Euler();
-        _euler.set(
-            THREE.MathUtils.degToRad(beta),
-            THREE.MathUtils.degToRad(alpha),
-            THREE.MathUtils.degToRad(-gamma),
-            'YXZ'
+    /* ── Гироскоп ── */
+    let gyroActive = false;
+    let gyroOffset = null;
+
+    // Поправка экрана: телефон в портрете держат с Z вверх,
+    // нам нужно "повернуть мир" на -90° по X чтобы Z стал Y (вперёд)
+    const qFix = new THREE.Quaternion(- Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+
+    function getScreenAngle() {
+        return THREE.MathUtils.degToRad(
+            (screen.orientation && screen.orientation.angle != null)
+                ? screen.orientation.angle
+                : (window.orientation || 0)
         );
-        q.setFromEuler(_euler);
     }
 
-    function getScreenOrientationAngle() {
-        return (screen.orientation && screen.orientation.angle) ||
-               window.orientation || 0;
-    }
-
-    function onOrientation(e) {
+    function onDeviceOrientation(e) {
+        if (e.alpha == null) return;
         gyroActive = true;
 
-        const alpha = e.alpha || 0;
-        const beta  = e.beta  || 0;
-        const gamma = e.gamma || 0;
+        // Стандартный алгоритм Three.js DeviceOrientationControls
+        const zee   = new THREE.Vector3(0, 0, 1);
+        const euler = new THREE.Euler();
+        const q0    = new THREE.Quaternion();
 
-        // Кватернион ориентации устройства
-        const qDevice = new THREE.Quaternion();
-        setQuaternionFromEulerDevice(qDevice, alpha, beta, gamma);
+        euler.set(
+            THREE.MathUtils.degToRad(e.beta),
+            THREE.MathUtils.degToRad(e.alpha),
+            THREE.MathUtils.degToRad(-e.gamma),
+            'YXZ'
+        );
 
-        // Поправка на поворот экрана
-        const angle = THREE.MathUtils.degToRad(-getScreenOrientationAngle() / 2);
-        qOrient.setFromAxisAngle(new THREE.Vector3(0, 0, 1), angle);
+        const qDevice = new THREE.Quaternion().setFromEuler(euler);
+        qDevice.multiply(qFix);
 
-        // Итоговый кватернион устройства с поправками
-        const qFull = new THREE.Quaternion();
-        qFull.multiplyQuaternions(qDevice, qScreen);
-        qFull.multiplyQuaternions(qOrient, qFull);
+        // Поправка на поворот экрана (landscape)
+        const orient = getScreenAngle();
+        q0.setFromAxisAngle(zee, -orient);
+        qDevice.multiply(q0);
 
         // Первый вызов — запоминаем как "ноль"
         if (!gyroOffset) {
-            gyroOffset = qFull.clone().invert();
+            gyroOffset = qDevice.clone().invert();
         }
 
-        // Применяем оффсет — камера начинает с нейтральной позиции
-        qTarget.multiplyQuaternions(gyroOffset, qFull);
+        qTarget.copy(gyroOffset).premultiply(qDevice);
+        // Нет — правильно:
+        const tmp = new THREE.Quaternion().copy(gyroOffset);
+        qTarget.copy(qDevice).premultiply(tmp);
     }
 
-    // Сброс калибровки по двойному тапу
+    // Сброс по двойному тапу
     document.addEventListener('dblclick', () => { gyroOffset = null; });
     let lastTap = 0;
     document.addEventListener('touchend', () => {
@@ -603,10 +589,10 @@
             DeviceOrientationEvent.requestPermission()
                 .then(res => {
                     if (res === 'granted')
-                        window.addEventListener('deviceorientation', onOrientation, true);
+                        window.addEventListener('deviceorientation', onDeviceOrientation, true);
                 }).catch(() => {});
         } else {
-            window.addEventListener('deviceorientation', onOrientation, true);
+            window.addEventListener('deviceorientation', onDeviceOrientation, true);
         }
     }
 
@@ -619,18 +605,16 @@
         startGyro();
     }
 
-    /* ── Ресайз ── */
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        gyroOffset = null; // пересброс при смене ориентации
+        gyroOffset = null;
     });
 
-    /* ── Рендер ── */
     (function animate() {
         requestAnimationFrame(animate);
-        qCurrent.slerp(qTarget, LERP); // slerp плавнее чем lerp для кватернионов
+        qCurrent.slerp(qTarget, LERP);
         camera.quaternion.copy(qCurrent);
         renderer.render(scene, camera);
     })();
