@@ -53,51 +53,32 @@
             background-color: #0d0e12;
         }
 
-        /* ═══════════════════════════════════════
-           LIQUID GLASS — настоящий эффект iOS 26
-           ═══════════════════════════════════════ */
+        /* ═══════════════════════════
+           GLASS — без блюра, только контур
+           ═══════════════════════════ */
         .glass {
             position: relative;
-            /* Сильный blur + насыщенность — основа эффекта */
-            backdrop-filter: blur(40px) saturate(180%) brightness(1.1);
-            -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.1);
-            /* Почти прозрачный тинт */
-            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            background: rgba(255, 255, 255, 0.06);
             isolation: isolate;
             overflow: hidden;
         }
 
-        /* Слой 1 — внутренний свет (имитация преломления) */
-        .glass::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background:
-                radial-gradient(ellipse 120% 80% at 30% 0%,
-                    rgba(255,255,255,0.22) 0%,
-                    rgba(255,255,255,0.00) 60%),
-                radial-gradient(ellipse 80% 60% at 80% 100%,
-                    rgba(255,255,255,0.10) 0%,
-                    rgba(255,255,255,0.00) 70%);
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* Слой 2 — граница с преломлением (градиентный border) */
+        /* Градиентный контур — толстый, с преломлением */
         .glass::after {
             content: "";
             position: absolute;
             inset: 0;
             border-radius: inherit;
-            padding: 1px;
+            padding: 2px;
             background: linear-gradient(
                 135deg,
-                rgba(255,255,255,0.70) 0%,
-                rgba(255,255,255,0.30) 25%,
-                rgba(255,255,255,0.05) 50%,
-                rgba(0,0,0,0.05) 75%,
-                rgba(255,255,255,0.20) 100%
+                rgba(255,255,255,0.85) 0%,
+                rgba(255,255,255,0.40) 20%,
+                rgba(255,255,255,0.08) 45%,
+                rgba(0,0,0,0.05) 70%,
+                rgba(255,255,255,0.30) 100%
             );
             -webkit-mask:
                 linear-gradient(#fff 0 0) content-box,
@@ -108,43 +89,49 @@
             z-index: 2;
         }
 
-        /* Слой 3 — бегущий блик (shimmer) */
-        .glass-shimmer::before {
-            background:
-                radial-gradient(ellipse 120% 80% at 30% 0%,
-                    rgba(255,255,255,0.22) 0%,
-                    rgba(255,255,255,0.00) 60%),
-                radial-gradient(ellipse 80% 60% at 80% 100%,
-                    rgba(255,255,255,0.10) 0%,
-                    rgba(255,255,255,0.00) 70%),
-                linear-gradient(
-                    105deg,
-                    rgba(255,255,255,0.00) 0%,
-                    rgba(255,255,255,0.00) 35%,
-                    rgba(255,255,255,0.55) 50%,
-                    rgba(255,255,255,0.00) 65%,
-                    rgba(255,255,255,0.00) 100%
-                );
-            background-size: 100% 100%, 100% 100%, 300% 100%;
-            background-position: 0 0, 0 0, 150% 0;
+        /* Шиммер — ТОЛЬКО по контуру (через padding + mask) */
+        .glass::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 2px;
+            background: linear-gradient(
+                105deg,
+                rgba(255,255,255,0.00) 0%,
+                rgba(255,255,255,0.00) 30%,
+                rgba(255,255,255,0.90) 50%,
+                rgba(255,255,255,0.00) 70%,
+                rgba(255,255,255,0.00) 100%
+            );
+            background-size: 300% 100%;
+            background-position: 150% 0;
+            -webkit-mask:
+                linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            z-index: 3;
             animation: shimmer 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         @keyframes shimmer {
-            0%   { background-position: 0 0, 0 0, 150% 0; }
-            100% { background-position: 0 0, 0 0, -150% 0; }
+            0%   { background-position: 150% 0; }
+            100% { background-position: -150% 0; }
         }
 
-        /* ── Инверсия текста относительно фона ── */
+        /* Разные задержки для разных элементов */
+        .header::before       { animation-delay: 0s; }
+        .info-card::before    { animation-delay: -3s; }
+        .btn-main::before     { animation-delay: -6s; }
+
+        /* ── Инверсия текста ── */
         .inv {
             mix-blend-mode: difference;
             color: #ffffff;
-        }
-
-        /* ── Инверсия SVG/img иконок ── */
-        .inv-icon {
-            mix-blend-mode: difference;
-            filter: brightness(0) invert(1);
+            position: relative;
+            z-index: 4;
         }
 
         /* ═══════ HEADER ═══════ */
@@ -185,7 +172,6 @@
             border-radius: 28px;
             overflow: hidden;
             transition: filter 0.3s ease;
-            /* Фиксированная высота — не меняется при переключении вкладок */
             height: 300px;
             flex-shrink: 0;
             display: flex;
@@ -215,7 +201,7 @@
             pointer-events: none;
         }
 
-        /* ═══════ СПИСОК МАССАЖЕЙ ═══════ */
+        /* ═══════ СПИСОК ═══════ */
         .massage-item {
             border-bottom: 1px solid rgba(255,255,255,0.10);
             cursor: pointer;
@@ -248,8 +234,10 @@
             justify-content: center;
             border: 1px solid rgba(255,255,255,0.22);
             border-radius: 50%;
-            font-size: 1rem;
+            font-size: 0.95rem;
+            /* сброс line-height чтобы плюс был по центру */
             line-height: 1;
+            padding-bottom: 1px;
             mix-blend-mode: difference;
             color: #ffffff;
             position: relative;
@@ -284,7 +272,6 @@
             background: none;
             border: 1px solid rgba(255,255,255,0.20);
             border-radius: 12px;
-            color: rgba(255,255,255,0.6);
             font-size: 0.72rem;
             letter-spacing: 1.4px;
             text-transform: uppercase;
@@ -292,21 +279,22 @@
             cursor: pointer;
             white-space: nowrap;
             flex-shrink: 0;
-            transition: border-color 0.2s, color 0.2s;
+            transition: border-color 0.2s;
             position: relative;
             z-index: 4;
             mix-blend-mode: difference;
+            color: #ffffff;
         }
-        .btn-back:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+        .btn-back:hover { border-color: rgba(255,255,255,0.5); }
 
         .detail-desc {
             font-size: 0.88rem;
             line-height: 1.72;
-            mix-blend-mode: difference;
-            color: #ffffff;
             flex: 1;
             position: relative;
             z-index: 4;
+            mix-blend-mode: difference;
+            color: #ffffff;
         }
 
         .detail-meta-box {
@@ -326,21 +314,27 @@
             letter-spacing: 0.2px;
             mix-blend-mode: difference;
             color: #ffffff;
+            position: relative;
+            z-index: 4;
         }
         .meta-sep {
             font-size: 0.88rem;
             mix-blend-mode: difference;
             color: #ffffff;
             opacity: 0.4;
+            position: relative;
+            z-index: 4;
         }
 
-        /* ═══════ SPACER ═══════ */
+        /* ═══════ SPACER — толкает кнопку вверх ═══════ */
         .spacer { flex: 1; }
 
         /* ═══════ КНОПКА ЗАПИСИ ═══════ */
         .contacts-zone {
             width: 100%;
             flex-shrink: 0;
+            /* отступ снизу меньше — кнопка выше */
+            padding-bottom: 0;
         }
         .btn-wrap {
             position: relative;
@@ -357,18 +351,16 @@
             border: none;
             cursor: pointer;
             border-radius: 18px;
-            font-size: 0.82rem;
-            font-weight: 400;
-            letter-spacing: 1.8px;
-            text-transform: uppercase;
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 10;
             transition: width 0.48s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
             overflow: hidden;
+            /* шиммер только по контуру — не поверх текста */
         }
         .btn-main.collapsed { width: 56px; opacity: 0; pointer-events: none; }
+
         .btn-main-label {
             pointer-events: none;
             position: relative;
@@ -378,7 +370,9 @@
             mix-blend-mode: difference;
             color: #ffffff;
             font-size: 0.82rem;
+            font-weight: 400;
             letter-spacing: 1.8px;
+            text-transform: uppercase;
         }
         .btn-main.collapsed .btn-main-label { opacity: 0; }
 
@@ -416,6 +410,13 @@
         .social-row.visible .soc-btn:nth-child(1) { transition-delay: 0.14s; }
         .social-row.visible .soc-btn:nth-child(5) { transition-delay: 0.14s; }
 
+        /* Шиммер на соцсетях — только контур, разные задержки */
+        .soc-btn:nth-child(1)::before { animation-delay: -1s; }
+        .soc-btn:nth-child(2)::before { animation-delay: -3s; }
+        .soc-btn:nth-child(3)::before { animation-delay: -5s; }
+        .soc-btn:nth-child(4)::before { animation-delay: -7s; }
+        .soc-btn:nth-child(5)::before { animation-delay: -9s; }
+
         .soc-btn img {
             width: 22px;
             height: 22px;
@@ -436,7 +437,7 @@
 <canvas id="panoramaCanvas"></canvas>
 <div id="edgeBlur"></div>
 
-<header class="header glass glass-shimmer">
+<header class="header glass">
     <h1>Час для себе</h1>
 </header>
 
@@ -445,7 +446,6 @@
     <section class="info-card glass" id="main-card">
         <div class="card-switcher">
 
-            <!-- СПИСОК -->
             <div class="view-panel" id="listView">
                 <div class="massage-list">
                     <div class="massage-item"
@@ -499,7 +499,6 @@
                 </div>
             </div>
 
-            <!-- ДЕТАЛЬНЫЙ ВИД -->
             <div class="view-panel hidden" id="detailView">
                 <div class="detail-view">
                     <div class="detail-header">
@@ -518,11 +517,12 @@
         </div>
     </section>
 
+    <!-- Spacer: карточка вверху, кнопка внизу -->
     <div class="spacer"></div>
 
     <div class="contacts-zone">
         <div class="btn-wrap">
-            <button class="btn-main glass glass-shimmer" id="btnMain">
+            <button class="btn-main glass" id="btnMain">
                 <span class="btn-main-label">Записатися на масаж</span>
             </button>
             <div class="social-row" id="socialRow">
@@ -575,22 +575,19 @@
     texture.colorSpace = THREE.SRGBColorSpace;
     scene.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })));
 
-    const LERP = 0.06;
+    const LERP        = 0.06;
+    const DRIFT_SPEED = 0.0003;
+
     const qTarget  = new THREE.Quaternion();
     const qCurrent = new THREE.Quaternion();
-
-    // Начальный угол — чуть вниз
     const eulerDrift = new THREE.Euler(0.4, 0, 0, 'YXZ');
-    const DRIFT_SPEED = 0.0003; // скорость авторотации по горизонтали
+
+    qTarget.setFromEuler(eulerDrift);
+    qCurrent.copy(qTarget);
 
     let gyroActive = false;
     let gyroOffset = null;
 
-    // Инициализируем стартовый qTarget
-    qTarget.setFromEuler(eulerDrift);
-    qCurrent.copy(qTarget);
-
-    /* ── Гироскоп (мобильный) ── */
     function onDeviceOrientation(e) {
         if (e.alpha == null || e.beta == null || e.gamma == null) return;
         gyroActive = true;
@@ -653,13 +650,10 @@
         gyroOffset = null;
     });
 
-    /* ── Рендер ── */
     (function animate() {
         requestAnimationFrame(animate);
-
         if (video.readyState >= video.HAVE_CURRENT_DATA) texture.needsUpdate = true;
 
-        // На десктопе без гироскопа — медленная авторотация по горизонтали
         if (!gyroActive) {
             eulerDrift.y += DRIFT_SPEED;
             qTarget.setFromEuler(eulerDrift);
@@ -717,7 +711,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    /* ── Кнопка записи ── */
     const btnMain   = document.getElementById('btnMain');
     const socialRow = document.getElementById('socialRow');
     let expanded = false;
