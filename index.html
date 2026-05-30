@@ -539,40 +539,46 @@
         );
     }
 
-    function onDeviceOrientation(e) {
-        if (e.alpha == null) return;
-        gyroActive = true;
+    // Убрать qFix — он больше не нужен
 
-        // Стандартный алгоритм Three.js DeviceOrientationControls
-        const zee   = new THREE.Vector3(0, 0, 1);
-        const euler = new THREE.Euler();
-        const q0    = new THREE.Quaternion();
+function onDeviceOrientation(e) {
+    if (e.alpha == null || e.beta == null || e.gamma == null) return;
+    gyroActive = true;
 
-        euler.set(
-            THREE.MathUtils.degToRad(e.beta),
-            THREE.MathUtils.degToRad(e.alpha),
-            THREE.MathUtils.degToRad(-e.gamma),
-            'YXZ'
-        );
+    const alpha = THREE.MathUtils.degToRad(e.alpha); // вращение вокруг Z (компас)
+    const beta  = THREE.MathUtils.degToRad(e.beta);  // вращение вокруг X (наклон вперёд/назад)
+    const gamma = THREE.MathUtils.degToRad(e.gamma); // вращение вокруг Y (наклон влево/вправо)
 
-        const qDevice = new THREE.Quaternion().setFromEuler(euler);
-        qDevice.multiply(qFix);
+    // Строим кватернион точно по спецификации W3C DeviceOrientation:
+    // порядок применения: Z(alpha) → X(beta) → Y(gamma)
+    const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), alpha);
+    const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), beta);
+    const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), gamma);
 
-        // Поправка на поворот экрана (landscape)
-        const orient = getScreenAngle();
-        q0.setFromAxisAngle(zee, -orient);
-        qDevice.multiply(q0);
+    const qDevice = new THREE.Quaternion();
+    qDevice.multiply(qZ).multiply(qX).multiply(qY);
 
-        // Первый вызов — запоминаем как "ноль"
-        if (!gyroOffset) {
-            gyroOffset = qDevice.clone().invert();
-        }
+    // Поправка: телефон в портрете — экран смотрит в потолок (Z=0,Y=-1 вверх)
+    // Нужно повернуть так чтобы камера смотрела вперёд (вдоль -Z в мировых координатах Three.js)
+    // Поправка = -90° по X
+    const qWorld = new THREE.Quaternion();
+    qWorld.setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI / 2);
+    qDevice.multiply(qWorld);
 
-        qTarget.copy(gyroOffset).premultiply(qDevice);
-        // Нет — правильно:
-        const tmp = new THREE.Quaternion().copy(gyroOffset);
-        qTarget.copy(qDevice).premultiply(tmp);
+    // Поправка поворота экрана (landscape left/right)
+    const screenAngle = getScreenAngle();
+    if (screenAngle !== 0) {
+        const qScreen = new THREE.Quaternion();
+        qScreen.setFromAxisAngle(new THREE.Vector3(0,0,1), -screenAngle);
+        qDevice.premultiply(qScreen);
     }
+
+    if (!gyroOffset) {
+        gyroOffset = qDevice.clone().invert();
+    }
+
+    qTarget.copy(qDevice).premultiply(gyroOffset);
+}
 
     // Сброс по двойному тапу
     document.addEventListener('dblclick', () => { gyroOffset = null; });
