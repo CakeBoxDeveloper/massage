@@ -43,7 +43,6 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            color: #ffffff;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -51,21 +50,23 @@
             padding: 12px 20px 20px 20px;
             overflow: hidden;
             background-color: #0d0e12;
+            /* mix-blend-mode работает только если нет isolation на родителе */
         }
 
         /* ═══════════════════════════
-           GLASS — без блюра, только контур
+           GLASS
+           isolation убран — иначе блокирует mix-blend-mode дочерних элементов
            ═══════════════════════════ */
         .glass {
             position: relative;
             backdrop-filter: none;
             -webkit-backdrop-filter: none;
             background: rgba(255, 255, 255, 0.06);
-            isolation: isolate;
+            /* isolation: isolate; — УБРАНО, это ломало инверсию */
             overflow: hidden;
         }
 
-        /* Градиентный контур — толстый, с преломлением */
+        /* Градиентный контур */
         .glass::after {
             content: "";
             position: absolute;
@@ -86,10 +87,10 @@
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             pointer-events: none;
-            z-index: 2;
+            z-index: 10;
         }
 
-        /* Шиммер — ТОЛЬКО по контуру (через padding + mask) */
+        /* Шиммер — только по контуру */
         .glass::before {
             content: "";
             position: absolute;
@@ -112,7 +113,7 @@
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             pointer-events: none;
-            z-index: 3;
+            z-index: 11;
             animation: shimmer 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
@@ -121,17 +122,45 @@
             100% { background-position: -150% 0; }
         }
 
-        /* Разные задержки для разных элементов */
-        .header::before       { animation-delay: 0s; }
-        .info-card::before    { animation-delay: -3s; }
-        .btn-main::before     { animation-delay: -6s; }
+        .header::before    { animation-delay: 0s; }
+        .info-card::before { animation-delay: -3s; }
+        .btn-main::before  { animation-delay: -6s; }
+        .soc-btn:nth-child(1)::before { animation-delay: -1s; }
+        .soc-btn:nth-child(2)::before { animation-delay: -3s; }
+        .soc-btn:nth-child(3)::before { animation-delay: -5s; }
+        .soc-btn:nth-child(4)::before { animation-delay: -7s; }
+        .soc-btn:nth-child(5)::before { animation-delay: -9s; }
 
-        /* ── Инверсия текста ── */
-        .inv {
+        /* ═══════════════════════════
+           ИНВЕРСИЯ
+           Вместо mix-blend-mode на каждом элементе —
+           вешаем на весь UI-слой поверх панорамы.
+           Белый текст на белом фоне = чёрный. На тёмном = белый.
+           ═══════════════════════════ */
+        #ui-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
             mix-blend-mode: difference;
-            color: #ffffff;
+            pointer-events: none;
+        }
+
+        /* Всё кликабельное — поверх ui-layer, но визуально под инверсией */
+        header, main {
             position: relative;
-            z-index: 4;
+            z-index: 2;
+        }
+
+        /* Текст белый — после difference на тёмном будет белым, на светлом чёрным */
+        h1, .massage-name, .massage-plus,
+        .detail-title, .detail-desc, .btn-back,
+        .meta-text, .meta-sep, .btn-main-label {
+            color: #ffffff;
+        }
+
+        /* SVG иконки — белые, difference сделает инверсию */
+        .soc-btn img {
+            filter: brightness(0) invert(1);
         }
 
         /* ═══════ HEADER ═══════ */
@@ -148,10 +177,6 @@
             font-weight: 500;
             letter-spacing: 2.5px;
             text-transform: uppercase;
-            position: relative;
-            z-index: 4;
-            mix-blend-mode: difference;
-            color: #ffffff;
         }
 
         /* ═══════ LAYOUT ═══════ */
@@ -166,7 +191,7 @@
             gap: 12px;
         }
 
-        /* ═══════ КАРТОЧКА — фиксированная высота ═══════ */
+        /* ═══════ КАРТОЧКА ═══════ */
         .info-card {
             padding: 20px;
             border-radius: 28px;
@@ -192,7 +217,6 @@
             scrollbar-width: none;
             transition: opacity 0.3s ease, visibility 0.3s ease;
             touch-action: pan-y;
-            z-index: 2;
         }
         .view-panel::-webkit-scrollbar { display: none; }
         .view-panel.hidden {
@@ -203,7 +227,7 @@
 
         /* ═══════ СПИСОК ═══════ */
         .massage-item {
-            border-bottom: 1px solid rgba(255,255,255,0.10);
+            border-bottom: 1px solid rgba(255,255,255,0.15);
             cursor: pointer;
             padding: 11px 4px;
             display: flex;
@@ -211,6 +235,7 @@
             align-items: center;
             gap: 8px;
             transition: opacity 0.18s ease;
+            pointer-events: auto;
         }
         .massage-item:last-child { border-bottom: none; }
         .massage-item:active { opacity: 0.6; }
@@ -219,10 +244,6 @@
             font-size: 0.95rem;
             font-weight: 500;
             letter-spacing: 0.2px;
-            mix-blend-mode: difference;
-            color: #ffffff;
-            position: relative;
-            z-index: 4;
         }
 
         .massage-plus {
@@ -232,16 +253,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(255,255,255,0.22);
+            border: 1px solid rgba(255,255,255,0.30);
             border-radius: 50%;
             font-size: 0.95rem;
-            /* сброс line-height чтобы плюс был по центру */
             line-height: 1;
             padding-bottom: 1px;
-            mix-blend-mode: difference;
-            color: #ffffff;
-            position: relative;
-            z-index: 4;
         }
 
         /* ═══════ ДЕТАЛЬНЫЙ ВИД ═══════ */
@@ -263,14 +279,10 @@
             font-weight: 600;
             letter-spacing: 0.3px;
             flex: 1;
-            mix-blend-mode: difference;
-            color: #ffffff;
-            position: relative;
-            z-index: 4;
         }
         .btn-back {
             background: none;
-            border: 1px solid rgba(255,255,255,0.20);
+            border: 1px solid rgba(255,255,255,0.25);
             border-radius: 12px;
             font-size: 0.72rem;
             letter-spacing: 1.4px;
@@ -279,62 +291,36 @@
             cursor: pointer;
             white-space: nowrap;
             flex-shrink: 0;
-            transition: border-color 0.2s;
-            position: relative;
-            z-index: 4;
-            mix-blend-mode: difference;
-            color: #ffffff;
+            pointer-events: auto;
         }
-        .btn-back:hover { border-color: rgba(255,255,255,0.5); }
 
         .detail-desc {
             font-size: 0.88rem;
             line-height: 1.72;
             flex: 1;
-            position: relative;
-            z-index: 4;
-            mix-blend-mode: difference;
-            color: #ffffff;
+            opacity: 0.9;
         }
 
         .detail-meta-box {
             margin-top: 12px;
-            border: 1px solid rgba(255,255,255,0.16);
+            border: 1px solid rgba(255,255,255,0.20);
             border-radius: 16px;
             padding: 12px 18px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            position: relative;
-            z-index: 4;
         }
-        .meta-text {
-            font-size: 0.88rem;
-            letter-spacing: 0.2px;
-            mix-blend-mode: difference;
-            color: #ffffff;
-            position: relative;
-            z-index: 4;
-        }
-        .meta-sep {
-            font-size: 0.88rem;
-            mix-blend-mode: difference;
-            color: #ffffff;
-            opacity: 0.4;
-            position: relative;
-            z-index: 4;
-        }
+        .meta-text { font-size: 0.88rem; letter-spacing: 0.2px; }
+        .meta-sep  { font-size: 0.88rem; opacity: 0.5; }
 
-        /* ═══════ SPACER — толкает кнопку вверх ═══════ */
+        /* ═══════ SPACER ═══════ */
         .spacer { flex: 1; }
 
         /* ═══════ КНОПКА ЗАПИСИ ═══════ */
         .contacts-zone {
             width: 100%;
             flex-shrink: 0;
-            /* отступ снизу меньше — кнопка выше */
-            padding-bottom: 0;
         }
         .btn-wrap {
             position: relative;
@@ -357,18 +343,14 @@
             z-index: 10;
             transition: width 0.48s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
             overflow: hidden;
-            /* шиммер только по контуру — не поверх текста */
+            pointer-events: auto;
         }
         .btn-main.collapsed { width: 56px; opacity: 0; pointer-events: none; }
 
         .btn-main-label {
             pointer-events: none;
-            position: relative;
-            z-index: 4;
             white-space: nowrap;
             transition: opacity 0.2s ease;
-            mix-blend-mode: difference;
-            color: #ffffff;
             font-size: 0.82rem;
             font-weight: 400;
             letter-spacing: 1.8px;
@@ -401,6 +383,7 @@
             transform-origin: center;
             transition: transform 0.44s cubic-bezier(0.34,1.3,0.64,1), opacity 0.3s ease;
             overflow: hidden;
+            pointer-events: auto;
         }
 
         .social-row.visible .soc-btn { transform: scaleX(1); opacity: 1; }
@@ -410,22 +393,10 @@
         .social-row.visible .soc-btn:nth-child(1) { transition-delay: 0.14s; }
         .social-row.visible .soc-btn:nth-child(5) { transition-delay: 0.14s; }
 
-        /* Шиммер на соцсетях — только контур, разные задержки */
-        .soc-btn:nth-child(1)::before { animation-delay: -1s; }
-        .soc-btn:nth-child(2)::before { animation-delay: -3s; }
-        .soc-btn:nth-child(3)::before { animation-delay: -5s; }
-        .soc-btn:nth-child(4)::before { animation-delay: -7s; }
-        .soc-btn:nth-child(5)::before { animation-delay: -9s; }
-
         .soc-btn img {
             width: 22px;
             height: 22px;
             object-fit: contain;
-            position: relative;
-            z-index: 4;
-            /* инверсия иконок */
-            mix-blend-mode: difference;
-            filter: brightness(0) invert(1);
             transition: transform 0.2s;
         }
         .soc-btn:hover img { transform: scale(1.15); }
@@ -436,6 +407,10 @@
 
 <canvas id="panoramaCanvas"></canvas>
 <div id="edgeBlur"></div>
+
+<!-- Слой инверсии — белый div с mix-blend-mode:difference поверх всего -->
+<!-- Он невидим сам по себе, но инвертирует всё что под ним -->
+<div id="ui-layer"></div>
 
 <header class="header glass">
     <h1>Час для себе</h1>
@@ -517,7 +492,6 @@
         </div>
     </section>
 
-    <!-- Spacer: карточка вверху, кнопка внизу -->
     <div class="spacer"></div>
 
     <div class="contacts-zone">
@@ -578,8 +552,8 @@
     const LERP        = 0.06;
     const DRIFT_SPEED = 0.0003;
 
-    const qTarget  = new THREE.Quaternion();
-    const qCurrent = new THREE.Quaternion();
+    const qTarget    = new THREE.Quaternion();
+    const qCurrent   = new THREE.Quaternion();
     const eulerDrift = new THREE.Euler(0.4, 0, 0, 'YXZ');
 
     qTarget.setFromEuler(eulerDrift);
@@ -653,12 +627,10 @@
     (function animate() {
         requestAnimationFrame(animate);
         if (video.readyState >= video.HAVE_CURRENT_DATA) texture.needsUpdate = true;
-
         if (!gyroActive) {
             eulerDrift.y += DRIFT_SPEED;
             qTarget.setFromEuler(eulerDrift);
         }
-
         qCurrent.slerp(qTarget, LERP);
         camera.quaternion.copy(qCurrent);
         renderer.render(scene, camera);
