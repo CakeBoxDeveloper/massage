@@ -483,6 +483,7 @@
 </main>
 
 <!-- ===== PANORAMA ===== -->
+<!-- ===== PANORAMA ===== -->
 <script>
 (function () {
     const canvas   = document.getElementById('panoramaCanvas');
@@ -503,72 +504,102 @@
     texture.colorSpace = THREE.SRGBColorSpace;
     scene.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })));
 
-    // Начальный угол — смотрим вниз (на пол сцены)
-    const INIT_PITCH = 0.72;
-    const MAX_PITCH  = 1.0;
-    const LERP       = 0.07;
+    const LERP = 0.12;
 
-    let yaw   = 0,         pitch   = INIT_PITCH;
-    let tYaw  = 0,         tPitch  = INIT_PITCH;
+    // Целевой кватернион камеры
+    const qTarget = new THREE.Quaternion();
+    const qCurrent = new THREE.Quaternion();
 
-    /* ── ДЕСКТОП: мышь ── */
+    // Поправка: телефон в портрете смотрит "вверх" по оси Y,
+    // нам нужно повернуть систему координат на -90° по X
+    // чтобы камера смотрела "вперёд"
+    const qScreen = new THREE.Quaternion();
+    qScreen.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+
+    // Поправка ориентации экрана (landscape)
+    const qOrient = new THREE.Quaternion();
+
+    let gyroActive = false;
+    let gyroOffset = null; // кватернион "нейтрального" положения
+
+    /* ── Десктоп: мышь ── */
+    const eulerMouse = new THREE.Euler(0, 0, 0, 'YXZ');
+    // Начальный угол — смотрим немного вниз
+    eulerMouse.x = 0.6;
+    qTarget.setFromEuler(eulerMouse);
+    qCurrent.copy(qTarget);
+
     let lastMX = null, lastMY = null;
     document.addEventListener('mousemove', (e) => {
+        if (gyroActive) return;
         if (lastMX === null) { lastMX = e.clientX; lastMY = e.clientY; return; }
-        tYaw   -= (e.clientX - lastMX) * 0.003;
-        tPitch -= (e.clientY - lastMY) * 0.002;
-        tPitch  = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, tPitch));
-        lastMX  = e.clientX; lastMY = e.clientY;
+        eulerMouse.y -= (e.clientX - lastMX) * 0.003;
+        eulerMouse.x -= (e.clientY - lastMY) * 0.002;
+        eulerMouse.x  = Math.max(-1.0, Math.min(1.0, eulerMouse.x));
+        qTarget.setFromEuler(eulerMouse);
+        lastMX = e.clientX; lastMY = e.clientY;
     });
 
-    /* ── МОБИЛЬНЫЙ: deviceorientation с калибровкой ── */
-    // Логика: запоминаем начальное положение телефона как "ноль"
-    // и двигаем камеру на дельту от него.
-    // Это работает независимо от того как пользователь держит телефон.
+    /* ── Мобильный: кватернион из deviceorientation ── */
+    // Алгоритм: alpha/beta/gamma → кватернион устройства в мировых координатах
+    // Источник: W3C DeviceOrientation spec + Three.js DeviceOrientationControls
+    function setQuaternionFromEulerDevice(q, alpha, beta, gamma) {
+        const _euler = new THREE.Euler();
+        _euler.set(
+            THREE.MathUtils.degToRad(beta),
+            THREE.MathUtils.degToRad(alpha),
+            THREE.MathUtils.degToRad(-gamma),
+            'YXZ'
+        );
+        q.setFromEuler(_euler);
+    }
 
-    let baseAlpha = null, baseBeta = null, baseGamma = null;
-    let calibrated = false;
-    const GYRO_SCALE_H = 1.8;  // чувствительность горизонталь
-    const GYRO_SCALE_V = 1.0;  // чувствительность вертикаль
+    function getScreenOrientationAngle() {
+        return (screen.orientation && screen.orientation.angle) ||
+               window.orientation || 0;
+    }
 
     function onOrientation(e) {
-        const alpha = e.alpha || 0; // вращение вокруг Z (0–360, как компас)
-        const beta  = e.beta  || 0; // наклон вперёд/назад (-180..180)
-        const gamma = e.gamma || 0; // наклон влево/вправо (-90..90)
+        gyroActive = true;
 
-        // Первый вызов — запоминаем как "нейтральное" положение
-        if (!calibrated) {
-            baseAlpha = alpha;
-            baseBeta  = beta;
-            baseGamma = gamma;
-            calibrated = true;
-            return;
+        const alpha = e.alpha || 0;
+        const beta  = e.beta  || 0;
+        const gamma = e.gamma || 0;
+
+        // Кватернион ориентации устройства
+        const qDevice = new THREE.Quaternion();
+        setQuaternionFromEulerDevice(qDevice, alpha, beta, gamma);
+
+        // Поправка на поворот экрана
+        const angle = THREE.MathUtils.degToRad(-getScreenOrientationAngle() / 2);
+        qOrient.setFromAxisAngle(new THREE.Vector3(0, 0, 1), angle);
+
+        // Итоговый кватернион устройства с поправками
+        const qFull = new THREE.Quaternion();
+        qFull.multiplyQuaternions(qDevice, qScreen);
+        qFull.multiplyQuaternions(qOrient, qFull);
+
+        // Первый вызов — запоминаем как "ноль"
+        if (!gyroOffset) {
+            gyroOffset = qFull.clone().invert();
         }
 
-        // Дельта по горизонтали — используем gamma (поворот кисти)
-        // В портретном режиме поворот телефона влево/вправо = gamma
-        let dGamma = gamma - baseGamma;
-
-        // Дельта по вертикали — используем beta (наклон к себе/от себя)
-        let dBeta = beta - baseBeta;
-
-        // Нормализуем скачки при переходе через ±180
-        if (dGamma >  90) dGamma -= 180;
-        if (dGamma < -90) dGamma += 180;
-        if (dBeta  >  90) dBeta  -= 180;
-        if (dBeta  < -90) dBeta  += 180;
-
-        const toRad = Math.PI / 180;
-
-        tYaw   = -dGamma * toRad * GYRO_SCALE_H;
-        tPitch = INIT_PITCH + dBeta * toRad * GYRO_SCALE_V;
-        tPitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, tPitch));
+        // Применяем оффсет — камера начинает с нейтральной позиции
+        qTarget.multiplyQuaternions(gyroOffset, qFull);
     }
+
+    // Сброс калибровки по двойному тапу
+    document.addEventListener('dblclick', () => { gyroOffset = null; });
+    let lastTap = 0;
+    document.addEventListener('touchend', () => {
+        const now = Date.now();
+        if (now - lastTap < 300) gyroOffset = null;
+        lastTap = now;
+    });
 
     function startGyro() {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
-            // iOS 13+
             DeviceOrientationEvent.requestPermission()
                 .then(res => {
                     if (res === 'granted')
@@ -579,7 +610,6 @@
         }
     }
 
-    // iOS — ждём касания, Android — сразу
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         document.addEventListener('touchstart', function ask() {
             startGyro();
@@ -589,33 +619,19 @@
         startGyro();
     }
 
-    // Кнопка пересброса калибровки по двойному тапу
-    document.addEventListener('dblclick', () => { calibrated = false; });
-    document.addEventListener('touchend', (function() {
-        let last = 0;
-        return () => {
-            const now = Date.now();
-            if (now - last < 300) calibrated = false;
-            last = now;
-        };
-    })());
-
     /* ── Ресайз ── */
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        gyroOffset = null; // пересброс при смене ориентации
     });
 
     /* ── Рендер ── */
-    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
-
     (function animate() {
         requestAnimationFrame(animate);
-        yaw   += (tYaw   - yaw)   * LERP;
-        pitch += (tPitch - pitch) * LERP;
-        euler.set(pitch, yaw, 0);
-        camera.quaternion.setFromEuler(euler);
+        qCurrent.slerp(qTarget, LERP); // slerp плавнее чем lerp для кватернионов
+        camera.quaternion.copy(qCurrent);
         renderer.render(scene, camera);
     })();
 })();
