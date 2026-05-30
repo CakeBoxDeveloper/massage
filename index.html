@@ -553,17 +553,19 @@ function onDeviceOrientation(e) {
     const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), beta);
     const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), gamma);
 
-    // Устройство: Z→X→Y (W3C spec)
     const qDevice = new THREE.Quaternion()
         .multiply(qZ)
         .multiply(qX)
         .multiply(qY);
 
-    // Поправка мирового пространства Three.js:
-    // применяем ПЕРЕД устройством, а не после
     const qWorld = new THREE.Quaternion()
         .setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
     qDevice.premultiply(qWorld);
+
+    // Убираем крен — горизонт всегда прямой
+    const euler = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
+    euler.z = 0;
+    qDevice.setFromEuler(euler);
 
     if (!gyroOffset) {
         gyroOffset = qDevice.clone().invert();
@@ -571,7 +573,6 @@ function onDeviceOrientation(e) {
 
     qTarget.copy(qDevice).premultiply(gyroOffset);
 }
-
 
     
 
