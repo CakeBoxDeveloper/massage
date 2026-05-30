@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Час для себе — Студія масажу</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -14,7 +14,20 @@
         }
     </style>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html, body {
+            touch-action: none;
+            overscroll-behavior: none;
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -124,6 +137,7 @@
             overflow-y: auto;
             scrollbar-width: none;
             transition: opacity 0.3s ease;
+            touch-action: pan-y;
         }
         .view-panel::-webkit-scrollbar { display: none; }
         .view-panel.hidden {
@@ -360,7 +374,6 @@
 
         <div class="card-switcher">
 
-            <!-- СПИСОК -->
             <div class="view-panel" id="listView">
                 <div class="massage-list">
                     <div class="massage-item"
@@ -414,7 +427,6 @@
                 </div>
             </div>
 
-            <!-- ДЕТАЛЬНЫЙ ВИД -->
             <div class="view-panel hidden" id="detailView">
                 <div class="detail-view">
                     <div class="detail-header">
@@ -479,7 +491,7 @@
 
 </main>
 
-<!-- ===== PANORAMA (Three.js) ===== -->
+<!-- ===== PANORAMA ===== -->
 <script>
 (function () {
     const canvas   = document.getElementById('panoramaCanvas');
@@ -499,136 +511,113 @@
     );
     texture.colorSpace = THREE.SRGBColorSpace;
 
-    const material = new THREE.MeshBasicMaterial({ map: texture });
-    scene.add(new THREE.Mesh(geometry, material));
+    scene.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })));
 
-    const LERP = 0.08;
-
-    // Текущие углы камеры (радианы)
-    let yaw   = 0;   // горизонталь
-    let pitch = 0;   // вертикаль
-    let targetYaw   = 0;
-    let targetPitch = 0;
-
+    const LERP      = 0.08;
     const MAX_PITCH = 0.5;
 
-    /* ─── МЫШЬ (десктоп) ─── */
-    let gyroActive = false;
-    let lastMouseX = null;
-    let lastMouseY = null;
+    let yaw   = 0, pitch   = 0;
+    let targetYaw = 0, targetPitch = 0;
+    let gyroActive  = false;
+    let lastMouseX  = null, lastMouseY = null;
+    let lastTime    = null;
 
+    /* ── Мышь ── */
     document.addEventListener('mousemove', (e) => {
         if (gyroActive) return;
         if (lastMouseX === null) { lastMouseX = e.clientX; lastMouseY = e.clientY; return; }
-
-        const dx = e.clientX - lastMouseX;
-        const dy = e.clientY - lastMouseY;
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
-
-        targetYaw   -= dx * 0.003;
-        targetPitch -= dy * 0.002;
+        targetYaw   -= (e.clientX - lastMouseX) * 0.003;
+        targetPitch -= (e.clientY - lastMouseY) * 0.002;
         targetPitch  = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
+        lastMouseX = e.clientX; lastMouseY = e.clientY;
     });
 
-    /* ─── ГИРОСКОП (мобильный) ─── */
-    // Используем DeviceMotionEvent + интегрируем угловую скорость —
-    // это даёт плавное «крути телефон → крутится картинка» как на Kuula
-
-    let lastTime = null;
-
+    /* ── Гироскоп ── */
     function onMotion(e) {
         gyroActive = true;
-
         const rate = e.rotationRate;
         if (!rate) return;
 
         const now = e.timeStamp || performance.now();
         if (lastTime === null) { lastTime = now; return; }
-
-        const dt = (now - lastTime) / 1000; // секунды
+        const dt = (now - lastTime) / 1000;
         lastTime = now;
 
-        // rotationRate.alpha — вокруг Z (портрет: поворот по горизонту)
-        // rotationRate.beta  — вокруг X (наклон вперёд/назад → pitch)
-        // rotationRate.gamma — вокруг Y (наклон влево/вправо → доп. yaw в ландшафте)
-
-        // Определяем ориентацию экрана
         const orient = (screen.orientation && screen.orientation.angle) ||
                        window.orientation || 0;
 
+        const toRad = Math.PI / 180;
         let dYaw, dPitch;
 
         if (Math.abs(orient) === 90 || Math.abs(orient) === 270) {
             // Ландшафт
-            dYaw   = rate.beta  * dt * (orient > 0 ? -1 : 1);
-            dPitch = rate.gamma * dt * -0.5;
+            dYaw   = rate.beta  * dt * (orient > 0 ? -1 : 1) * toRad;
+            dPitch = rate.gamma * dt * -0.5 * toRad;
         } else {
-            // Портрет (основной режим)
-            dYaw   = -rate.alpha * dt;   // alpha — вращение вокруг оси Z (как компас)
-            dPitch = -rate.beta  * dt * 0.5;
+            // Портрет:
+            // gamma — наклон влево/вправо → горизонталь (yaw)
+            // beta  — наклон вперёд/назад → вертикаль (pitch)
+            dYaw   =  rate.gamma * dt * toRad;
+            dPitch = -rate.beta  * dt * 0.5 * toRad;
         }
 
-        targetYaw   += dYaw   * (Math.PI / 180);
-        targetPitch += dPitch * (Math.PI / 180);
+        targetYaw   += dYaw;
+        targetPitch += dPitch;
         targetPitch  = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
     }
 
-    function requestGyro() {
+    function startGyro() {
         if (typeof DeviceMotionEvent !== 'undefined' &&
             typeof DeviceMotionEvent.requestPermission === 'function') {
-            // iOS 13+
             DeviceMotionEvent.requestPermission()
-                .then(res => {
-                    if (res === 'granted')
-                        window.addEventListener('devicemotion', onMotion, true);
-                })
+                .then(res => { if (res === 'granted') window.addEventListener('devicemotion', onMotion, true); })
                 .catch(() => {});
         } else {
             window.addEventListener('devicemotion', onMotion, true);
         }
     }
 
-    // На iOS нужен жест пользователя — запрашиваем при первом касании
-    document.addEventListener('touchstart', function ask() {
-        requestGyro();
-        document.removeEventListener('touchstart', ask);
-    }, { once: true });
-
-    // Android — можно сразу
-    if (!/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        requestGyro();
+    // iOS — ждём жест, Android — сразу
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        document.addEventListener('touchstart', function ask() {
+            startGyro();
+            document.removeEventListener('touchstart', ask);
+        }, { once: true });
+    } else {
+        startGyro();
     }
 
-    /* ─── РЕСАЙЗ ─── */
+    /* ── Ресайз ── */
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    /* ─── РЕНДЕР ─── */
+    /* ── Рендер ── */
     const euler = new THREE.Euler(0, 0, 0, 'YXZ');
 
-    function animate() {
+    (function animate() {
         requestAnimationFrame(animate);
-
-        // Плавное сглаживание
         yaw   += (targetYaw   - yaw)   * LERP;
         pitch += (targetPitch - pitch) * LERP;
-
         euler.set(pitch, yaw, 0);
         camera.quaternion.setFromEuler(euler);
-
         renderer.render(scene, camera);
-    }
-    animate();
+    })();
 })();
 </script>
 
 <!-- ===== ОСНОВНАЯ ЛОГИКА ===== -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+
+    // Запрет зума и скролла жестами
+    document.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('gesturestart',  (e) => e.preventDefault());
+    document.addEventListener('gesturechange', (e) => e.preventDefault());
 
     const tone = 'rgba(20, 15, 25, 0.13)';
     document.querySelectorAll('.glass').forEach(el => el.style.background = tone);
@@ -668,7 +657,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // ===== КНОПКИ =====
+    /* ── Кнопки соцсетей ── */
     const btnMain   = document.getElementById('btnMain');
     const socialRow = document.getElementById('socialRow');
     let expanded = false;
@@ -687,7 +676,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ===== OIL CANVAS =====
+    /* ── Oil canvas ── */
     function initOilCanvas(canvas) {
         const parent = canvas.parentElement;
         canvas.width  = parent.offsetWidth  * 2;
@@ -791,47 +780,42 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('.oil-canvas').forEach(c => initOilCanvas(c));
     });
 
-    // ===== PARALLAX UI (мышь / гироскоп) =====
-    // Параллакс только для UI-элементов (не для панорамы — она управляется Three.js)
-    const MAX_SHIFT = 18;
-    const LERP_UI   = 0.06;
+    /* ── Параллакс UI ── */
+    const MAX_SHIFT  = 18;
+    const LERP_UI    = 0.06;
+    let uiTargetX = 0, uiTargetY = 0;
+    let uiCurX    = 0, uiCurY    = 0;
+    let uiGyro    = false;
 
-    let targetX = 0, targetY = 0;
-    let currentX = 0, currentY = 0;
-    let gyroActive = false;
-
-    function applyParallax() {
-        currentX += (targetX - currentX) * LERP_UI;
-        currentY += (targetY - currentY) * LERP_UI;
-
+    (function applyParallax() {
+        uiCurX += (uiTargetX - uiCurX) * LERP_UI;
+        uiCurY += (uiTargetY - uiCurY) * LERP_UI;
         document.querySelector('.header').style.transform =
-            `translateX(${-currentX * 0.15}px) translateY(${-currentY * 0.15}px)`;
+            `translateX(${-uiCurX * 0.15}px) translateY(${-uiCurY * 0.15}px)`;
         document.querySelector('.container').style.transform =
-            `translateX(${-currentX * 0.08}px) translateY(${-currentY * 0.08}px)`;
-
+            `translateX(${-uiCurX * 0.08}px) translateY(${-uiCurY * 0.08}px)`;
         requestAnimationFrame(applyParallax);
-    }
-    applyParallax();
+    })();
 
     window.addEventListener('deviceorientation', (e) => {
-        gyroActive = true;
+        uiGyro = true;
         const beta  = Math.max(-45, Math.min(45, e.beta  || 0));
         const gamma = Math.max(-45, Math.min(45, e.gamma || 0));
-        targetX = (gamma / 45) * MAX_SHIFT;
-        targetY = (beta  / 45) * MAX_SHIFT * 0.6;
+        uiTargetX = (gamma / 45) * MAX_SHIFT;
+        uiTargetY = (beta  / 45) * MAX_SHIFT * 0.6;
     }, true);
 
     document.addEventListener('mousemove', (e) => {
-        if (gyroActive) return;
+        if (uiGyro) return;
         const cx = window.innerWidth  / 2;
         const cy = window.innerHeight / 2;
-        targetX = ((e.clientX - cx) / cx) * MAX_SHIFT;
-        targetY = ((e.clientY - cy) / cy) * MAX_SHIFT * 0.6;
+        uiTargetX = ((e.clientX - cx) / cx) * MAX_SHIFT;
+        uiTargetY = ((e.clientY - cy) / cy) * MAX_SHIFT * 0.6;
     });
 
     document.addEventListener('mouseleave', () => {
-        if (gyroActive) return;
-        targetX = 0; targetY = 0;
+        if (uiGyro) return;
+        uiTargetX = 0; uiTargetY = 0;
     });
 
 });
