@@ -557,8 +557,8 @@
             // Портрет:
             // gamma — наклон влево/вправо → горизонталь (yaw)
             // beta  — наклон вперёд/назад → вертикаль (pitch)
-            dYaw   =  rate.gamma * dt * toRad;
-            dPitch = -rate.beta  * dt * 0.5 * toRad;
+            dYaw   =  -rate.gamma * dt * toRad;
+            dPitch = rate.beta  * dt * 0.5 * toRad;
         }
 
         targetYaw   += dYaw;
