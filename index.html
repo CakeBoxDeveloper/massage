@@ -28,17 +28,6 @@
             background-color: #0d0e12;
         }
 
-        #bgVideo {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(1.12);
-            width: auto; height: auto;
-            min-width: 110%; min-height: 110%;
-            z-index: -1;
-            object-fit: cover;
-            background: #0d0e12;
-        }
-
         .glass {
             backdrop-filter: blur(1.5px) saturate(120%);
             -webkit-backdrop-filter: blur(1.5px) saturate(120%);
@@ -109,7 +98,7 @@
             min-height: 0;
         }
 
-        /* ===== CARD — фиксированная высота через grid ===== */
+        /* ===== CARD ===== */
         .info-card {
             padding: 20px;
             border-radius: 28px;
@@ -118,7 +107,7 @@
             transition: filter 0.3s ease;
             display: grid;
             grid-template-rows: 1fr;
-            height: 320px; /* фиксированная высота */
+            height: 320px;
         }
         .info-card::before { animation-delay: -5s; }
         .info-card.card-blurring { filter: blur(8px); }
@@ -181,7 +170,7 @@
             line-height: 1;
         }
 
-        /* ===== ДЕТАЛЬНИЙ ПЕРЕГЛЯД ===== */
+        /* ===== ДЕТАЛЬНЫЙ ВИД ===== */
         .detail-view {
             display: flex;
             flex-direction: column;
@@ -190,7 +179,6 @@
             z-index: 2;
         }
 
-        /* Рядок: назва + кнопка назад */
         .detail-header {
             display: flex;
             justify-content: space-between;
@@ -220,7 +208,6 @@
         }
         .btn-back:hover { border-color: rgba(255,255,255,0.35); color: rgba(255,255,255,0.8); }
 
-        /* Описание */
         .detail-desc {
             font-size: 0.88rem;
             line-height: 1.72;
@@ -228,7 +215,6 @@
             flex: 1;
         }
 
-        /* Нижній блок: тривалість + ціна */
         .detail-meta-box {
             margin-top: 20px;
             border: 1px solid rgba(255,255,255,0.16);
@@ -360,9 +346,7 @@
 </head>
 <body>
 
-<video id="bgVideo" autoplay muted loop playsinline>
-    <source src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Sweet%20cozy%20romance%20vibes%20for%20people%20who%20love%20beauty%20with%20soft%20aesthetic%20charm%20that%20feel%20deeply%20perso%20-%20Pin-784893041333041558.mp4" type="video/mp4">
-</video>
+<canvas id="panoramaCanvas"></canvas>
 
 <header class="header glass">
     <canvas class="oil-canvas"></canvas>
@@ -430,7 +414,7 @@
                 </div>
             </div>
 
-            <!-- ДЕТАЛЬНИЙ ПЕРЕГЛЯД -->
+            <!-- ДЕТАЛЬНЫЙ ВИД -->
             <div class="view-panel hidden" id="detailView">
                 <div class="detail-view">
                     <div class="detail-header">
@@ -495,21 +479,118 @@
 
 </main>
 
+<!-- ===== PANORAMA (Three.js) ===== -->
+<script>
+(function () {
+    const canvas   = document.getElementById('panoramaCanvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene  = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 0.001);
+
+    // Сфера, вывернутая наизнанку — камера внутри
+    const geometry = new THREE.SphereGeometry(500, 60, 40);
+    geometry.scale(-1, 1, 1);
+
+    const texture = new THREE.TextureLoader().load(
+        'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Lite2SeamlessHDRI.webp'
+    );
+    texture.colorSpace = THREE.SRGBColorSpace;
+
+    const material = new THREE.MeshBasicMaterial({ map: texture });
+    const sphere   = new THREE.Mesh(geometry, material);
+    scene.add(sphere);
+
+    // Параметры движения
+    const AUTO_SPEED = 0.00018;   // скорость автовращения
+    const MAX_PITCH  = 0.25;      // ограничение наклона (рад)
+    const LERP       = 0.04;      // сглаживание
+
+    let targetYaw = 0, targetPitch = 0;
+    let curYaw    = 0, curPitch    = 0;
+    let autoYaw   = 0;
+    let gyro      = false;
+
+    // Мышь
+    document.addEventListener('mousemove', (e) => {
+        if (gyro) return;
+        const cx = window.innerWidth  / 2;
+        const cy = window.innerHeight / 2;
+        targetYaw   = -((e.clientX - cx) / cx) * 0.35;
+        targetPitch =  ((e.clientY - cy) / cy) * 0.18;
+    });
+    document.addEventListener('mouseleave', () => {
+        if (gyro) return;
+        targetYaw = 0; targetPitch = 0;
+    });
+
+    // Гироскоп (мобильный)
+    function onGyro(e) {
+        gyro = true;
+        const g = Math.max(-45, Math.min(45, e.gamma || 0));
+        const b = Math.max(-45, Math.min(45, e.beta  || 0));
+        targetYaw   = -(g / 45) * 0.45;
+        targetPitch =  (b / 45) * 0.22;
+    }
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+        document.addEventListener('touchstart', async function ask() {
+            try {
+                if (await DeviceOrientationEvent.requestPermission() === 'granted')
+                    window.addEventListener('deviceorientation', onGyro, true);
+            } catch (e) {}
+            document.removeEventListener('touchstart', ask);
+        }, { once: true });
+    } else {
+        window.addEventListener('deviceorientation', onGyro, true);
+    }
+
+    // Ресайз
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        autoYaw += AUTO_SPEED;
+
+        curYaw   += (targetYaw   - curYaw)   * LERP;
+        curPitch += (targetPitch - curPitch) * LERP;
+        curPitch  = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, curPitch));
+
+        euler.set(curPitch, autoYaw + curYaw, 0);
+        camera.quaternion.setFromEuler(euler);
+
+        renderer.render(scene, camera);
+    }
+    animate();
+})();
+</script>
+
+<!-- ===== ОСНОВНАЯ ЛОГИКА ===== -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
     const tone = 'rgba(20, 15, 25, 0.13)';
     document.querySelectorAll('.glass').forEach(el => el.style.background = tone);
 
-    const card        = document.getElementById('main-card');
-    const listView    = document.getElementById('listView');
-    const detailView  = document.getElementById('detailView');
-    const detailName  = document.getElementById('detailName');
-    const detailDesc  = document.getElementById('detailDesc');
+    const card           = document.getElementById('main-card');
+    const listView       = document.getElementById('listView');
+    const detailView     = document.getElementById('detailView');
+    const detailName     = document.getElementById('detailName');
+    const detailDesc     = document.getElementById('detailDesc');
     const detailDuration = document.getElementById('detailDuration');
-    const detailPrice = document.getElementById('detailPrice');
-    const btnBack     = document.getElementById('btnBack');
-    const BLUR_DUR    = 300;
+    const detailPrice    = document.getElementById('detailPrice');
+    const btnBack        = document.getElementById('btnBack');
+    const BLUR_DUR       = 300;
 
     function blurSwitch(fn) {
         card.classList.add('card-blurring');
@@ -596,12 +677,12 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.closePath();
         }
 
-        const blobs = Array.from({length: 4}, (_, i) => {
-            const minR = Math.min(W, H);
+        const blobs = Array.from({ length: 4 }, (_, i) => {
+            const minR   = Math.min(W, H);
             const points = 8 + Math.floor(Math.random() * 8);
             const baseR  = minR * (0.25 + Math.random() * 0.35);
-            const cx = W * (0.1 + Math.random() * 0.8);
-            const cy = H * (0.1 + Math.random() * 0.8);
+            const cx     = W * (0.1 + Math.random() * 0.8);
+            const cy     = H * (0.1 + Math.random() * 0.8);
             return {
                 cx, cy, baseR,
                 jitter: minR * (0.15 + Math.random() * 0.2),
@@ -615,8 +696,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         blobs.forEach(b => {
-            b.pts  = makeBlob(b.cx, b.cy, b.baseR, b.jitter, b.points);
-            b.ptV  = b.pts.map(() => ({ x: (Math.random()-0.5)*0.5, y: (Math.random()-0.5)*0.5 }));
+            b.pts = makeBlob(b.cx, b.cy, b.baseR, b.jitter, b.points);
+            b.ptV = b.pts.map(() => ({ x: (Math.random() - 0.5) * 0.5, y: (Math.random() - 0.5) * 0.5 }));
         });
 
         function draw() {
@@ -630,19 +711,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 b.pts.forEach((p, i) => {
                     p.x += b.ptV[i].x; p.y += b.ptV[i].y;
-                    const dx = b.cx - p.x, dy = b.cy - p.y;
+                    const dx   = b.cx - p.x, dy = b.cy - p.y;
                     const dist = Math.hypot(dx, dy) || 1;
                     const pull = (dist - b.baseR) * 0.003;
-                    b.ptV[i].x += (dx / dist) * pull + (Math.random()-0.5) * 0.06;
-                    b.ptV[i].y += (dy / dist) * pull + (Math.random()-0.5) * 0.06;
+                    b.ptV[i].x += (dx / dist) * pull + (Math.random() - 0.5) * 0.06;
+                    b.ptV[i].y += (dy / dist) * pull + (Math.random() - 0.5) * 0.06;
                     b.ptV[i].x *= 0.96; b.ptV[i].y *= 0.96;
                 });
 
                 b.hue = (b.hue + b.vh) % 360;
                 const grad = ctx.createRadialGradient(b.cx, b.cy, 0, b.cx, b.cy, b.baseR * 1.1);
                 grad.addColorStop(0,    `hsla(${b.hue}, 80%, 65%, 0.22)`);
-                grad.addColorStop(0.5,  `hsla(${(b.hue+80)%360}, 80%, 60%, 0.14)`);
-                grad.addColorStop(0.85, `hsla(${(b.hue+160)%360}, 70%, 55%, 0.06)`);
+                grad.addColorStop(0.5,  `hsla(${(b.hue + 80) % 360}, 80%, 60%, 0.14)`);
+                grad.addColorStop(0.85, `hsla(${(b.hue + 160) % 360}, 70%, 55%, 0.06)`);
                 grad.addColorStop(1,    `hsla(${b.hue}, 60%, 45%, 0)`);
 
                 ctx.globalCompositeOperation = 'screen';
@@ -659,21 +740,18 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('.oil-canvas').forEach(c => initOilCanvas(c));
     });
 
-    // ===== GYROSCOPE / PARALLAX 3D =====
-    const bgEl = document.getElementById('bgVideo') || document.getElementById('bgCanvas');
-
+    // ===== PARALLAX UI (мышь / гироскоп) =====
+    // Параллакс только для UI-элементов (не для панорамы — она управляется Three.js)
     const MAX_SHIFT = 18;
-    const LERP = 0.06;
+    const LERP_UI   = 0.06;
 
     let targetX = 0, targetY = 0;
     let currentX = 0, currentY = 0;
+    let gyroActive = false;
 
     function applyParallax() {
-        currentX += (targetX - currentX) * LERP;
-        currentY += (targetY - currentY) * LERP;
-
-        if (bgEl) bgEl.style.transform =
-            `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px)) scale(1.12)`;
+        currentX += (targetX - currentX) * LERP_UI;
+        currentY += (targetY - currentY) * LERP_UI;
 
         document.querySelector('.header').style.transform =
             `translateX(${-currentX * 0.15}px) translateY(${-currentY * 0.15}px)`;
@@ -684,52 +762,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     applyParallax();
 
-    // Гироскоп (мобильные)
-    let gyroSupported = false;
-
-    function handleOrientation(e) {
-        gyroSupported = true;
-        // beta  = наклон вперёд/назад (-180..180), gamma = влево/вправо (-90..90)
+    window.addEventListener('deviceorientation', (e) => {
+        gyroActive = true;
         const beta  = Math.max(-45, Math.min(45, e.beta  || 0));
         const gamma = Math.max(-45, Math.min(45, e.gamma || 0));
-
         targetX = (gamma / 45) * MAX_SHIFT;
         targetY = (beta  / 45) * MAX_SHIFT * 0.6;
-    }
+    }, true);
 
-    // iOS 13+ требует разрешения
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // Запрашиваем при первом касании
-        document.addEventListener('touchstart', async function askPerm() {
-            try {
-                const res = await DeviceOrientationEvent.requestPermission();
-                if (res === 'granted') {
-                    window.addEventListener('deviceorientation', handleOrientation, true);
-                }
-            } catch(e) {}
-            document.removeEventListener('touchstart', askPerm);
-        }, { once: true });
-    } else {
-        window.addEventListener('deviceorientation', handleOrientation, true);
-    }
-
-    // Мышь — фоллбэк для десктопа
     document.addEventListener('mousemove', (e) => {
-        if (gyroSupported) return;
+        if (gyroActive) return;
         const cx = window.innerWidth  / 2;
         const cy = window.innerHeight / 2;
         targetX = ((e.clientX - cx) / cx) * MAX_SHIFT;
         targetY = ((e.clientY - cy) / cy) * MAX_SHIFT * 0.6;
     });
 
-    // Сброс при уходе мыши
     document.addEventListener('mouseleave', () => {
-        if (gyroSupported) return;
+        if (gyroActive) return;
         targetX = 0; targetY = 0;
     });
 
-}); // end DOMContentLoaded
+});
 </script>
+
 </body>
 </html>
