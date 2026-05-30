@@ -545,33 +545,25 @@ function onDeviceOrientation(e) {
     if (e.alpha == null || e.beta == null || e.gamma == null) return;
     gyroActive = true;
 
-    const alpha = THREE.MathUtils.degToRad(e.alpha); // вращение вокруг Z (компас)
-    const beta  = THREE.MathUtils.degToRad(e.beta);  // вращение вокруг X (наклон вперёд/назад)
-    const gamma = THREE.MathUtils.degToRad(e.gamma); // вращение вокруг Y (наклон влево/вправо)
+    const alpha = THREE.MathUtils.degToRad(e.alpha);
+    const beta  = THREE.MathUtils.degToRad(e.beta);
+    const gamma = THREE.MathUtils.degToRad(e.gamma);
 
-    // Строим кватернион точно по спецификации W3C DeviceOrientation:
-    // порядок применения: Z(alpha) → X(beta) → Y(gamma)
-    const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), alpha);
-    const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), beta);
-    const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), gamma);
+    const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), alpha);
+    const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), beta);
+    const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), gamma);
 
-    const qDevice = new THREE.Quaternion();
-    qDevice.multiply(qZ).multiply(qX).multiply(qY);
+    // Устройство: Z→X→Y (W3C spec)
+    const qDevice = new THREE.Quaternion()
+        .multiply(qZ)
+        .multiply(qX)
+        .multiply(qY);
 
-    // Поправка: телефон в портрете — экран смотрит в потолок (Z=0,Y=-1 вверх)
-    // Нужно повернуть так чтобы камера смотрела вперёд (вдоль -Z в мировых координатах Three.js)
-    // Поправка = -90° по X
-    const qWorld = new THREE.Quaternion();
-    qWorld.setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI / 2);
-    qDevice.multiply(qWorld);
-
-    // Поправка поворота экрана (landscape left/right)
-    const screenAngle = getScreenAngle();
-    if (screenAngle !== 0) {
-        const qScreen = new THREE.Quaternion();
-        qScreen.setFromAxisAngle(new THREE.Vector3(0,0,1), -screenAngle);
-        qDevice.premultiply(qScreen);
-    }
+    // Поправка мирового пространства Three.js:
+    // применяем ПЕРЕД устройством, а не после
+    const qWorld = new THREE.Quaternion()
+        .setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+    qDevice.premultiply(qWorld);
 
     if (!gyroOffset) {
         gyroOffset = qDevice.clone().invert();
@@ -579,6 +571,9 @@ function onDeviceOrientation(e) {
 
     qTarget.copy(qDevice).premultiply(gyroOffset);
 }
+
+
+    
 
     // Сброс по двойному тапу
     document.addEventListener('dblclick', () => { gyroOffset = null; });
