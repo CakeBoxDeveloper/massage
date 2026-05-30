@@ -20,16 +20,10 @@
             pointer-events: none;
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            -webkit-mask-image:
-                radial-gradient(ellipse 80% 80% at 50% 50%,
-                    transparent 45%,
-                    rgba(0,0,0,0.4) 65%,
-                    black 85%);
-            mask-image:
-                radial-gradient(ellipse 80% 80% at 50% 50%,
-                    transparent 45%,
-                    rgba(0,0,0,0.4) 65%,
-                    black 85%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%,
+                transparent 45%, rgba(0,0,0,0.4) 65%, black 85%);
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%,
+                transparent 45%, rgba(0,0,0,0.4) 65%, black 85%);
         }
 
         * {
@@ -59,11 +53,17 @@
             background-color: #0d0e12;
         }
 
-        /* ── Liquid Glass ── */
+        /* ── mix-blend-mode: difference = инверсия фона ── */
+        /* Применяем ко всему контенту поверх панорамы */
+        .blend-text {
+            mix-blend-mode: difference;
+            color: #ffffff;
+        }
+
         .glass {
             position: relative;
-          backdrop-filter: blur(2px) saturate(160%) brightness(1.06);
--webkit-backdrop-filter: blur(2px) saturate(160%) brightness(1.06);
+            backdrop-filter: blur(6px) saturate(160%) brightness(1.06);
+            -webkit-backdrop-filter: blur(6px) saturate(160%) brightness(1.06);
             background: rgba(255,255,255,0.07);
             box-shadow:
                 0 8px 32px rgba(0,0,0,0.30),
@@ -73,21 +73,19 @@
             overflow: hidden;
         }
 
-        /* Градиентная граница — имитация преломления стекла */
         .glass::after {
             content: "";
             position: absolute;
             inset: 0;
             border-radius: inherit;
             border: 2px solid transparent;
-            background:
-                linear-gradient(145deg,
-                    rgba(255,255,255,0.60) 0%,
-                    rgba(255,255,255,0.20) 20%,
-                    rgba(255,255,255,0.05) 45%,
-                    rgba(255,255,255,0.00) 60%,
-                    rgba(0,0,0,0.12) 100%
-                ) border-box;
+            background: linear-gradient(145deg,
+                rgba(255,255,255,0.60) 0%,
+                rgba(255,255,255,0.20) 20%,
+                rgba(255,255,255,0.05) 45%,
+                rgba(255,255,255,0.00) 60%,
+                rgba(0,0,0,0.12) 100%
+            ) border-box;
             -webkit-mask:
                 linear-gradient(#fff 0 0) padding-box,
                 linear-gradient(#fff 0 0);
@@ -97,15 +95,13 @@
             z-index: 2;
         }
 
-        /* Shimmer — бегущий блик по границе */
         .glass::before {
             content: "";
             position: absolute;
             inset: 0;
             border-radius: inherit;
             padding: 2px;
-            background: linear-gradient(
-                105deg,
+            background: linear-gradient(105deg,
                 rgba(255,255,255,0.00) 0%,
                 rgba(255,255,255,0.00) 30%,
                 rgba(255,255,255,0.80) 50%,
@@ -146,9 +142,11 @@
             text-transform: uppercase;
             position: relative;
             z-index: 2;
+            /* инверсия цвета относительно фона */
+            mix-blend-mode: difference;
+            color: #ffffff;
         }
 
-        /* Контейнер: flex с space-between чтобы карточка была по центру */
         .container {
             width: 100%;
             max-width: 400px;
@@ -156,26 +154,26 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            gap: 0;
             min-height: 0;
             padding: 16px 0 0 0;
+            gap: 16px;
         }
 
         .info-card {
             padding: 20px;
             border-radius: 28px;
-            flex: 1;
+            /* Убираем flex:1, даём fit-content чтобы карточка сжалась по содержимому */
+            flex-shrink: 1;
+            flex-grow: 0;
             overflow: hidden;
             transition: filter 0.3s ease;
             display: flex;
             flex-direction: column;
-            min-height: 0;
         }
         .info-card::before { animation-delay: -5s; }
         .info-card.card-blurring { filter: blur(8px); }
 
         .card-switcher {
-            flex: 1;
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -184,7 +182,6 @@
         }
 
         .view-panel {
-            flex: 1;
             overflow-y: auto;
             scrollbar-width: none;
             transition: opacity 0.3s ease;
@@ -216,6 +213,8 @@
             font-size: 0.95rem;
             font-weight: 500;
             letter-spacing: 0.2px;
+            mix-blend-mode: difference;
+            color: #ffffff;
         }
 
         .massage-plus {
@@ -235,7 +234,6 @@
         .detail-view {
             display: flex;
             flex-direction: column;
-            height: 100%;
         }
 
         .detail-header {
@@ -250,6 +248,8 @@
             font-weight: 600;
             letter-spacing: 0.3px;
             flex: 1;
+            mix-blend-mode: difference;
+            color: #ffffff;
         }
         .btn-back {
             background: none;
@@ -271,11 +271,11 @@
             font-size: 0.88rem;
             line-height: 1.72;
             color: rgba(255,255,255,0.75);
-            flex: 1;
+            mix-blend-mode: difference;
         }
 
         .detail-meta-box {
-            margin-top: 20px;
+            margin-top: 16px;
             border: 1px solid rgba(255,255,255,0.16);
             border-radius: 16px;
             padding: 14px 18px;
@@ -289,16 +289,19 @@
             font-size: 0.88rem;
             color: rgba(255,255,255,0.70);
             letter-spacing: 0.2px;
+            mix-blend-mode: difference;
         }
         .meta-sep {
             color: rgba(255,255,255,0.25);
             font-size: 0.88rem;
         }
 
+        /* spacer толкает кнопку вниз */
+        .spacer { flex: 1; }
+
         .contacts-zone {
             width: 100%;
             flex-shrink: 0;
-            padding-top: 16px;
         }
         .btn-wrap {
             position: relative;
@@ -333,6 +336,8 @@
             z-index: 4;
             white-space: nowrap;
             transition: opacity 0.2s ease;
+            mix-blend-mode: difference;
+            color: #ffffff;
         }
         .btn-main.collapsed .btn-main-label { opacity: 0; }
 
@@ -525,49 +530,77 @@
 
     const texture = new THREE.VideoTexture(video);
     texture.colorSpace = THREE.SRGBColorSpace;
-
     scene.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })));
 
-    const LERP = 0.12;
+    const LERP = 0.06;
     const qTarget  = new THREE.Quaternion();
     const qCurrent = new THREE.Quaternion();
 
- /* ── Десктоп: мышь с pointer lock ── */
-const eulerMouse = new THREE.Euler(0.6, 0, 0, 'YXZ');
-qTarget.setFromEuler(eulerMouse);
-qCurrent.copy(qTarget);
+    /* ─── DRIFT (пассивное вращение) ─── */
+    // Случайное направление дрифта — единичный вектор в пространстве Эйлера
+    const drift = {
+        yawSpeed:   0,
+        pitchSpeed: 0,
+        timer: null,
+    };
 
-let gyroActive = false;
+    const eulerDrift = new THREE.Euler(0.5, 0, 0, 'YXZ'); // начальный угол — чуть вниз
 
-// Захват мыши по клику на canvas
-canvas.addEventListener('click', () => {
-    if (!gyroActive) canvas.requestPointerLock();
-});
-
-// Движение через movementX/Y — работает без границ экрана
-document.addEventListener('mousemove', (e) => {
-    if (gyroActive) return;
-    if (!document.pointerLockElement) return;
-    eulerMouse.y -= e.movementX * 0.003;
-    eulerMouse.x -= e.movementY * 0.002;
-    eulerMouse.x  = Math.max(-1.0, Math.min(1.0, eulerMouse.x));
-    qTarget.setFromEuler(eulerMouse);
-});
-
-// Выход из захвата по Escape (браузер делает это сам)
-document.addEventListener('pointerlockchange', () => {
-    // можно добавить визуальный индикатор если нужно
-});
-
-    let gyroOffset = null;
-
-    function getScreenAngle() {
-        return THREE.MathUtils.degToRad(
-            (screen.orientation && screen.orientation.angle != null)
-                ? screen.orientation.angle
-                : (window.orientation || 0)
-        );
+    function newDriftDirection() {
+        // Медленная случайная скорость
+        drift.yawSpeed   = (Math.random() - 0.5) * 0.00025;
+        drift.pitchSpeed = (Math.random() - 0.5) * 0.00008;
     }
+    newDriftDirection();
+
+    /* ─── МЫШЬ (зажатая кнопка) ─── */
+    let gyroActive   = false;
+    let mouseDown    = false;
+    let manualActive = false; // true пока крутим руками
+    let idleTimer    = null;
+
+    // Эйлер для ручного управления — начинаем с позиции дрифта
+    const eulerManual = new THREE.Euler(0.5, 0, 0, 'YXZ');
+
+    function startIdleTimer() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+            // После 2 секунд бездействия — синхронизируем дрифт с текущим положением
+            eulerDrift.x = eulerManual.x;
+            eulerDrift.y = eulerManual.y;
+            newDriftDirection();
+            manualActive = false;
+        }, 2000);
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (gyroActive) return;
+        if (e.button !== 0 && e.button !== 2) return; // только ЛКМ или ПКМ
+        mouseDown = true;
+        manualActive = true;
+        clearTimeout(idleTimer);
+    });
+
+    document.addEventListener('mouseup', () => {
+        mouseDown = false;
+        if (!gyroActive && manualActive) startIdleTimer();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (gyroActive || !mouseDown) return;
+        manualActive = true;
+        clearTimeout(idleTimer);
+
+        eulerManual.y -= e.movementX * 0.004;
+        eulerManual.x -= e.movementY * 0.003;
+        eulerManual.x  = Math.max(-1.0, Math.min(1.0, eulerManual.x));
+
+        qTarget.setFromEuler(eulerManual);
+        startIdleTimer();
+    });
+
+    /* ─── ГИРОСКОП ─── */
+    let gyroOffset = null;
 
     function onDeviceOrientation(e) {
         if (e.alpha == null || e.beta == null || e.gamma == null) return;
@@ -582,8 +615,7 @@ document.addEventListener('pointerlockchange', () => {
         const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), gamma);
 
         const qDevice = new THREE.Quaternion().multiply(qZ).multiply(qX).multiply(qY);
-
-        const qWorld = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+        const qWorld  = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
         qDevice.premultiply(qWorld);
 
         const euler = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
@@ -630,9 +662,22 @@ document.addEventListener('pointerlockchange', () => {
         gyroOffset = null;
     });
 
+    /* ─── РЕНДЕР ─── */
     (function animate() {
         requestAnimationFrame(animate);
+
         if (video.readyState >= video.HAVE_CURRENT_DATA) texture.needsUpdate = true;
+
+        // Дрифт работает только когда нет ручного управления и нет гироскопа
+        if (!gyroActive && !manualActive) {
+            eulerDrift.y += drift.yawSpeed;
+            eulerDrift.x += drift.pitchSpeed;
+            // Ограничиваем pitch чтобы не уходил за полюса
+            if (eulerDrift.x >  0.8) { eulerDrift.x =  0.8; drift.pitchSpeed *= -1; }
+            if (eulerDrift.x < -0.3) { eulerDrift.x = -0.3; drift.pitchSpeed *= -1; }
+            qTarget.setFromEuler(eulerDrift);
+        }
+
         qCurrent.slerp(qTarget, LERP);
         camera.quaternion.copy(qCurrent);
         renderer.render(scene, camera);
