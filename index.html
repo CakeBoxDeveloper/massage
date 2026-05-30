@@ -48,154 +48,174 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 12px 20px 15px 20px;
+            padding: 12px 20px 20px 20px;
             overflow: hidden;
             background-color: #0d0e12;
         }
 
-        /* ── mix-blend-mode: difference = инверсия фона ── */
-        /* Применяем ко всему контенту поверх панорамы */
-        .blend-text {
-            mix-blend-mode: difference;
-            color: #ffffff;
-        }
-
+        /* ═══════════════════════════════════════
+           LIQUID GLASS — настоящий эффект iOS 26
+           ═══════════════════════════════════════ */
         .glass {
             position: relative;
-            backdrop-filter: blur(6px) saturate(160%) brightness(1.06);
-            -webkit-backdrop-filter: blur(6px) saturate(160%) brightness(1.06);
-            background: rgba(255,255,255,0.07);
-            box-shadow:
-                0 8px 32px rgba(0,0,0,0.30),
-                0 1px 0px rgba(255,255,255,0.12) inset,
-                0 -1px 0px rgba(0,0,0,0.20) inset;
+            /* Сильный blur + насыщенность — основа эффекта */
+            backdrop-filter: blur(40px) saturate(180%) brightness(1.1);
+            -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.1);
+            /* Почти прозрачный тинт */
+            background: rgba(255, 255, 255, 0.08);
             isolation: isolate;
             overflow: hidden;
         }
 
-        .glass::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            border: 2px solid transparent;
-            background: linear-gradient(145deg,
-                rgba(255,255,255,0.60) 0%,
-                rgba(255,255,255,0.20) 20%,
-                rgba(255,255,255,0.05) 45%,
-                rgba(255,255,255,0.00) 60%,
-                rgba(0,0,0,0.12) 100%
-            ) border-box;
-            -webkit-mask:
-                linear-gradient(#fff 0 0) padding-box,
-                linear-gradient(#fff 0 0);
-            -webkit-mask-composite: destination-out;
-            mask-composite: exclude;
-            pointer-events: none;
-            z-index: 2;
-        }
-
+        /* Слой 1 — внутренний свет (имитация преломления) */
         .glass::before {
             content: "";
             position: absolute;
             inset: 0;
             border-radius: inherit;
-            padding: 2px;
-            background: linear-gradient(105deg,
-                rgba(255,255,255,0.00) 0%,
-                rgba(255,255,255,0.00) 30%,
-                rgba(255,255,255,0.80) 50%,
-                rgba(255,255,255,0.00) 70%,
-                rgba(255,255,255,0.00) 100%
+            background:
+                radial-gradient(ellipse 120% 80% at 30% 0%,
+                    rgba(255,255,255,0.22) 0%,
+                    rgba(255,255,255,0.00) 60%),
+                radial-gradient(ellipse 80% 60% at 80% 100%,
+                    rgba(255,255,255,0.10) 0%,
+                    rgba(255,255,255,0.00) 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Слой 2 — граница с преломлением (градиентный border) */
+        .glass::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(
+                135deg,
+                rgba(255,255,255,0.70) 0%,
+                rgba(255,255,255,0.30) 25%,
+                rgba(255,255,255,0.05) 50%,
+                rgba(0,0,0,0.05) 75%,
+                rgba(255,255,255,0.20) 100%
             );
-            background-size: 300% 100%;
-            background-position: 150% 0;
             -webkit-mask:
                 linear-gradient(#fff 0 0) content-box,
                 linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             pointer-events: none;
-            z-index: 3;
-            animation: shimmer 10s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            z-index: 2;
+        }
+
+        /* Слой 3 — бегущий блик (shimmer) */
+        .glass-shimmer::before {
+            background:
+                radial-gradient(ellipse 120% 80% at 30% 0%,
+                    rgba(255,255,255,0.22) 0%,
+                    rgba(255,255,255,0.00) 60%),
+                radial-gradient(ellipse 80% 60% at 80% 100%,
+                    rgba(255,255,255,0.10) 0%,
+                    rgba(255,255,255,0.00) 70%),
+                linear-gradient(
+                    105deg,
+                    rgba(255,255,255,0.00) 0%,
+                    rgba(255,255,255,0.00) 35%,
+                    rgba(255,255,255,0.55) 50%,
+                    rgba(255,255,255,0.00) 65%,
+                    rgba(255,255,255,0.00) 100%
+                );
+            background-size: 100% 100%, 100% 100%, 300% 100%;
+            background-position: 0 0, 0 0, 150% 0;
+            animation: shimmer 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         @keyframes shimmer {
-            0%   { background-position: 150% 0; }
-            100% { background-position: -150% 0; }
+            0%   { background-position: 0 0, 0 0, 150% 0; }
+            100% { background-position: 0 0, 0 0, -150% 0; }
         }
 
+        /* ── Инверсия текста относительно фона ── */
+        .inv {
+            mix-blend-mode: difference;
+            color: #ffffff;
+        }
+
+        /* ── Инверсия SVG/img иконок ── */
+        .inv-icon {
+            mix-blend-mode: difference;
+            filter: brightness(0) invert(1);
+        }
+
+        /* ═══════ HEADER ═══════ */
         .header {
             width: 100%;
             max-width: 400px;
-            padding: 16px 20px;
+            padding: 14px 20px;
             border-radius: 20px;
             text-align: center;
             flex-shrink: 0;
-            margin-bottom: 0;
         }
-        .header::before { animation-delay: -2s; }
         .header h1 {
             font-size: 1.45rem;
             font-weight: 500;
             letter-spacing: 2.5px;
             text-transform: uppercase;
             position: relative;
-            z-index: 2;
-            /* инверсия цвета относительно фона */
+            z-index: 4;
             mix-blend-mode: difference;
             color: #ffffff;
         }
 
+        /* ═══════ LAYOUT ═══════ */
         .container {
             width: 100%;
             max-width: 400px;
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
             min-height: 0;
-            padding: 16px 0 0 0;
-            gap: 16px;
+            padding: 12px 0 0 0;
+            gap: 12px;
         }
 
+        /* ═══════ КАРТОЧКА — фиксированная высота ═══════ */
         .info-card {
             padding: 20px;
             border-radius: 28px;
-            /* Убираем flex:1, даём fit-content чтобы карточка сжалась по содержимому */
-            flex-shrink: 1;
-            flex-grow: 0;
             overflow: hidden;
             transition: filter 0.3s ease;
+            /* Фиксированная высота — не меняется при переключении вкладок */
+            height: 300px;
+            flex-shrink: 0;
             display: flex;
             flex-direction: column;
         }
-        .info-card::before { animation-delay: -5s; }
         .info-card.card-blurring { filter: blur(8px); }
 
         .card-switcher {
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
+            flex: 1;
             position: relative;
-            z-index: 2;
+            min-height: 0;
         }
 
         .view-panel {
+            position: absolute;
+            inset: 0;
             overflow-y: auto;
             scrollbar-width: none;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
             touch-action: pan-y;
+            z-index: 2;
         }
         .view-panel::-webkit-scrollbar { display: none; }
         .view-panel.hidden {
+            opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            opacity: 0;
-            position: absolute;
-            inset: 0;
         }
 
+        /* ═══════ СПИСОК МАССАЖЕЙ ═══════ */
         .massage-item {
             border-bottom: 1px solid rgba(255,255,255,0.10);
             cursor: pointer;
@@ -215,6 +235,8 @@
             letter-spacing: 0.2px;
             mix-blend-mode: difference;
             color: #ffffff;
+            position: relative;
+            z-index: 4;
         }
 
         .massage-plus {
@@ -226,14 +248,19 @@
             justify-content: center;
             border: 1px solid rgba(255,255,255,0.22);
             border-radius: 50%;
-            color: rgba(255,255,255,0.45);
             font-size: 1rem;
             line-height: 1;
+            mix-blend-mode: difference;
+            color: #ffffff;
+            position: relative;
+            z-index: 4;
         }
 
+        /* ═══════ ДЕТАЛЬНЫЙ ВИД ═══════ */
         .detail-view {
             display: flex;
             flex-direction: column;
+            height: 100%;
         }
 
         .detail-header {
@@ -241,7 +268,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 12px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         .detail-title {
             font-size: 1.05rem;
@@ -250,12 +277,14 @@
             flex: 1;
             mix-blend-mode: difference;
             color: #ffffff;
+            position: relative;
+            z-index: 4;
         }
         .btn-back {
             background: none;
-            border: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.20);
             border-radius: 12px;
-            color: rgba(255,255,255,0.5);
+            color: rgba(255,255,255,0.6);
             font-size: 0.72rem;
             letter-spacing: 1.4px;
             text-transform: uppercase;
@@ -264,41 +293,51 @@
             white-space: nowrap;
             flex-shrink: 0;
             transition: border-color 0.2s, color 0.2s;
+            position: relative;
+            z-index: 4;
+            mix-blend-mode: difference;
         }
-        .btn-back:hover { border-color: rgba(255,255,255,0.35); color: rgba(255,255,255,0.8); }
+        .btn-back:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
 
         .detail-desc {
             font-size: 0.88rem;
             line-height: 1.72;
-            color: rgba(255,255,255,0.75);
             mix-blend-mode: difference;
+            color: #ffffff;
+            flex: 1;
+            position: relative;
+            z-index: 4;
         }
 
         .detail-meta-box {
-            margin-top: 16px;
+            margin-top: 12px;
             border: 1px solid rgba(255,255,255,0.16);
             border-radius: 16px;
-            padding: 14px 18px;
-            width: 100%;
+            padding: 12px 18px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
+            position: relative;
+            z-index: 4;
         }
         .meta-text {
             font-size: 0.88rem;
-            color: rgba(255,255,255,0.70);
             letter-spacing: 0.2px;
             mix-blend-mode: difference;
+            color: #ffffff;
         }
         .meta-sep {
-            color: rgba(255,255,255,0.25);
             font-size: 0.88rem;
+            mix-blend-mode: difference;
+            color: #ffffff;
+            opacity: 0.4;
         }
 
-        /* spacer толкает кнопку вниз */
+        /* ═══════ SPACER ═══════ */
         .spacer { flex: 1; }
 
+        /* ═══════ КНОПКА ЗАПИСИ ═══════ */
         .contacts-zone {
             width: 100%;
             flex-shrink: 0;
@@ -306,7 +345,7 @@
         .btn-wrap {
             position: relative;
             width: 100%;
-            height: 58px;
+            height: 56px;
         }
         .btn-main {
             position: absolute;
@@ -314,22 +353,22 @@
             top: 0;
             transform: translateX(-50%);
             width: 100%;
-            height: 58px;
+            height: 56px;
             border: none;
             cursor: pointer;
             border-radius: 18px;
             font-size: 0.82rem;
             font-weight: 400;
             letter-spacing: 1.8px;
-            color: rgba(255,255,255,0.75);
             text-transform: uppercase;
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 10;
             transition: width 0.48s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
+            overflow: hidden;
         }
-        .btn-main.collapsed { width: 58px; opacity: 0; pointer-events: none; }
+        .btn-main.collapsed { width: 56px; opacity: 0; pointer-events: none; }
         .btn-main-label {
             pointer-events: none;
             position: relative;
@@ -338,9 +377,12 @@
             transition: opacity 0.2s ease;
             mix-blend-mode: difference;
             color: #ffffff;
+            font-size: 0.82rem;
+            letter-spacing: 1.8px;
         }
         .btn-main.collapsed .btn-main-label { opacity: 0; }
 
+        /* ═══════ СОЦСЕТИ ═══════ */
         .social-row {
             position: absolute;
             inset: 0;
@@ -353,7 +395,7 @@
 
         .soc-btn {
             flex: 1;
-            height: 58px;
+            height: 56px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -364,6 +406,7 @@
             opacity: 0;
             transform-origin: center;
             transition: transform 0.44s cubic-bezier(0.34,1.3,0.64,1), opacity 0.3s ease;
+            overflow: hidden;
         }
 
         .social-row.visible .soc-btn { transform: scaleX(1); opacity: 1; }
@@ -373,25 +416,19 @@
         .social-row.visible .soc-btn:nth-child(1) { transition-delay: 0.14s; }
         .social-row.visible .soc-btn:nth-child(5) { transition-delay: 0.14s; }
 
-        .soc-btn::before { animation-delay: calc(var(--sd, 0) * 1s); }
-        .soc-btn:nth-child(1)::before { --sd: -1; }
-        .soc-btn:nth-child(2)::before { --sd: -4; }
-        .soc-btn:nth-child(3)::before { --sd: -7; }
-        .soc-btn:nth-child(4)::before { --sd: -10; }
-        .soc-btn:nth-child(5)::before { --sd: -13; }
-
         .soc-btn img {
             width: 22px;
             height: 22px;
             object-fit: contain;
             position: relative;
             z-index: 4;
-            opacity: 0.72;
+            /* инверсия иконок */
+            mix-blend-mode: difference;
             filter: brightness(0) invert(1);
-            transition: opacity 0.2s, transform 0.2s;
+            transition: transform 0.2s;
         }
-        .soc-btn:hover img { opacity: 1; transform: scale(1.12); }
-        .soc-btn:active { filter: brightness(1.3); }
+        .soc-btn:hover img { transform: scale(1.15); }
+        .soc-btn:active { opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -399,7 +436,7 @@
 <canvas id="panoramaCanvas"></canvas>
 <div id="edgeBlur"></div>
 
-<header class="header glass">
+<header class="header glass glass-shimmer">
     <h1>Час для себе</h1>
 </header>
 
@@ -407,6 +444,8 @@
 
     <section class="info-card glass" id="main-card">
         <div class="card-switcher">
+
+            <!-- СПИСОК -->
             <div class="view-panel" id="listView">
                 <div class="massage-list">
                     <div class="massage-item"
@@ -460,6 +499,7 @@
                 </div>
             </div>
 
+            <!-- ДЕТАЛЬНЫЙ ВИД -->
             <div class="view-panel hidden" id="detailView">
                 <div class="detail-view">
                     <div class="detail-header">
@@ -474,12 +514,15 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </section>
 
+    <div class="spacer"></div>
+
     <div class="contacts-zone">
         <div class="btn-wrap">
-            <button class="btn-main glass" id="btnMain">
+            <button class="btn-main glass glass-shimmer" id="btnMain">
                 <span class="btn-main-label">Записатися на масаж</span>
             </button>
             <div class="social-row" id="socialRow">
@@ -536,72 +579,18 @@
     const qTarget  = new THREE.Quaternion();
     const qCurrent = new THREE.Quaternion();
 
-    /* ─── DRIFT (пассивное вращение) ─── */
-    // Случайное направление дрифта — единичный вектор в пространстве Эйлера
-    const drift = {
-        yawSpeed:   0,
-        pitchSpeed: 0,
-        timer: null,
-    };
+    // Начальный угол — чуть вниз
+    const eulerDrift = new THREE.Euler(0.4, 0, 0, 'YXZ');
+    const DRIFT_SPEED = 0.0003; // скорость авторотации по горизонтали
 
-    const eulerDrift = new THREE.Euler(0.5, 0, 0, 'YXZ'); // начальный угол — чуть вниз
-
-    function newDriftDirection() {
-        // Медленная случайная скорость
-        drift.yawSpeed   = (Math.random() - 0.5) * 0.00025;
-        drift.pitchSpeed = (Math.random() - 0.5) * 0.00008;
-    }
-    newDriftDirection();
-
-    /* ─── МЫШЬ (зажатая кнопка) ─── */
-    let gyroActive   = false;
-    let mouseDown    = false;
-    let manualActive = false; // true пока крутим руками
-    let idleTimer    = null;
-
-    // Эйлер для ручного управления — начинаем с позиции дрифта
-    const eulerManual = new THREE.Euler(0.5, 0, 0, 'YXZ');
-
-    function startIdleTimer() {
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(() => {
-            // После 2 секунд бездействия — синхронизируем дрифт с текущим положением
-            eulerDrift.x = eulerManual.x;
-            eulerDrift.y = eulerManual.y;
-            newDriftDirection();
-            manualActive = false;
-        }, 2000);
-    }
-
-    canvas.addEventListener('mousedown', (e) => {
-        if (gyroActive) return;
-        if (e.button !== 0 && e.button !== 2) return; // только ЛКМ или ПКМ
-        mouseDown = true;
-        manualActive = true;
-        clearTimeout(idleTimer);
-    });
-
-    document.addEventListener('mouseup', () => {
-        mouseDown = false;
-        if (!gyroActive && manualActive) startIdleTimer();
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (gyroActive || !mouseDown) return;
-        manualActive = true;
-        clearTimeout(idleTimer);
-
-        eulerManual.y -= e.movementX * 0.004;
-        eulerManual.x -= e.movementY * 0.003;
-        eulerManual.x  = Math.max(-1.0, Math.min(1.0, eulerManual.x));
-
-        qTarget.setFromEuler(eulerManual);
-        startIdleTimer();
-    });
-
-    /* ─── ГИРОСКОП ─── */
+    let gyroActive = false;
     let gyroOffset = null;
 
+    // Инициализируем стартовый qTarget
+    qTarget.setFromEuler(eulerDrift);
+    qCurrent.copy(qTarget);
+
+    /* ── Гироскоп (мобильный) ── */
     function onDeviceOrientation(e) {
         if (e.alpha == null || e.beta == null || e.gamma == null) return;
         gyroActive = true;
@@ -638,8 +627,10 @@
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
             DeviceOrientationEvent.requestPermission()
-                .then(res => { if (res === 'granted') window.addEventListener('deviceorientation', onDeviceOrientation, true); })
-                .catch(() => {});
+                .then(res => {
+                    if (res === 'granted')
+                        window.addEventListener('deviceorientation', onDeviceOrientation, true);
+                }).catch(() => {});
         } else {
             window.addEventListener('deviceorientation', onDeviceOrientation, true);
         }
@@ -662,19 +653,15 @@
         gyroOffset = null;
     });
 
-    /* ─── РЕНДЕР ─── */
+    /* ── Рендер ── */
     (function animate() {
         requestAnimationFrame(animate);
 
         if (video.readyState >= video.HAVE_CURRENT_DATA) texture.needsUpdate = true;
 
-        // Дрифт работает только когда нет ручного управления и нет гироскопа
-        if (!gyroActive && !manualActive) {
-            eulerDrift.y += drift.yawSpeed;
-            eulerDrift.x += drift.pitchSpeed;
-            // Ограничиваем pitch чтобы не уходил за полюса
-            if (eulerDrift.x >  0.8) { eulerDrift.x =  0.8; drift.pitchSpeed *= -1; }
-            if (eulerDrift.x < -0.3) { eulerDrift.x = -0.3; drift.pitchSpeed *= -1; }
+        // На десктопе без гироскопа — медленная авторотация по горизонтали
+        if (!gyroActive) {
+            eulerDrift.y += DRIFT_SPEED;
             qTarget.setFromEuler(eulerDrift);
         }
 
@@ -730,6 +717,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    /* ── Кнопка записи ── */
     const btnMain   = document.getElementById('btnMain');
     const socialRow = document.getElementById('socialRow');
     let expanded = false;
@@ -749,7 +737,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     /* ── Параллакс UI ── */
-    const MAX_SHIFT = 18;
+    const MAX_SHIFT = 14;
     const LERP_UI   = 0.06;
     let uiTX = 0, uiTY = 0, uiCX = 0, uiCY = 0;
     let uiGyro = false;
@@ -775,7 +763,9 @@ document.addEventListener("DOMContentLoaded", () => {
         uiTX = ((e.clientX - window.innerWidth  / 2) / (window.innerWidth  / 2)) * MAX_SHIFT;
         uiTY = ((e.clientY - window.innerHeight / 2) / (window.innerHeight / 2)) * MAX_SHIFT * 0.6;
     });
-    document.addEventListener('mouseleave', () => { if (!uiGyro) { uiTX = 0; uiTY = 0; } });
+    document.addEventListener('mouseleave', () => {
+        if (!uiGyro) { uiTX = 0; uiTY = 0; }
+    });
 
 });
 </script>
