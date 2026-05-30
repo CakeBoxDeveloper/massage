@@ -78,7 +78,6 @@
             border-radius: inherit;
         }
 
-        /* ===== HEADER ===== */
         .header {
             width: 100%;
             max-width: 400px;
@@ -99,7 +98,6 @@
             z-index: 2;
         }
 
-        /* ===== LAYOUT ===== */
         .container {
             width: 100%;
             max-width: 400px;
@@ -111,7 +109,6 @@
             min-height: 0;
         }
 
-        /* ===== CARD ===== */
         .info-card {
             padding: 20px;
             border-radius: 28px;
@@ -148,7 +145,6 @@
             inset: 0;
         }
 
-        /* ===== СПИСОК ===== */
         .massage-list { position: relative; z-index: 2; }
 
         .massage-item {
@@ -184,7 +180,6 @@
             line-height: 1;
         }
 
-        /* ===== ДЕТАЛЬНЫЙ ВИД ===== */
         .detail-view {
             display: flex;
             flex-direction: column;
@@ -250,7 +245,6 @@
             font-size: 0.88rem;
         }
 
-        /* ===== КНОПКИ ===== */
         .contacts-zone {
             width: 100%;
             flex-shrink: 0;
@@ -371,9 +365,7 @@
 
     <section class="info-card glass" id="main-card">
         <canvas class="oil-canvas"></canvas>
-
         <div class="card-switcher">
-
             <div class="view-panel" id="listView">
                 <div class="massage-list">
                     <div class="massage-item"
@@ -441,7 +433,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </section>
 
@@ -510,74 +501,85 @@
         'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Lite2SeamlessHDRI.webp'
     );
     texture.colorSpace = THREE.SRGBColorSpace;
-
     scene.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })));
 
-    const LERP      = 0.08;
-    const MAX_PITCH = 0.5;
+    // Начальный угол — смотрим вниз (на пол сцены)
+    const INIT_PITCH = 0.72;
+    const MAX_PITCH  = 1.0;
+    const LERP       = 0.07;
 
-    let yaw   = 0, pitch   = 0;
-    let targetYaw = 0, targetPitch = 0;
-    let gyroActive  = false;
-    let lastMouseX  = null, lastMouseY = null;
-    let lastTime    = null;
+    let yaw   = 0,         pitch   = INIT_PITCH;
+    let tYaw  = 0,         tPitch  = INIT_PITCH;
 
-    /* ── Мышь ── */
+    /* ── ДЕСКТОП: мышь ── */
+    let lastMX = null, lastMY = null;
     document.addEventListener('mousemove', (e) => {
-        if (gyroActive) return;
-        if (lastMouseX === null) { lastMouseX = e.clientX; lastMouseY = e.clientY; return; }
-        targetYaw   -= (e.clientX - lastMouseX) * 0.003;
-        targetPitch -= (e.clientY - lastMouseY) * 0.002;
-        targetPitch  = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
-        lastMouseX = e.clientX; lastMouseY = e.clientY;
+        if (lastMX === null) { lastMX = e.clientX; lastMY = e.clientY; return; }
+        tYaw   -= (e.clientX - lastMX) * 0.003;
+        tPitch -= (e.clientY - lastMY) * 0.002;
+        tPitch  = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, tPitch));
+        lastMX  = e.clientX; lastMY = e.clientY;
     });
 
-    /* ── Гироскоп ── */
-    function onMotion(e) {
-        gyroActive = true;
-        const rate = e.rotationRate;
-        if (!rate) return;
+    /* ── МОБИЛЬНЫЙ: deviceorientation с калибровкой ── */
+    // Логика: запоминаем начальное положение телефона как "ноль"
+    // и двигаем камеру на дельту от него.
+    // Это работает независимо от того как пользователь держит телефон.
 
-        const now = e.timeStamp || performance.now();
-        if (lastTime === null) { lastTime = now; return; }
-        const dt = (now - lastTime) / 1000;
-        lastTime = now;
+    let baseAlpha = null, baseBeta = null, baseGamma = null;
+    let calibrated = false;
+    const GYRO_SCALE_H = 1.8;  // чувствительность горизонталь
+    const GYRO_SCALE_V = 1.0;  // чувствительность вертикаль
 
-        const orient = (screen.orientation && screen.orientation.angle) ||
-                       window.orientation || 0;
+    function onOrientation(e) {
+        const alpha = e.alpha || 0; // вращение вокруг Z (0–360, как компас)
+        const beta  = e.beta  || 0; // наклон вперёд/назад (-180..180)
+        const gamma = e.gamma || 0; // наклон влево/вправо (-90..90)
 
-        const toRad = Math.PI / 180;
-        let dYaw, dPitch;
-
-        if (Math.abs(orient) === 90 || Math.abs(orient) === 270) {
-            // Ландшафт
-            dYaw   = rate.beta  * dt * (orient > 0 ? -1 : 1) * toRad;
-            dPitch = rate.gamma * dt * -0.5 * toRad;
-        } else {
-            // Портрет:
-            // gamma — наклон влево/вправо → горизонталь (yaw)
-            // beta  — наклон вперёд/назад → вертикаль (pitch)
-            dYaw   =  -rate.gamma * dt * toRad;
-            dPitch = rate.beta  * dt * 0.5 * toRad;
+        // Первый вызов — запоминаем как "нейтральное" положение
+        if (!calibrated) {
+            baseAlpha = alpha;
+            baseBeta  = beta;
+            baseGamma = gamma;
+            calibrated = true;
+            return;
         }
 
-        targetYaw   += dYaw;
-        targetPitch += dPitch;
-        targetPitch  = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
+        // Дельта по горизонтали — используем gamma (поворот кисти)
+        // В портретном режиме поворот телефона влево/вправо = gamma
+        let dGamma = gamma - baseGamma;
+
+        // Дельта по вертикали — используем beta (наклон к себе/от себя)
+        let dBeta = beta - baseBeta;
+
+        // Нормализуем скачки при переходе через ±180
+        if (dGamma >  90) dGamma -= 180;
+        if (dGamma < -90) dGamma += 180;
+        if (dBeta  >  90) dBeta  -= 180;
+        if (dBeta  < -90) dBeta  += 180;
+
+        const toRad = Math.PI / 180;
+
+        tYaw   = -dGamma * toRad * GYRO_SCALE_H;
+        tPitch = INIT_PITCH + dBeta * toRad * GYRO_SCALE_V;
+        tPitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, tPitch));
     }
 
     function startGyro() {
-        if (typeof DeviceMotionEvent !== 'undefined' &&
-            typeof DeviceMotionEvent.requestPermission === 'function') {
-            DeviceMotionEvent.requestPermission()
-                .then(res => { if (res === 'granted') window.addEventListener('devicemotion', onMotion, true); })
-                .catch(() => {});
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // iOS 13+
+            DeviceOrientationEvent.requestPermission()
+                .then(res => {
+                    if (res === 'granted')
+                        window.addEventListener('deviceorientation', onOrientation, true);
+                }).catch(() => {});
         } else {
-            window.addEventListener('devicemotion', onMotion, true);
+            window.addEventListener('deviceorientation', onOrientation, true);
         }
     }
 
-    // iOS — ждём жест, Android — сразу
+    // iOS — ждём касания, Android — сразу
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         document.addEventListener('touchstart', function ask() {
             startGyro();
@@ -586,6 +588,17 @@
     } else {
         startGyro();
     }
+
+    // Кнопка пересброса калибровки по двойному тапу
+    document.addEventListener('dblclick', () => { calibrated = false; });
+    document.addEventListener('touchend', (function() {
+        let last = 0;
+        return () => {
+            const now = Date.now();
+            if (now - last < 300) calibrated = false;
+            last = now;
+        };
+    })());
 
     /* ── Ресайз ── */
     window.addEventListener('resize', () => {
@@ -599,8 +612,8 @@
 
     (function animate() {
         requestAnimationFrame(animate);
-        yaw   += (targetYaw   - yaw)   * LERP;
-        pitch += (targetPitch - pitch) * LERP;
+        yaw   += (tYaw   - yaw)   * LERP;
+        pitch += (tPitch - pitch) * LERP;
         euler.set(pitch, yaw, 0);
         camera.quaternion.setFromEuler(euler);
         renderer.render(scene, camera);
@@ -612,7 +625,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Запрет зума и скролла жестами
+    // Запрет зума и лишних жестов
     document.addEventListener('touchmove', (e) => {
         if (e.touches.length > 1) e.preventDefault();
     }, { passive: false });
@@ -780,43 +793,34 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('.oil-canvas').forEach(c => initOilCanvas(c));
     });
 
-    /* ── Параллакс UI ── */
-    const MAX_SHIFT  = 18;
-    const LERP_UI    = 0.06;
-    let uiTargetX = 0, uiTargetY = 0;
-    let uiCurX    = 0, uiCurY    = 0;
-    let uiGyro    = false;
+    /* ── Параллакс UI-элементов ── */
+    const MAX_SHIFT = 18;
+    const LERP_UI   = 0.06;
+    let uiTX = 0, uiTY = 0, uiCX = 0, uiCY = 0;
+    let uiGyro = false;
 
-    (function applyParallax() {
-        uiCurX += (uiTargetX - uiCurX) * LERP_UI;
-        uiCurY += (uiTargetY - uiCurY) * LERP_UI;
+    (function uiLoop() {
+        uiCX += (uiTX - uiCX) * LERP_UI;
+        uiCY += (uiTY - uiCY) * LERP_UI;
         document.querySelector('.header').style.transform =
-            `translateX(${-uiCurX * 0.15}px) translateY(${-uiCurY * 0.15}px)`;
+            `translateX(${-uiCX * 0.15}px) translateY(${-uiCY * 0.15}px)`;
         document.querySelector('.container').style.transform =
-            `translateX(${-uiCurX * 0.08}px) translateY(${-uiCurY * 0.08}px)`;
-        requestAnimationFrame(applyParallax);
+            `translateX(${-uiCX * 0.08}px) translateY(${-uiCY * 0.08}px)`;
+        requestAnimationFrame(uiLoop);
     })();
 
     window.addEventListener('deviceorientation', (e) => {
         uiGyro = true;
-        const beta  = Math.max(-45, Math.min(45, e.beta  || 0));
-        const gamma = Math.max(-45, Math.min(45, e.gamma || 0));
-        uiTargetX = (gamma / 45) * MAX_SHIFT;
-        uiTargetY = (beta  / 45) * MAX_SHIFT * 0.6;
+        uiTX = Math.max(-45, Math.min(45, e.gamma || 0)) / 45 * MAX_SHIFT;
+        uiTY = Math.max(-45, Math.min(45, e.beta  || 0)) / 45 * MAX_SHIFT * 0.6;
     }, true);
 
     document.addEventListener('mousemove', (e) => {
         if (uiGyro) return;
-        const cx = window.innerWidth  / 2;
-        const cy = window.innerHeight / 2;
-        uiTargetX = ((e.clientX - cx) / cx) * MAX_SHIFT;
-        uiTargetY = ((e.clientY - cy) / cy) * MAX_SHIFT * 0.6;
+        uiTX = ((e.clientX - window.innerWidth  / 2) / (window.innerWidth  / 2)) * MAX_SHIFT;
+        uiTY = ((e.clientY - window.innerHeight / 2) / (window.innerHeight / 2)) * MAX_SHIFT * 0.6;
     });
-
-    document.addEventListener('mouseleave', () => {
-        if (uiGyro) return;
-        uiTargetX = 0; uiTargetY = 0;
-    });
+    document.addEventListener('mouseleave', () => { if (!uiGyro) { uiTX = 0; uiTY = 0; } });
 
 });
 </script>
