@@ -437,46 +437,30 @@ let gyroOffset = null;
 
 // Гироскоп
 function onDeviceOrientation(e) {
-    if (e.alpha == null) return;
+    if (e.alpha == null || e.beta == null || e.gamma == null) return;
     gyroActive = true;
 
-    // Конвертируем углы устройства в радианы
-    const alpha = THREE.MathUtils.degToRad(e.alpha); // компас (Z)
-    const beta  = THREE.MathUtils.degToRad(e.beta);  // наклон вперёд/назад (X)
-    const gamma = THREE.MathUtils.degToRad(e.gamma); // наклон влево/вправо (Y)
+    // Берём только два угла которые нам нужны:
+    // alpha — поворот вокруг вертикальной оси (компас, 0-360) → YAW
+    // beta  — наклон вперёд/назад (-180..180)                 → PITCH (ограничим)
+    // gamma игнорируем полностью — это крен, нам не нужен
 
-    // Строим Euler сразу в нужном порядке YXZ
-    // и явно убиваем крен (Z = 0)
-    const deviceEuler = new THREE.Euler(
-        beta,    // pitch
-        alpha,   // yaw (компас)
-        -gamma,  // roll — берём отрицательный чтобы компенсировать
-        'YXZ'
+    const yaw   = THREE.MathUtils.degToRad(e.alpha);
+    const pitch = THREE.MathUtils.degToRad(
+        Math.max(-30, Math.min(30, e.beta - 90)) // вычитаем 90° — компенсация портретного режима
     );
 
-    const qDevice = new THREE.Quaternion().setFromEuler(deviceEuler);
+    // Строим кватернион только из yaw и pitch, крена нет
+    const e2 = new THREE.Euler(pitch, -yaw, 0, 'YXZ');
+    const qDevice = new THREE.Quaternion().setFromEuler(e2);
 
-    // Поворачиваем систему координат: телефон в портрете смотрит вверх,
-    // нам нужно чтобы смотрел вперёд
-    const qFix = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(1, 0, 0), -Math.PI / 2
-    );
-    qDevice.premultiply(qFix);
-
-    // Извлекаем Euler, ОБНУЛЯЕМ КРЕН, кладём обратно
-    const e2 = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
-    e2.z = 0; // <-- вот здесь убиваем завал горизонта
-    qDevice.setFromEuler(e2);
-
-    // Ограничиваем pitch
-    const e3 = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
-    e3.x = Math.max(-0.5, Math.min(0.5, e3.x));
-    qDevice.setFromEuler(e3);
-
-    // Калибровка — первое положение = ноль
+    // Калибровка
     if (!gyroOffset) gyroOffset = qDevice.clone().invert();
     qTarget.copy(qDevice).premultiply(gyroOffset);
 }
+
+
+    
 
 // Десктоп: мышь зажата
 const eulerMouse = new THREE.Euler(0, 0, 0, 'YXZ');
