@@ -43,61 +43,44 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            color: #ffffff;
             height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 12px 20px 20px 20px;
+            padding: 12px 20px 12px 20px;
             overflow: hidden;
             background-color: #0d0e12;
         }
 
-        /* ══════════════════════════════════
-           LIQUID GLASS
-           Distortion через SVG-фильтр + тонкий blur + градиентный контур
-           ══════════════════════════════════ */
+        /* ══════════════════════════════
+           GLASS — нормальный backdrop blur
+           ══════════════════════════════ */
         .glass {
             position: relative;
-            overflow: hidden;
-            /* Тонкий фrost-blur + цветовой сдвиг */
-            backdrop-filter: blur(3px) saturate(140%);
-            -webkit-backdrop-filter: blur(3px) saturate(140%);
-            /* Distortion применяется через ::after */
-            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(24px) saturate(160%) brightness(1.08);
+            -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(1.08);
+            background: rgba(255, 255, 255, 0.10);
             box-shadow:
-                0 8px 32px rgba(0,0,0,0.28),
-                inset 0 1px 0 rgba(255,255,255,0.14),
-                inset 0 -1px 0 rgba(0,0,0,0.18);
+                0 8px 32px rgba(0,0,0,0.32),
+                inset 0 1px 0 rgba(255,255,255,0.20),
+                inset 0 -1px 0 rgba(0,0,0,0.15);
+            overflow: hidden;
         }
 
-        /* Distortion-слой — SVG-фильтр на псевдоэлемент */
-        .glass-distort {
-            position: absolute;
-            inset: -4px; /* чуть больше чтоб края не обрезались */
-            border-radius: inherit;
-            backdrop-filter: blur(2px);
-            -webkit-backdrop-filter: blur(2px);
-            filter: url(#glass-distortion);
-            -webkit-filter: url("#glass-distortion");
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* Градиентный контур — имитация преломления на грани */
+        /* Градиентный контур */
         .glass::after {
             content: "";
             position: absolute;
             inset: 0;
             border-radius: inherit;
-            padding: 2px;
+            padding: 1.5px;
             background: linear-gradient(
                 135deg,
-                rgba(255,255,255,0.88) 0%,
-                rgba(255,255,255,0.35) 18%,
-                rgba(255,255,255,0.06) 42%,
-                rgba(0,0,0,0.04) 68%,
-                rgba(255,255,255,0.28) 100%
+                rgba(255,255,255,0.80) 0%,
+                rgba(255,255,255,0.30) 20%,
+                rgba(255,255,255,0.05) 45%,
+                rgba(0,0,0,0.04) 70%,
+                rgba(255,255,255,0.25) 100%
             );
             -webkit-mask:
                 linear-gradient(#fff 0 0) content-box,
@@ -105,21 +88,21 @@
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             pointer-events: none;
-            z-index: 12;
+            z-index: 10;
         }
 
-        /* Shimmer — бегущий блик по контуру */
+        /* Шиммер — только по контуру */
         .glass::before {
             content: "";
             position: absolute;
             inset: 0;
             border-radius: inherit;
-            padding: 2px;
+            padding: 1.5px;
             background: linear-gradient(
                 105deg,
                 rgba(255,255,255,0.00) 0%,
                 rgba(255,255,255,0.00) 28%,
-                rgba(255,255,255,0.95) 50%,
+                rgba(255,255,255,0.90) 50%,
                 rgba(255,255,255,0.00) 72%,
                 rgba(255,255,255,0.00) 100%
             );
@@ -131,7 +114,7 @@
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             pointer-events: none;
-            z-index: 13;
+            z-index: 11;
             animation: shimmer 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
@@ -149,31 +132,23 @@
         .soc-btn:nth-child(4)::before { animation-delay: -7s; }
         .soc-btn:nth-child(5)::before { animation-delay: -9s; }
 
-        /* ══════════════════════════════════
+        /* ══════════════════════════════
            ИНВЕРСИЯ ТЕКСТА
-           Белый слой с mix-blend-mode: difference поверх всего UI.
-           На тёмном фоне: белый текст остаётся белым (255-0=255).
-           На светлом фоне: белый текст становится чёрным (255-255=0).
-           ══════════════════════════════════ */
-        #invert-layer {
-            position: fixed;
-            inset: 0;
-            z-index: 100;
-            pointer-events: none;
+           Ключ: текстовые элементы должны быть белыми (#fff)
+           и иметь mix-blend-mode: difference.
+           Родитель НЕ должен иметь isolation:isolate или z-index
+           создающий новый stacking context выше body.
+           Решение: весь UI на z-index:1, текст на z-index:2,
+           и никакого isolation на .glass
+           ══════════════════════════════ */
+
+        header { position: relative; z-index: 1; }
+        main   { position: relative; z-index: 1; }
+
+        /* Все текстовые/иконочные элементы с инверсией */
+        .inv {
+            color: #ffffff;
             mix-blend-mode: difference;
-            background: transparent;
-        }
-
-        /* Белые "штампы" поверх каждого текстового элемента — они инвертируются через difference */
-        .invert-text {
-            position: relative;
-        }
-        .invert-text::before {
-            display: none; /* не конфликтовать с .glass::before */
-        }
-
-        /* Весь UI поверх panorama, но под invert-layer */
-        header, main {
             position: relative;
             z-index: 2;
         }
@@ -182,21 +157,32 @@
         .header {
             width: 100%;
             max-width: 400px;
-            padding: 14px 20px;
+            padding: 12px 20px 14px;
             border-radius: 20px;
             text-align: center;
             flex-shrink: 0;
         }
         .header h1 {
-            font-size: 1.45rem;
+            font-size: 1.35rem;
             font-weight: 500;
             letter-spacing: 2.5px;
             text-transform: uppercase;
-            position: relative;
-            z-index: 2;
-            /* Инверсия: белый текст + mix-blend-mode difference на родителе */
             color: #ffffff;
             mix-blend-mode: difference;
+            position: relative;
+            z-index: 2;
+        }
+        .header .tagline {
+            margin-top: 5px;
+            font-size: 0.72rem;
+            font-weight: 400;
+            letter-spacing: 0.4px;
+            line-height: 1.45;
+            color: #ffffff;
+            mix-blend-mode: difference;
+            position: relative;
+            z-index: 2;
+            opacity: 0.75;
         }
 
         /* ══════ LAYOUT ══════ */
@@ -207,30 +193,28 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
-            padding: 12px 0 0 0;
-            gap: 12px;
+            padding: 10px 0 0 0;
+            gap: 10px;
         }
 
-        /* ══════ КАРТОЧКА ══════ */
+        /* ══════ КАРТОЧКА — фиксированная высота ══════ */
         .info-card {
-            padding: 20px;
+            padding: 18px;
             border-radius: 28px;
-            overflow: hidden;
-           
-            height: 310px;
+            height: 295px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
         }
-   .info-card.card-blurring .card-switcher { filter: blur(8px); }
 
-  .card-switcher {
-    flex: 1;
-    position: relative;
-    min-height: 0;
-    z-index: 2;
-    transition: filter 0.3s ease; /* добавить сюда */
-}
+        .card-switcher {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+            z-index: 2;
+            transition: filter 0.3s ease;
+        }
+        .info-card.card-blurring .card-switcher { filter: blur(8px); }
 
         .view-panel {
             position: absolute;
@@ -249,9 +233,9 @@
 
         /* ══════ СПИСОК ══════ */
         .massage-item {
-            border-bottom: 1px solid rgba(255,255,255,0.15);
+            border-bottom: 1px solid rgba(255,255,255,0.12);
             cursor: pointer;
-            padding: 11px 4px;
+            padding: 10px 4px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -267,6 +251,8 @@
             letter-spacing: 0.2px;
             color: #ffffff;
             mix-blend-mode: difference;
+            position: relative;
+            z-index: 2;
         }
 
         .massage-plus {
@@ -276,12 +262,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1.5px solid rgba(255,255,255,0.40);
+            border: 1.5px solid rgba(255,255,255,0.35);
             border-radius: 50%;
             font-size: 0.95rem;
             line-height: 1;
+            padding-bottom: 1px;
             color: #ffffff;
             mix-blend-mode: difference;
+            position: relative;
+            z-index: 2;
         }
 
         /* ══════ ДЕТАЛЬНЫЙ ВИД ══════ */
@@ -290,13 +279,12 @@
             flex-direction: column;
             height: 100%;
         }
-
         .detail-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 12px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .detail-title {
             font-size: 1.05rem;
@@ -305,35 +293,39 @@
             flex: 1;
             color: #ffffff;
             mix-blend-mode: difference;
+            position: relative;
+            z-index: 2;
         }
         .btn-back {
             background: none;
-            border: 1.5px solid rgba(255,255,255,0.30);
+            border: 1.5px solid rgba(255,255,255,0.28);
             border-radius: 12px;
             font-size: 0.72rem;
             letter-spacing: 1.4px;
             text-transform: uppercase;
-            padding: 6px 14px;
+            padding: 6px 12px;
             cursor: pointer;
             white-space: nowrap;
             flex-shrink: 0;
             color: #ffffff;
             mix-blend-mode: difference;
+            position: relative;
+            z-index: 2;
         }
-
         .detail-desc {
             font-size: 0.88rem;
-            line-height: 1.72;
+            line-height: 1.68;
             flex: 1;
             color: #ffffff;
             mix-blend-mode: difference;
+            position: relative;
+            z-index: 2;
         }
-
         .detail-meta-box {
-            margin-top: 12px;
-            border: 1.5px solid rgba(255,255,255,0.22);
-            border-radius: 16px;
-            padding: 12px 18px;
+            margin-top: 10px;
+            border: 1.5px solid rgba(255,255,255,0.20);
+            border-radius: 14px;
+            padding: 10px 18px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -344,26 +336,32 @@
             letter-spacing: 0.2px;
             color: #ffffff;
             mix-blend-mode: difference;
+            position: relative;
+            z-index: 2;
         }
         .meta-sep {
             font-size: 0.88rem;
             color: #ffffff;
             mix-blend-mode: difference;
-            opacity: 0.5;
+            opacity: 0.45;
+            position: relative;
+            z-index: 2;
         }
 
         /* ══════ SPACER ══════ */
-        .spacer { flex: 1; }
+        .spacer { flex: 1; min-height: 8px; }
 
         /* ══════ КНОПКА ЗАПИСИ ══════ */
         .contacts-zone {
             width: 100%;
             flex-shrink: 0;
+            /* поднимаем выше — меньший отступ снизу */
+            padding-bottom: 4px;
         }
         .btn-wrap {
             position: relative;
             width: 100%;
-            height: 56px;
+            height: 54px;
         }
         .btn-main {
             position: absolute;
@@ -371,7 +369,7 @@
             top: 0;
             transform: translateX(-50%);
             width: 100%;
-            height: 56px;
+            height: 54px;
             border: none;
             cursor: pointer;
             border-radius: 18px;
@@ -382,7 +380,7 @@
             transition: width 0.48s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
             overflow: hidden;
         }
-        .btn-main.collapsed { width: 56px; opacity: 0; pointer-events: none; }
+        .btn-main.collapsed { width: 54px; opacity: 0; pointer-events: none; }
 
         .btn-main-label {
             pointer-events: none;
@@ -412,7 +410,7 @@
 
         .soc-btn {
             flex: 1;
-            height: 56px;
+            height: 54px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -433,13 +431,13 @@
         .social-row.visible .soc-btn:nth-child(1) { transition-delay: 0.14s; }
         .social-row.visible .soc-btn:nth-child(5) { transition-delay: 0.14s; }
 
-        /* SVG иконки: белые + mix-blend-mode difference = инверсия на любом фоне */
         .soc-btn img {
             width: 22px;
             height: 22px;
             object-fit: contain;
             position: relative;
             z-index: 2;
+            /* белые иконки + difference = инверсия */
             filter: brightness(0) invert(1);
             mix-blend-mode: difference;
             transition: transform 0.2s;
@@ -447,37 +445,23 @@
         .soc-btn:hover img { transform: scale(1.15); }
         .soc-btn:active { opacity: 0.7; }
 
-        /* Cursor */
         body.can-drag { cursor: grab; }
         body.is-dragging { cursor: grabbing; }
     </style>
 </head>
 <body>
 
-<!-- SVG-фильтр для distortion (liquid glass) -->
-<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;overflow:hidden">
-    <defs>
-        <filter id="glass-distortion" x="-5%" y="-5%" width="110%" height="110%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.012" numOctaves="1" seed="42" result="noise"/>
-            <feGaussianBlur in="noise" stdDeviation="1.5" result="blurred"/>
-            <feDisplacementMap in="SourceGraphic" in2="blurred" scale="55" xChannelSelector="R" yChannelSelector="G"/>
-        </filter>
-    </defs>
-</svg>
-
 <canvas id="panoramaCanvas"></canvas>
 <div id="edgeBlur"></div>
 
 <header class="header glass">
-    <!-- distortion-слой внутри каждого glass-элемента -->
-    <div class="glass-distort"></div>
     <h1>Час для себе</h1>
+    <p class="tagline">Нехай увесь світ зачекає — знайди час для себе</p>
 </header>
 
 <main class="container">
 
     <section class="info-card glass" id="main-card">
-        <div class="glass-distort"></div>
         <div class="card-switcher">
 
             <div class="view-panel" id="listView">
@@ -556,28 +540,22 @@
     <div class="contacts-zone">
         <div class="btn-wrap">
             <button class="btn-main glass" id="btnMain">
-                <div class="glass-distort"></div>
                 <span class="btn-main-label">Записатися на масаж</span>
             </button>
             <div class="social-row" id="socialRow">
                 <a href="https://threads.net/" target="_blank" class="soc-btn glass">
-                    <div class="glass-distort"></div>
                     <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/hreads.svg" alt="Threads">
                 </a>
                 <a href="https://t.me/username" target="_blank" class="soc-btn glass">
-                    <div class="glass-distort"></div>
                     <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/telegram.svg" alt="Telegram">
                 </a>
                 <a href="https://instagram.com/username" target="_blank" class="soc-btn glass">
-                    <div class="glass-distort"></div>
                     <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/insta.svg" alt="Instagram">
                 </a>
                 <a href="https://wa.me/380000000000" target="_blank" class="soc-btn glass">
-                    <div class="glass-distort"></div>
                     <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/wa.svg" alt="WhatsApp">
                 </a>
                 <a href="tel:+380000000000" class="soc-btn glass">
-                    <div class="glass-distort"></div>
                     <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/call.svg" alt="Дзвінок">
                 </a>
             </div>
@@ -620,6 +598,7 @@
     const qTarget    = new THREE.Quaternion();
     const qCurrent   = new THREE.Quaternion();
     const eulerDrift = new THREE.Euler(0.4, 0, 0, 'YXZ');
+    const eulerMouse = new THREE.Euler(0.4, 0, 0, 'YXZ');
 
     qTarget.setFromEuler(eulerDrift);
     qCurrent.copy(qTarget);
@@ -627,9 +606,7 @@
     let gyroActive = false;
     let gyroOffset = null;
 
-    /* ── Десктоп: зажать ЛКМ = pointer lock, бесконечный скролл ── */
-    const eulerMouse = new THREE.Euler(0.4, 0, 0, 'YXZ');
-
+    /* ── Десктоп: зажать ЛКМ = pointer lock ── */
     document.addEventListener('mousedown', (e) => {
         if (gyroActive) return;
         if (e.button !== 0) return;
@@ -637,21 +614,15 @@
         document.body.requestPointerLock();
         document.body.classList.add('is-dragging');
     });
-
     document.addEventListener('mouseup', () => {
         if (document.pointerLockElement) document.exitPointerLock();
         document.body.classList.remove('is-dragging');
     });
-
     document.addEventListener('pointerlockchange', () => {
-        if (!document.pointerLockElement) {
-            document.body.classList.remove('is-dragging');
-        }
+        if (!document.pointerLockElement) document.body.classList.remove('is-dragging');
     });
-
     document.addEventListener('mousemove', (e) => {
-        if (gyroActive) return;
-        if (!document.pointerLockElement) return;
+        if (gyroActive || !document.pointerLockElement) return;
         eulerMouse.y -= e.movementX * 0.003;
         eulerMouse.x -= e.movementY * 0.002;
         eulerMouse.x  = Math.max(-1.0, Math.min(1.0, eulerMouse.x));
@@ -823,8 +794,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, true);
 
     document.addEventListener('mousemove', (e) => {
-        if (uiGyro) return;
-        if (document.pointerLockElement) return;
+        if (uiGyro || document.pointerLockElement) return;
         uiTX = ((e.clientX - window.innerWidth  / 2) / (window.innerWidth  / 2)) * MAX_SHIFT;
         uiTY = ((e.clientY - window.innerHeight / 2) / (window.innerHeight / 2)) * MAX_SHIFT * 0.6;
     });
