@@ -43,6 +43,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #ffffff;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -50,23 +51,40 @@
             padding: 12px 20px 20px 20px;
             overflow: hidden;
             background-color: #0d0e12;
-            /* mix-blend-mode работает только если нет isolation на родителе */
         }
 
-        /* ═══════════════════════════
-           GLASS
-           isolation убран — иначе блокирует mix-blend-mode дочерних элементов
-           ═══════════════════════════ */
+        /* ══════════════════════════════════
+           LIQUID GLASS
+           Distortion через SVG-фильтр + тонкий blur + градиентный контур
+           ══════════════════════════════════ */
         .glass {
             position: relative;
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-            background: rgba(255, 255, 255, 0.06);
-            /* isolation: isolate; — УБРАНО, это ломало инверсию */
             overflow: hidden;
+            /* Тонкий фrost-blur + цветовой сдвиг */
+            backdrop-filter: blur(3px) saturate(140%);
+            -webkit-backdrop-filter: blur(3px) saturate(140%);
+            /* Distortion применяется через ::after */
+            background: rgba(255,255,255,0.06);
+            box-shadow:
+                0 8px 32px rgba(0,0,0,0.28),
+                inset 0 1px 0 rgba(255,255,255,0.14),
+                inset 0 -1px 0 rgba(0,0,0,0.18);
         }
 
-        /* Градиентный контур */
+        /* Distortion-слой — SVG-фильтр на псевдоэлемент */
+        .glass-distort {
+            position: absolute;
+            inset: -4px; /* чуть больше чтоб края не обрезались */
+            border-radius: inherit;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            filter: url(#glass-distortion);
+            -webkit-filter: url("#glass-distortion");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Градиентный контур — имитация преломления на грани */
         .glass::after {
             content: "";
             position: absolute;
@@ -75,11 +93,11 @@
             padding: 2px;
             background: linear-gradient(
                 135deg,
-                rgba(255,255,255,0.85) 0%,
-                rgba(255,255,255,0.40) 20%,
-                rgba(255,255,255,0.08) 45%,
-                rgba(0,0,0,0.05) 70%,
-                rgba(255,255,255,0.30) 100%
+                rgba(255,255,255,0.88) 0%,
+                rgba(255,255,255,0.35) 18%,
+                rgba(255,255,255,0.06) 42%,
+                rgba(0,0,0,0.04) 68%,
+                rgba(255,255,255,0.28) 100%
             );
             -webkit-mask:
                 linear-gradient(#fff 0 0) content-box,
@@ -87,10 +105,10 @@
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             pointer-events: none;
-            z-index: 10;
+            z-index: 12;
         }
 
-        /* Шиммер — только по контуру */
+        /* Shimmer — бегущий блик по контуру */
         .glass::before {
             content: "";
             position: absolute;
@@ -100,9 +118,9 @@
             background: linear-gradient(
                 105deg,
                 rgba(255,255,255,0.00) 0%,
-                rgba(255,255,255,0.00) 30%,
-                rgba(255,255,255,0.90) 50%,
-                rgba(255,255,255,0.00) 70%,
+                rgba(255,255,255,0.00) 28%,
+                rgba(255,255,255,0.95) 50%,
+                rgba(255,255,255,0.00) 72%,
                 rgba(255,255,255,0.00) 100%
             );
             background-size: 300% 100%;
@@ -113,7 +131,7 @@
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             pointer-events: none;
-            z-index: 11;
+            z-index: 13;
             animation: shimmer 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
@@ -131,39 +149,36 @@
         .soc-btn:nth-child(4)::before { animation-delay: -7s; }
         .soc-btn:nth-child(5)::before { animation-delay: -9s; }
 
-        /* ═══════════════════════════
-           ИНВЕРСИЯ
-           Вместо mix-blend-mode на каждом элементе —
-           вешаем на весь UI-слой поверх панорамы.
-           Белый текст на белом фоне = чёрный. На тёмном = белый.
-           ═══════════════════════════ */
-        #ui-layer {
+        /* ══════════════════════════════════
+           ИНВЕРСИЯ ТЕКСТА
+           Белый слой с mix-blend-mode: difference поверх всего UI.
+           На тёмном фоне: белый текст остаётся белым (255-0=255).
+           На светлом фоне: белый текст становится чёрным (255-255=0).
+           ══════════════════════════════════ */
+        #invert-layer {
             position: fixed;
             inset: 0;
-            z-index: 1;
-            mix-blend-mode: difference;
+            z-index: 100;
             pointer-events: none;
+            mix-blend-mode: difference;
+            background: transparent;
         }
 
-        /* Всё кликабельное — поверх ui-layer, но визуально под инверсией */
+        /* Белые "штампы" поверх каждого текстового элемента — они инвертируются через difference */
+        .invert-text {
+            position: relative;
+        }
+        .invert-text::before {
+            display: none; /* не конфликтовать с .glass::before */
+        }
+
+        /* Весь UI поверх panorama, но под invert-layer */
         header, main {
             position: relative;
             z-index: 2;
         }
 
-        /* Текст белый — после difference на тёмном будет белым, на светлом чёрным */
-        h1, .massage-name, .massage-plus,
-        .detail-title, .detail-desc, .btn-back,
-        .meta-text, .meta-sep, .btn-main-label {
-            color: #ffffff;
-        }
-
-        /* SVG иконки — белые, difference сделает инверсию */
-        .soc-btn img {
-            filter: brightness(0) invert(1);
-        }
-
-        /* ═══════ HEADER ═══════ */
+        /* ══════ HEADER ══════ */
         .header {
             width: 100%;
             max-width: 400px;
@@ -177,9 +192,14 @@
             font-weight: 500;
             letter-spacing: 2.5px;
             text-transform: uppercase;
+            position: relative;
+            z-index: 2;
+            /* Инверсия: белый текст + mix-blend-mode difference на родителе */
+            color: #ffffff;
+            mix-blend-mode: difference;
         }
 
-        /* ═══════ LAYOUT ═══════ */
+        /* ══════ LAYOUT ══════ */
         .container {
             width: 100%;
             max-width: 400px;
@@ -191,13 +211,13 @@
             gap: 12px;
         }
 
-        /* ═══════ КАРТОЧКА ═══════ */
+        /* ══════ КАРТОЧКА ══════ */
         .info-card {
             padding: 20px;
             border-radius: 28px;
             overflow: hidden;
             transition: filter 0.3s ease;
-            height: 300px;
+            height: 310px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
@@ -208,6 +228,7 @@
             flex: 1;
             position: relative;
             min-height: 0;
+            z-index: 2;
         }
 
         .view-panel {
@@ -225,7 +246,7 @@
             pointer-events: none;
         }
 
-        /* ═══════ СПИСОК ═══════ */
+        /* ══════ СПИСОК ══════ */
         .massage-item {
             border-bottom: 1px solid rgba(255,255,255,0.15);
             cursor: pointer;
@@ -235,7 +256,6 @@
             align-items: center;
             gap: 8px;
             transition: opacity 0.18s ease;
-            pointer-events: auto;
         }
         .massage-item:last-child { border-bottom: none; }
         .massage-item:active { opacity: 0.6; }
@@ -244,6 +264,8 @@
             font-size: 0.95rem;
             font-weight: 500;
             letter-spacing: 0.2px;
+            color: #ffffff;
+            mix-blend-mode: difference;
         }
 
         .massage-plus {
@@ -253,14 +275,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(255,255,255,0.30);
+            border: 1.5px solid rgba(255,255,255,0.40);
             border-radius: 50%;
             font-size: 0.95rem;
             line-height: 1;
-            padding-bottom: 1px;
+            color: #ffffff;
+            mix-blend-mode: difference;
         }
 
-        /* ═══════ ДЕТАЛЬНЫЙ ВИД ═══════ */
+        /* ══════ ДЕТАЛЬНЫЙ ВИД ══════ */
         .detail-view {
             display: flex;
             flex-direction: column;
@@ -279,10 +302,12 @@
             font-weight: 600;
             letter-spacing: 0.3px;
             flex: 1;
+            color: #ffffff;
+            mix-blend-mode: difference;
         }
         .btn-back {
             background: none;
-            border: 1px solid rgba(255,255,255,0.25);
+            border: 1.5px solid rgba(255,255,255,0.30);
             border-radius: 12px;
             font-size: 0.72rem;
             letter-spacing: 1.4px;
@@ -291,19 +316,21 @@
             cursor: pointer;
             white-space: nowrap;
             flex-shrink: 0;
-            pointer-events: auto;
+            color: #ffffff;
+            mix-blend-mode: difference;
         }
 
         .detail-desc {
             font-size: 0.88rem;
             line-height: 1.72;
             flex: 1;
-            opacity: 0.9;
+            color: #ffffff;
+            mix-blend-mode: difference;
         }
 
         .detail-meta-box {
             margin-top: 12px;
-            border: 1px solid rgba(255,255,255,0.20);
+            border: 1.5px solid rgba(255,255,255,0.22);
             border-radius: 16px;
             padding: 12px 18px;
             display: flex;
@@ -311,13 +338,23 @@
             justify-content: center;
             gap: 6px;
         }
-        .meta-text { font-size: 0.88rem; letter-spacing: 0.2px; }
-        .meta-sep  { font-size: 0.88rem; opacity: 0.5; }
+        .meta-text {
+            font-size: 0.88rem;
+            letter-spacing: 0.2px;
+            color: #ffffff;
+            mix-blend-mode: difference;
+        }
+        .meta-sep {
+            font-size: 0.88rem;
+            color: #ffffff;
+            mix-blend-mode: difference;
+            opacity: 0.5;
+        }
 
-        /* ═══════ SPACER ═══════ */
+        /* ══════ SPACER ══════ */
         .spacer { flex: 1; }
 
-        /* ═══════ КНОПКА ЗАПИСИ ═══════ */
+        /* ══════ КНОПКА ЗАПИСИ ══════ */
         .contacts-zone {
             width: 100%;
             flex-shrink: 0;
@@ -343,7 +380,6 @@
             z-index: 10;
             transition: width 0.48s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
             overflow: hidden;
-            pointer-events: auto;
         }
         .btn-main.collapsed { width: 56px; opacity: 0; pointer-events: none; }
 
@@ -355,10 +391,14 @@
             font-weight: 400;
             letter-spacing: 1.8px;
             text-transform: uppercase;
+            position: relative;
+            z-index: 2;
+            color: #ffffff;
+            mix-blend-mode: difference;
         }
         .btn-main.collapsed .btn-main-label { opacity: 0; }
 
-        /* ═══════ СОЦСЕТИ ═══════ */
+        /* ══════ СОЦСЕТИ ══════ */
         .social-row {
             position: absolute;
             inset: 0;
@@ -383,7 +423,6 @@
             transform-origin: center;
             transition: transform 0.44s cubic-bezier(0.34,1.3,0.64,1), opacity 0.3s ease;
             overflow: hidden;
-            pointer-events: auto;
         }
 
         .social-row.visible .soc-btn { transform: scaleX(1); opacity: 1; }
@@ -393,32 +432,51 @@
         .social-row.visible .soc-btn:nth-child(1) { transition-delay: 0.14s; }
         .social-row.visible .soc-btn:nth-child(5) { transition-delay: 0.14s; }
 
+        /* SVG иконки: белые + mix-blend-mode difference = инверсия на любом фоне */
         .soc-btn img {
             width: 22px;
             height: 22px;
             object-fit: contain;
+            position: relative;
+            z-index: 2;
+            filter: brightness(0) invert(1);
+            mix-blend-mode: difference;
             transition: transform 0.2s;
         }
         .soc-btn:hover img { transform: scale(1.15); }
         .soc-btn:active { opacity: 0.7; }
+
+        /* Cursor */
+        body.can-drag { cursor: grab; }
+        body.is-dragging { cursor: grabbing; }
     </style>
 </head>
 <body>
 
+<!-- SVG-фильтр для distortion (liquid glass) -->
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;overflow:hidden">
+    <defs>
+        <filter id="glass-distortion" x="-5%" y="-5%" width="110%" height="110%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.012" numOctaves="1" seed="42" result="noise"/>
+            <feGaussianBlur in="noise" stdDeviation="1.5" result="blurred"/>
+            <feDisplacementMap in="SourceGraphic" in2="blurred" scale="55" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+    </defs>
+</svg>
+
 <canvas id="panoramaCanvas"></canvas>
 <div id="edgeBlur"></div>
 
-<!-- Слой инверсии — белый div с mix-blend-mode:difference поверх всего -->
-<!-- Он невидим сам по себе, но инвертирует всё что под ним -->
-<div id="ui-layer"></div>
-
 <header class="header glass">
+    <!-- distortion-слой внутри каждого glass-элемента -->
+    <div class="glass-distort"></div>
     <h1>Час для себе</h1>
 </header>
 
 <main class="container">
 
     <section class="info-card glass" id="main-card">
+        <div class="glass-distort"></div>
         <div class="card-switcher">
 
             <div class="view-panel" id="listView">
@@ -497,22 +555,28 @@
     <div class="contacts-zone">
         <div class="btn-wrap">
             <button class="btn-main glass" id="btnMain">
+                <div class="glass-distort"></div>
                 <span class="btn-main-label">Записатися на масаж</span>
             </button>
             <div class="social-row" id="socialRow">
                 <a href="https://threads.net/" target="_blank" class="soc-btn glass">
+                    <div class="glass-distort"></div>
                     <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/hreads.svg" alt="Threads">
                 </a>
                 <a href="https://t.me/username" target="_blank" class="soc-btn glass">
+                    <div class="glass-distort"></div>
                     <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/telegram.svg" alt="Telegram">
                 </a>
                 <a href="https://instagram.com/username" target="_blank" class="soc-btn glass">
+                    <div class="glass-distort"></div>
                     <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/insta.svg" alt="Instagram">
                 </a>
                 <a href="https://wa.me/380000000000" target="_blank" class="soc-btn glass">
+                    <div class="glass-distort"></div>
                     <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/wa.svg" alt="WhatsApp">
                 </a>
                 <a href="tel:+380000000000" class="soc-btn glass">
+                    <div class="glass-distort"></div>
                     <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/call.svg" alt="Дзвінок">
                 </a>
             </div>
@@ -562,6 +626,38 @@
     let gyroActive = false;
     let gyroOffset = null;
 
+    /* ── Десктоп: зажать ЛКМ = pointer lock, бесконечный скролл ── */
+    const eulerMouse = new THREE.Euler(0.4, 0, 0, 'YXZ');
+
+    document.addEventListener('mousedown', (e) => {
+        if (gyroActive) return;
+        if (e.button !== 0) return;
+        if (e.target.closest('button, a, .massage-item')) return;
+        document.body.requestPointerLock();
+        document.body.classList.add('is-dragging');
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (document.pointerLockElement) document.exitPointerLock();
+        document.body.classList.remove('is-dragging');
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+        if (!document.pointerLockElement) {
+            document.body.classList.remove('is-dragging');
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (gyroActive) return;
+        if (!document.pointerLockElement) return;
+        eulerMouse.y -= e.movementX * 0.003;
+        eulerMouse.x -= e.movementY * 0.002;
+        eulerMouse.x  = Math.max(-1.0, Math.min(1.0, eulerMouse.x));
+        qTarget.setFromEuler(eulerMouse);
+    });
+
+    /* ── Гироскоп ── */
     function onDeviceOrientation(e) {
         if (e.alpha == null || e.beta == null || e.gamma == null) return;
         gyroActive = true;
@@ -627,7 +723,7 @@
     (function animate() {
         requestAnimationFrame(animate);
         if (video.readyState >= video.HAVE_CURRENT_DATA) texture.needsUpdate = true;
-        if (!gyroActive) {
+        if (!gyroActive && !document.pointerLockElement) {
             eulerDrift.y += DRIFT_SPEED;
             qTarget.setFromEuler(eulerDrift);
         }
@@ -635,6 +731,8 @@
         camera.quaternion.copy(qCurrent);
         renderer.render(scene, camera);
     })();
+
+    document.body.classList.add('can-drag');
 })();
 </script>
 
@@ -725,6 +823,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener('mousemove', (e) => {
         if (uiGyro) return;
+        if (document.pointerLockElement) return;
         uiTX = ((e.clientX - window.innerWidth  / 2) / (window.innerWidth  / 2)) * MAX_SHIFT;
         uiTY = ((e.clientY - window.innerHeight / 2) / (window.innerHeight / 2)) * MAX_SHIFT * 0.6;
     });
