@@ -7,7 +7,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         html, body {
             width: 100%; height: 100%;
             overflow: hidden;
@@ -17,369 +16,110 @@
             user-select: none;
             -webkit-user-select: none;
         }
-
         #three-canvas {
             position: fixed;
             inset: 0;
             width: 100%; height: 100%;
         }
 
-        /* ── UI поверх Three.js ── */
-        #ui {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px;
-        }
-
-        /* Заголовок */
-        #title-block {
-            text-align: center;
-            pointer-events: none;
-        }
-        #title-block h1 {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-            font-size: 1.3rem;
-            font-weight: 500;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: #fff;
-            mix-blend-mode: difference;
-        }
-        #title-block p {
-            margin-top: 4px;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            font-size: 0.7rem;
-            color: rgba(255,255,255,0.6);
-            letter-spacing: 0.5px;
-            mix-blend-mode: difference;
-        }
-
-        /* Подсказка внизу */
+        /* Подсказка */
         #hint {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             font-size: 0.68rem;
-            color: rgba(255,255,255,0.35);
-            letter-spacing: 1px;
+            color: rgba(255,255,255,0.40);
+            letter-spacing: 1.2px;
             text-transform: uppercase;
             text-align: center;
             pointer-events: none;
-            transition: opacity 1s ease;
+            transition: opacity 1.2s ease;
+            white-space: nowrap;
         }
         #hint.hidden { opacity: 0; }
-
-        /* Кнопка записи */
-        #btn-book {
-            pointer-events: auto;
-            position: fixed;
-            bottom: 28px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 20;
-
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            font-size: 0.78rem;
-            font-weight: 400;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #fff;
-            mix-blend-mode: difference;
-
-            background: rgba(255,255,255,0.08);
-            border: none;
-            border-radius: 16px;
-            padding: 16px 36px;
-            cursor: pointer;
-            white-space: nowrap;
-
-            /* Контур */
-            box-shadow:
-                0 0 0 1.5px rgba(255,255,255,0.5),
-                0 8px 32px rgba(0,0,0,0.4);
-
-            transition: box-shadow 0.2s, background 0.2s;
-        }
-        #btn-book:active {
-            background: rgba(255,255,255,0.14);
-        }
-
-        /* Соцсети — появляются вместо кнопки */
-        #social-row {
-            pointer-events: auto;
-            position: fixed;
-            bottom: 28px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 20;
-            display: flex;
-            gap: 10px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-        #social-row.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .soc-btn {
-            width: 54px;
-            height: 54px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            border-radius: 16px;
-            background: rgba(255,255,255,0.08);
-            box-shadow: 0 0 0 1.5px rgba(255,255,255,0.4);
-            transition: background 0.2s;
-        }
-        .soc-btn:active { background: rgba(255,255,255,0.18); }
-        .soc-btn img {
-            width: 22px; height: 22px;
-            filter: brightness(0) invert(1);
-            mix-blend-mode: difference;
-        }
-
-        /* Индикатор активной карточки */
-        #dots {
-            position: fixed;
-            top: 50%;
-            right: 16px;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 20;
-            pointer-events: none;
-        }
-        .dot {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.25);
-            transition: background 0.3s, transform 0.3s;
-        }
-        .dot.active {
-            background: rgba(255,255,255,0.85);
-            transform: scale(1.4);
-        }
     </style>
 </head>
 <body>
 
 <canvas id="three-canvas"></canvas>
-
-<!-- UI поверх -->
-<div id="ui">
-    <div id="title-block">
-        <h1>Час для себе</h1>
-        <p>Нехай увесь світ зачекає — знайди час для себе</p>
-    </div>
-</div>
-
-<div id="hint">Поверніть телефон, щоб оглянутись</div>
-
-<button id="btn-book">Записатися на масаж</button>
-
-<div id="social-row">
-    <a href="https://threads.net/" target="_blank" class="soc-btn">
-        <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/hreads.svg" alt="Threads">
-    </a>
-    <a href="https://t.me/username" target="_blank" class="soc-btn">
-        <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/telegram.svg" alt="Telegram">
-    </a>
-    <a href="https://instagram.com/username" target="_blank" class="soc-btn">
-        <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/insta.svg" alt="Instagram">
-    </a>
-    <a href="https://wa.me/380000000000" target="_blank" class="soc-btn">
-        <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/wa.svg" alt="WhatsApp">
-    </a>
-    <a href="tel:+380000000000" class="soc-btn">
-        <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/call.svg" alt="Дзвінок">
-    </a>
-</div>
-
-<div id="dots">
-    <div class="dot active"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-</div>
+<div id="hint">Крутіть телефон навколо себе</div>
 
 <script>
-// ═══════════════════════════════════════════
-// ДАННЫЕ КАРТОЧЕК
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════
+// ДАННЫЕ
+// ═══════════════════════════════════════
 const CARDS = [
-    {
-        name: 'Класичний масаж',
-        desc: 'Відновлює кровообіг, знімає м\'язову напругу та покращує загальний тонус тіла. Ідеально після важкого тижня.',
-        duration: '60 або 90 хв',
-        price: '600 / 850 грн',
-        color: '#1a1f2e'
-    },
-    {
-        name: 'Глибокий тканинний',
-        desc: 'Інтенсивний вплив на глибокі шари м\'язів. Ефективний при хронічних болях та м\'язових затисках.',
-        duration: '60 або 90 хв',
-        price: '750 / 1050 грн',
-        color: '#1e1a2e'
-    },
-    {
-        name: 'Аромамасаж',
-        desc: 'М\'які техніки з натуральними ефірними оліями. Заспокоює нервову систему та знімає тривожність.',
-        duration: '75 або 90 хв',
-        price: '700 / 900 грн',
-        color: '#1a2e1e'
-    },
-    {
-        name: 'Масаж спини та шиї',
-        desc: 'Знімає головний біль, напругу від сидячої роботи та скутість у плечовому поясі.',
-        duration: '30 або 45 хв',
-        price: '400 / 550 грн',
-        color: '#2e1a1a'
-    },
-    {
-        name: 'Антицелюлітний',
-        desc: 'Лімфодренаж та покращення мікроциркуляції. Шкіра стає пружнішою, контури — чіткішими.',
-        duration: '45 або 60 хв',
-        price: '650 / 850 грн',
-        color: '#2e2a1a'
-    },
-    {
-        name: 'Спортивний масаж',
-        desc: 'Відновлення після тренувань, профілактика травм, підвищення гнучкості та тонусу м\'язів.',
-        duration: '60 хв',
-        price: '700 грн',
-        color: '#1a2a2e'
-    }
+    { name: 'Класичний масаж',    desc: 'Відновлює кровообіг, знімає м\'язову напругу та покращує загальний тонус тіла. Ідеально після важкого тижня.',         duration: '60 або 90 хв', price: '600 / 850 грн'  },
+    { name: 'Глибокий тканинний', desc: 'Інтенсивний вплив на глибокі шари м\'язів. Ефективний при хронічних болях та м\'язових затисках після стресу.',        duration: '60 або 90 хв', price: '750 / 1050 грн' },
+    { name: 'Аромамасаж',         desc: 'М\'які техніки з натуральними ефірними оліями. Заспокоює нервову систему та наповнює тіло відчуттям легкості.',         duration: '75 або 90 хв', price: '700 / 900 грн'  },
+    { name: 'Масаж спини та шиї', desc: 'Знімає головний біль, напругу від сидячої роботи та скутість у плечовому поясі. Результат після першого сеансу.',       duration: '30 або 45 хв', price: '400 / 550 грн'  },
+    { name: 'Антицелюлітний',     desc: 'Лімфодренаж та покращення мікроциркуляції. Шкіра стає пружнішою, контури — чіткішими. Курс від 8 сеансів.',             duration: '45 або 60 хв', price: '650 / 850 грн'  },
+    { name: 'Спортивний масаж',   desc: 'Відновлення після тренувань, профілактика травм, підвищення гнучкості та тонусу м\'язів. До і після навантажень.',       duration: '60 хв',        price: '700 грн'        },
 ];
 
-// ═══════════════════════════════════════════
-// THREE.JS SETUP
-// ═══════════════════════════════════════════
-const canvas = document.getElementById('three-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+const SOC_ICONS = [
+    { href: 'https://threads.net/',          src: 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/hreads.svg',   alt: 'Threads'   },
+    { href: 'https://t.me/username',         src: 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/telegram.svg', alt: 'Telegram'  },
+    { href: 'https://instagram.com/username',src: 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/insta.svg',    alt: 'Instagram' },
+    { href: 'https://wa.me/380000000000',    src: 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/wa.svg',       alt: 'WhatsApp'  },
+    { href: 'tel:+380000000000',             src: 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/call.svg',     alt: 'Дзвінок'   },
+];
+
+// ═══════════════════════════════════════
+// THREE SETUP
+// ═══════════════════════════════════════
+const canvas   = document.getElementById('three-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
-const scene = new THREE.Scene();
+const scene  = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 0, 0);
 
-// ── Видео-фон (сфера) ──
+// Видео-сфера
 const video = document.createElement('video');
-video.src = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/SpaceSeamless.mp4';
+video.src         = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/SpaceSeamless.mp4';
 video.crossOrigin = 'anonymous';
-video.loop = true;
-video.muted = true;
-video.playsInline = true;
-video.autoplay = true;
+video.loop = true; video.muted = true; video.playsInline = true; video.autoplay = true;
 video.play().catch(() => {});
-
 const videoTex = new THREE.VideoTexture(video);
 videoTex.colorSpace = THREE.SRGBColorSpace;
-
 const skyGeo = new THREE.SphereGeometry(80, 64, 32);
 skyGeo.scale(-1, 1, 1);
-const skyMesh = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: videoTex }));
-scene.add(skyMesh);
+scene.add(new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: videoTex })));
 
-// ── Свет ──
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-dirLight.position.set(0, 5, 5);
-scene.add(dirLight);
+// ═══════════════════════════════════════
+// КАРТОЧКИ — Canvas Texture
+// ═══════════════════════════════════════
+const RADIUS = 4.5;
+const CARD_W = 2.0;
+const CARD_H = 2.9;
+const TW = 520, TH = 740;
 
-// ═══════════════════════════════════════════
-// СОЗДАНИЕ КАРТОЧЕК ЧЕРЕЗ CSS2DRenderer-подобный подход
-// Карточки — это HTML-текстуры на PlaneGeometry через CanvasTexture
-// ═══════════════════════════════════════════
-const RADIUS   = 4.5;   // радиус круга карточек
-const CARD_W   = 2.2;   // ширина карточки (world units)
-const CARD_H   = 2.8;   // высота карточки
-const TEX_W    = 512;
-const TEX_H    = 650;
+// Состояние раскрытых карточек (какая показывает иконки)
+const cardExpanded = new Array(CARDS.length).fill(false);
 
-function makeCardTexture(data) {
-    const c = document.createElement('canvas');
-    c.width  = TEX_W;
-    c.height = TEX_H;
-    const ctx = c.getContext('2d');
-
-    // Фон карточки — тёмное стекло
-    const bg = ctx.createLinearGradient(0, 0, 0, TEX_H);
-    bg.addColorStop(0, 'rgba(255,255,255,0.13)');
-    bg.addColorStop(1, 'rgba(255,255,255,0.05)');
-    ctx.fillStyle = bg;
-    roundRect(ctx, 0, 0, TEX_W, TEX_H, 48);
-    ctx.fill();
-
-    // Контур
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-    ctx.lineWidth = 3;
-    roundRect(ctx, 1.5, 1.5, TEX_W - 3, TEX_H - 3, 47);
-    ctx.stroke();
-
-    // Название
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 42px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.textAlign = 'left';
-    wrapText(ctx, data.name, 44, 80, TEX_W - 88, 52);
-
-    // Разделитель
-    ctx.strokeStyle = 'rgba(255,255,255,0.20)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(44, 115);
-    ctx.lineTo(TEX_W - 44, 115);
-    ctx.stroke();
-
-    // Описание
-    ctx.fillStyle = 'rgba(255,255,255,0.78)';
-    ctx.font = '28px -apple-system, BlinkMacSystemFont, sans-serif';
-    wrapText(ctx, data.desc, 44, 160, TEX_W - 88, 38);
-
-    // Плашка внизу
-    const pill = ctx.createLinearGradient(0, TEX_H - 130, 0, TEX_H - 40);
-    pill.addColorStop(0, 'rgba(255,255,255,0.10)');
-    pill.addColorStop(1, 'rgba(255,255,255,0.06)');
-    ctx.fillStyle = pill;
-    roundRect(ctx, 36, TEX_H - 130, TEX_W - 72, 90, 24);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, 36, TEX_H - 130, TEX_W - 72, 90, 24);
-    ctx.stroke();
-
-    // Длительность · цена
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.font = '30px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(data.duration + '  ·  ' + data.price, TEX_W / 2, TEX_H - 72);
-
-    const tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
-}
+// Иконки (Image объекты) грузим заранее
+const socImages = SOC_ICONS.map(s => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = s.src;
+    return img;
+});
 
 function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
     ctx.closePath();
 }
 
@@ -392,129 +132,260 @@ function wrapText(ctx, text, x, y, maxW, lineH) {
             ctx.fillText(line.trim(), x, y);
             line = words[i] + ' ';
             y += lineH;
-        } else {
-            line = test;
-        }
+        } else { line = test; }
     }
     ctx.fillText(line.trim(), x, y);
 }
 
-// Размещаем карточки по кругу
+function drawCard(cardCanvas, data, expanded) {
+    const ctx = cardCanvas.getContext('2d');
+    ctx.clearRect(0, 0, TW, TH);
+
+    // Фон — тёмное стекло с лёгким blur-эффектом через полупрозрачность
+    const bg = ctx.createLinearGradient(0, 0, 0, TH);
+    bg.addColorStop(0, 'rgba(200,210,230,0.18)');
+    bg.addColorStop(1, 'rgba(160,180,210,0.08)');
+    ctx.fillStyle = bg;
+    roundRect(ctx, 0, 0, TW, TH, 56);
+    ctx.fill();
+
+    // Внутренний блик сверху
+    const shine = ctx.createLinearGradient(0, 0, 0, TH * 0.4);
+    shine.addColorStop(0, 'rgba(255,255,255,0.12)');
+    shine.addColorStop(1, 'rgba(255,255,255,0.00)');
+    ctx.fillStyle = shine;
+    roundRect(ctx, 0, 0, TW, TH, 56);
+    ctx.fill();
+
+    // Контур
+    ctx.strokeStyle = 'rgba(255,255,255,0.60)';
+    ctx.lineWidth = 2.5;
+    roundRect(ctx, 1.5, 1.5, TW-3, TH-3, 55);
+    ctx.stroke();
+
+    // Название
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, Helvetica, sans-serif';
+    ctx.textAlign = 'left';
+    wrapText(ctx, data.name, 44, 82, TW - 88, 54);
+
+    // Разделитель
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(44, 120); ctx.lineTo(TW-44, 120); ctx.stroke();
+
+    // Описание
+    ctx.fillStyle = 'rgba(255,255,255,0.80)';
+    ctx.font = '29px -apple-system, BlinkMacSystemFont, Helvetica, sans-serif';
+    wrapText(ctx, data.desc, 44, 168, TW - 88, 40);
+
+    // ── Нижняя плашка ──
+    const pillY = TH - 148;
+    const pillH = 108;
+
+    roundRect(ctx, 36, pillY, TW - 72, pillH, 28);
+
+    if (!expanded) {
+        // Обычное состояние — длительность · цена
+        const pillBg = ctx.createLinearGradient(0, pillY, 0, pillY + pillH);
+        pillBg.addColorStop(0, 'rgba(255,255,255,0.12)');
+        pillBg.addColorStop(1, 'rgba(255,255,255,0.06)');
+        ctx.fillStyle = pillBg;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.90)';
+        ctx.font = '31px -apple-system, BlinkMacSystemFont, Helvetica, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(data.duration + '  ·  ' + data.price, TW / 2, pillY + 64);
+    } else {
+        // Раскрытое состояние — 5 иконок
+        const pillBg = ctx.createLinearGradient(0, pillY, 0, pillY + pillH);
+        pillBg.addColorStop(0, 'rgba(255,255,255,0.16)');
+        pillBg.addColorStop(1, 'rgba(255,255,255,0.08)');
+        ctx.fillStyle = pillBg;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // 5 иконок равномерно
+        const iconSize = 38;
+        const totalW   = TW - 72;
+        const step     = totalW / 5;
+        SOC_ICONS.forEach((soc, idx) => {
+            const ix = 36 + step * idx + step / 2 - iconSize / 2;
+            const iy = pillY + (pillH - iconSize) / 2;
+            if (socImages[idx].complete && socImages[idx].naturalWidth > 0) {
+                ctx.globalAlpha = 0.85;
+                ctx.drawImage(socImages[idx], ix, iy, iconSize, iconSize);
+                ctx.globalAlpha = 1;
+            } else {
+                // Fallback — белый кружок
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.beginPath();
+                ctx.arc(ix + iconSize/2, iy + iconSize/2, iconSize/2, 0, Math.PI*2);
+                ctx.fill();
+            }
+        });
+    }
+
+    // Подсказка "нажми" — маленький текст под плашкой
+    if (!expanded) {
+        ctx.fillStyle = 'rgba(255,255,255,0.30)';
+        ctx.font = '22px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Натисни для запису', TW / 2, TH - 22);
+    }
+}
+
+// Создаём меши карточек
 const cardMeshes = [];
 CARDS.forEach((data, i) => {
     const angle = (i / CARDS.length) * Math.PI * 2;
     const x = Math.sin(angle) * RADIUS;
-    const z = -Math.cos(angle) * RADIUS; // начало — прямо перед камерой
+    const z = -Math.cos(angle) * RADIUS;
+
+    const cardCanvas = document.createElement('canvas');
+    cardCanvas.width  = TW;
+    cardCanvas.height = TH;
+    drawCard(cardCanvas, data, false);
+
+    const tex = new THREE.CanvasTexture(cardCanvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
 
     const geo = new THREE.PlaneGeometry(CARD_W, CARD_H);
-    const tex = makeCardTexture(data);
-    const mat = new THREE.MeshBasicMaterial({
-        map: tex,
-        transparent: true,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-    });
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, depthWrite: false });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(x, 0, z);
-    // Карточка смотрит на центр
     mesh.lookAt(0, 0, 0);
-
     scene.add(mesh);
-    cardMeshes.push({ mesh, angle });
+
+    cardMeshes.push({ mesh, angle, tex, cardCanvas, data, index: i });
 });
 
-// ═══════════════════════════════════════════
-// УПРАВЛЕНИЕ КАМЕРОЙ
-// ═══════════════════════════════════════════
+// Перерисовываем карточку (например после раскрытия)
+function redrawCard(i) {
+    const { cardCanvas, tex, data } = cardMeshes[i];
+    drawCard(cardCanvas, data, cardExpanded[i]);
+    tex.needsUpdate = true;
+}
+
+// Иконки грузим асинхронно — перерисуем все карточки когда загрузятся
+socImages.forEach(img => {
+    img.onload = () => { cardMeshes.forEach((_, i) => redrawCard(i)); };
+});
+
+// ═══════════════════════════════════════
+// RAYCASTER — клик по карточке
+// ═══════════════════════════════════════
+const raycaster = new THREE.Raycaster();
+const pointer   = new THREE.Vector2();
+
+function onPointerUp(e) {
+    // Координаты в NDC
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+    pointer.x =  ((clientX - rect.left) / rect.width)  * 2 - 1;
+    pointer.y = -((clientY - rect.top)  / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(cardMeshes.map(c => c.mesh));
+    if (!hits.length) return;
+
+    const hit  = hits[0];
+    const idx  = cardMeshes.findIndex(c => c.mesh === hit.object);
+    if (idx < 0) return;
+
+    // Проверяем попал ли клик в зону плашки
+    // UV.y: 0 = низ, 1 = верх. Плашка примерно y < 0.22
+    const uv = hit.uv;
+    if (uv && uv.y < 0.22) {
+        if (cardExpanded[idx]) {
+            // Клик по иконке — определяем какой
+            const u = uv.x; // 0..1
+            const socIdx = Math.floor(u * 5);
+            const soc = SOC_ICONS[Math.max(0, Math.min(4, socIdx))];
+            window.open(soc.href, '_blank');
+        } else {
+            // Раскрываем
+            cardExpanded[idx] = true;
+            redrawCard(idx);
+        }
+    } else if (cardExpanded[idx]) {
+        // Клик вне плашки — закрываем
+        cardExpanded[idx] = false;
+        redrawCard(idx);
+    }
+}
+
+canvas.addEventListener('pointerup',  onPointerUp);
+canvas.addEventListener('touchend',   onPointerUp, { passive: true });
+
+// ═══════════════════════════════════════
+// ГИРОСКОП — deviceorientation W3C стандарт
+// Только yaw-калибровка, pitch всегда от вертикали
+// ═══════════════════════════════════════
 const qTarget  = new THREE.Quaternion();
 const qCurrent = new THREE.Quaternion();
-
-// Авторотация по умолчанию
-let autoAngle = 0;
-const AUTO_SPEED = 0.0002;
 let gyroActive = false;
-let gyroOffset = null;
+let gyroYawOffset = 0; // только горизонтальная калибровка
+let gyroCalibrated = false;
 
-// Гироскоп
 function onDeviceOrientation(e) {
     if (e.alpha == null || e.beta == null || e.gamma == null) return;
     gyroActive = true;
 
-    const alpha = THREE.MathUtils.degToRad(e.alpha);
-    const beta  = THREE.MathUtils.degToRad(e.beta);
-    const gamma = THREE.MathUtils.degToRad(e.gamma);
+    const toR = Math.PI / 180;
 
-    // Кватернионы по каждой оси — стандарт W3C DeviceOrientation
-    const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), alpha);
-    const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), beta);
-    const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -gamma);
+    // W3C стандарт — строим кватернион устройства
+    const alpha = e.alpha * toR;
+    const beta  = e.beta  * toR;
+    const gamma = e.gamma * toR;
 
-    // Порядок как в спецификации W3C
-    const qDevice = new THREE.Quaternion()
-        .multiply(qZ)
-        .multiply(qX)
-        .multiply(qY);
+    const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),  alpha);
+    const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),  beta);
+    const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -gamma);
+    const qDev = new THREE.Quaternion().multiply(qZ).multiply(qX).multiply(qY);
 
-    // Поворот системы координат:
-    // устройство в портрете смотрит ВВЕРХ (ось Z вверх)
-    // нам нужно чтобы смотрело ВПЕРЁД (ось Z вперёд = в экран)
-    // поворачиваем на -90° по X
-    const qWorld = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(1, 0, 0), -Math.PI / 2
-    );
-    qDevice.premultiply(qWorld);
+    // Переводим из "лежачей" системы координат устройства в "стоячую" камеры
+    const qFix = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI/2);
+    qDev.premultiply(qFix);
 
-    // Убиваем крен (roll) — извлекаем Euler YXZ, зануляем Z, кладём обратно
-    const euler = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
-    euler.z = 0;
-    // Ограничиваем pitch чтобы не смотреть под ноги/в потолок
-    euler.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, euler.x));
-    qDevice.setFromEuler(euler);
+    // Извлекаем Euler YXZ — убиваем крен
+    const eu = new THREE.Euler().setFromQuaternion(qDev, 'YXZ');
+    eu.z = 0;
+    // Pitch: 0 = горизонталь, ограничиваем
+    eu.x = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, eu.x));
 
-    // Первый вызов — запоминаем как ноль
-    // НО: нам не нужна калибровка по вертикали — только по горизонтали
-    // Иначе если телефон лежит на столе при загрузке — будет смотреть в пол
-    if (!gyroOffset) {
-        // Берём только yaw-компонент для оффсета (горизонталь)
-        const yawOnly = new THREE.Euler(0, euler.y, 0, 'YXZ');
-        const qYawOnly = new THREE.Quaternion().setFromEuler(yawOnly);
-        gyroOffset = qYawOnly.invert();
+    // Калибровка — запоминаем только yaw при первом вызове
+    if (!gyroCalibrated) {
+        gyroYawOffset = eu.y;
+        gyroCalibrated = true;
     }
 
-    qTarget.copy(qDevice).premultiply(gyroOffset);
+    eu.y -= gyroYawOffset;
+    qTarget.setFromEuler(eu);
 }
 
-    
-
-// Десктоп: мышь зажата
-const eulerMouse = new THREE.Euler(0, 0, 0, 'YXZ');
-document.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    document.body.requestPointerLock();
-});
-document.addEventListener('mousemove', (e) => {
-    if (!document.pointerLockElement || gyroActive) return;
-    eulerMouse.y -= e.movementX * 0.003;
-    eulerMouse.x -= e.movementY * 0.002;
-    eulerMouse.x = Math.max(-0.5, Math.min(0.5, eulerMouse.x));
-    qTarget.setFromEuler(eulerMouse);
-});
-
 // Сброс калибровки двойным тапом
-document.addEventListener('dblclick', () => { gyroOffset = null; });
+document.addEventListener('dblclick', () => { gyroCalibrated = false; });
 let lastTap = 0;
 document.addEventListener('touchend', () => {
     const now = Date.now();
-    if (now - lastTap < 300) gyroOffset = null;
+    if (now - lastTap < 300) gyroCalibrated = false;
     lastTap = now;
-});
+}, { passive: true });
 
 function startGyro() {
     if (typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
-            .then(r => { if (r === 'granted') window.addEventListener('deviceorientation', onDeviceOrientation, true); })
-            .catch(() => {});
+            .then(r => { if (r==='granted') window.addEventListener('deviceorientation', onDeviceOrientation, true); })
+            .catch(()=>{});
     } else {
         window.addEventListener('deviceorientation', onDeviceOrientation, true);
     }
@@ -522,7 +393,7 @@ function startGyro() {
 
 if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     document.addEventListener('touchstart', function ask() {
-        video.play().catch(() => {});
+        video.play().catch(()=>{});
         startGyro();
         document.removeEventListener('touchstart', ask);
     }, { once: true });
@@ -530,112 +401,80 @@ if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     startGyro();
 }
 
-// ═══════════════════════════════════════════
-// ОПРЕДЕЛЕНИЕ АКТИВНОЙ КАРТОЧКИ
-// ═══════════════════════════════════════════
-const dots = document.querySelectorAll('.dot');
-let activeCard = 0;
+// ═══════════════════════════════════════
+// ДЕСКТОП — pointer lock
+// ═══════════════════════════════════════
+const eulerMouse = new THREE.Euler(0, 0, 0, 'YXZ');
+let mouseDown = false;
 
-function updateActiveCard() {
-    // Направление взгляда камеры в XZ-плоскости
-    const dir = new THREE.Vector3(0, 0, -1);
-    dir.applyQuaternion(camera.quaternion);
+document.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    if (e.target.closest('a,button')) return;
+    mouseDown = true;
+    canvas.requestPointerLock();
+});
+document.addEventListener('mouseup', () => {
+    mouseDown = false;
+    if (document.pointerLockElement) document.exitPointerLock();
+});
+document.addEventListener('mousemove', e => {
+    if (!document.pointerLockElement || gyroActive) return;
+    eulerMouse.y -= e.movementX * 0.003;
+    eulerMouse.x -= e.movementY * 0.002;
+    eulerMouse.x = Math.max(-0.6, Math.min(0.6, eulerMouse.x));
+    qTarget.setFromEuler(eulerMouse);
+});
 
-    let minAngle = Infinity;
-    let closest  = 0;
-
-    cardMeshes.forEach(({ angle }, i) => {
-        const cardDir = new THREE.Vector3(Math.sin(angle), 0, -Math.cos(angle));
-        const dot = dir.dot(cardDir);
-        const a = Math.acos(Math.max(-1, Math.min(1, dot)));
-        if (a < minAngle) { minAngle = a; closest = i; }
-    });
-
-    if (closest !== activeCard) {
-        activeCard = closest;
-        dots.forEach((d, i) => d.classList.toggle('active', i === activeCard));
-    }
-}
-
-// ═══════════════════════════════════════════
-// ЭФФЕКТ ГЛУБИНЫ: карточки ближние ярче
-// ═══════════════════════════════════════════
-function updateCardDepth() {
-    const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+// ═══════════════════════════════════════
+// ЭФФЕКТ ГЛУБИНЫ
+// ═══════════════════════════════════════
+function updateDepth() {
+    const dir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
     cardMeshes.forEach(({ mesh, angle }) => {
-        const cardDir = new THREE.Vector3(Math.sin(angle), 0, -Math.cos(angle));
-        const dot = dir.dot(cardDir); // от -1 до 1
-        // Нормализуем: 1 = прямо перед, -1 = сзади
-        const t = (dot + 1) / 2; // 0..1
-        const opacity = 0.35 + t * 0.65;
-        const scale   = 0.80 + t * 0.20;
-        mesh.material.opacity = opacity;
-        mesh.scale.setScalar(scale);
+        const cd  = new THREE.Vector3(Math.sin(angle), 0, -Math.cos(angle));
+        const dot = Math.max(-1, Math.min(1, dir.dot(cd)));
+        const t   = (dot + 1) / 2;
+        mesh.material.opacity = 0.4 + t * 0.6;
+        mesh.scale.setScalar(0.82 + t * 0.18);
     });
 }
 
-// ═══════════════════════════════════════════
-// КНОПКА ЗАПИСИ
-// ═══════════════════════════════════════════
-const btnBook   = document.getElementById('btn-book');
-const socialRow = document.getElementById('social-row');
-let expanded = false;
+// ═══════════════════════════════════════
+// АВТОРОТАЦИЯ
+// ═══════════════════════════════════════
+let autoAngle = 0;
+const eulerAuto = new THREE.Euler(0,0,0,'YXZ');
 
-btnBook.addEventListener('click', () => {
-    expanded = true;
-    btnBook.style.opacity = '0';
-    btnBook.style.pointerEvents = 'none';
-    socialRow.classList.add('visible');
-});
-
-document.addEventListener('click', (e) => {
-    if (expanded && !e.target.closest('#social-row') && !e.target.closest('#btn-book')) {
-        expanded = false;
-        socialRow.classList.remove('visible');
-        setTimeout(() => {
-            btnBook.style.opacity = '1';
-            btnBook.style.pointerEvents = 'auto';
-        }, 300);
-    }
-});
-
-// Скрываем подсказку через 4 секунды
-setTimeout(() => {
-    document.getElementById('hint').classList.add('hidden');
-}, 4000);
-
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════
 // РЕСАЙЗ
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ═══════════════════════════════════════════
-// АНИМАЦИЯ
-// ═══════════════════════════════════════════
-const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+// Скрываем подсказку
+setTimeout(() => { document.getElementById('hint').classList.add('hidden'); }, 4000);
 
+// ═══════════════════════════════════════
+// АНИМАЦИЯ
+// ═══════════════════════════════════════
 (function animate() {
     requestAnimationFrame(animate);
 
     if (video.readyState >= video.HAVE_CURRENT_DATA) videoTex.needsUpdate = true;
 
-    // Авторотация если нет гироскопа и нет pointer lock
     if (!gyroActive && !document.pointerLockElement) {
-        autoAngle += AUTO_SPEED;
-        euler.set(0, autoAngle, 0);
-        qTarget.setFromEuler(euler);
+        autoAngle += 0.0002;
+        eulerAuto.set(0, autoAngle, 0);
+        qTarget.setFromEuler(eulerAuto);
     }
 
-    qCurrent.slerp(qTarget, 0.07);
+    qCurrent.slerp(qTarget, 0.08);
     camera.quaternion.copy(qCurrent);
 
-    updateCardDepth();
-    updateActiveCard();
-
+    updateDepth();
     renderer.render(scene, camera);
 })();
 </script>
