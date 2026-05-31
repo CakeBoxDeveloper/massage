@@ -440,24 +440,40 @@ function onDeviceOrientation(e) {
     if (e.alpha == null) return;
     gyroActive = true;
 
-    const alpha = THREE.MathUtils.degToRad(e.alpha);
-    const beta  = THREE.MathUtils.degToRad(e.beta);
-    const gamma = THREE.MathUtils.degToRad(e.gamma);
+    // Конвертируем углы устройства в радианы
+    const alpha = THREE.MathUtils.degToRad(e.alpha); // компас (Z)
+    const beta  = THREE.MathUtils.degToRad(e.beta);  // наклон вперёд/назад (X)
+    const gamma = THREE.MathUtils.degToRad(e.gamma); // наклон влево/вправо (Y)
 
-    const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), alpha);
-    const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), beta);
-    const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), gamma);
+    // Строим Euler сразу в нужном порядке YXZ
+    // и явно убиваем крен (Z = 0)
+    const deviceEuler = new THREE.Euler(
+        beta,    // pitch
+        alpha,   // yaw (компас)
+        -gamma,  // roll — берём отрицательный чтобы компенсировать
+        'YXZ'
+    );
 
-    const qDevice = new THREE.Quaternion().multiply(qZ).multiply(qX).multiply(qY);
-    const qWorld  = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI / 2);
-    qDevice.premultiply(qWorld);
+    const qDevice = new THREE.Quaternion().setFromEuler(deviceEuler);
 
-    const euler = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
-    euler.z = 0;
-    // Ограничиваем pitch — смотрим только горизонтально ±30°
-    euler.x = Math.max(-0.5, Math.min(0.5, euler.x));
-    qDevice.setFromEuler(euler);
+    // Поворачиваем систему координат: телефон в портрете смотрит вверх,
+    // нам нужно чтобы смотрел вперёд
+    const qFix = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(1, 0, 0), -Math.PI / 2
+    );
+    qDevice.premultiply(qFix);
 
+    // Извлекаем Euler, ОБНУЛЯЕМ КРЕН, кладём обратно
+    const e2 = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
+    e2.z = 0; // <-- вот здесь убиваем завал горизонта
+    qDevice.setFromEuler(e2);
+
+    // Ограничиваем pitch
+    const e3 = new THREE.Euler().setFromQuaternion(qDevice, 'YXZ');
+    e3.x = Math.max(-0.5, Math.min(0.5, e3.x));
+    qDevice.setFromEuler(e3);
+
+    // Калибровка — первое положение = ноль
     if (!gyroOffset) gyroOffset = qDevice.clone().invert();
     qTarget.copy(qDevice).premultiply(gyroOffset);
 }
