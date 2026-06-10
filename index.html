@@ -180,112 +180,202 @@ socImages.forEach(img=>{ img.onload=()=>{ cardMeshes.forEach((_,i)=>redrawCard(i
 // ── Raycaster ──
 const raycaster = new THREE.Raycaster();
 const pointer   = new THREE.Vector2();
+
+// Відстежуємо рух між pointerdown і pointerup щоб не спрацьовував клік під час перетягування
+let pointerDownX = 0, pointerDownY = 0;
+const DRAG_THRESHOLD = 8; // px
+
+canvas.addEventListener('pointerdown', e => {
+  pointerDownX = e.clientX;
+  pointerDownY = e.clientY;
+});
+
 function onPointerUp(e){
-  const rect=canvas.getBoundingClientRect();
-  const clientX=e.changedTouches?e.changedTouches[0].clientX:e.clientX;
-  const clientY=e.changedTouches?e.changedTouches[0].clientY:e.clientY;
-  pointer.x=((clientX-rect.left)/rect.width)*2-1;
-  pointer.y=-((clientY-rect.top)/rect.height)*2+1;
-  raycaster.setFromCamera(pointer,camera);
-  const hits=raycaster.intersectObjects(cardMeshes.map(c=>c.mesh));
+  const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+  const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+
+  // Якщо це був drag — не обробляємо як клік
+  const dx = clientX - pointerDownX;
+  const dy = clientY - pointerDownY;
+  if(Math.sqrt(dx*dx + dy*dy) > DRAG_THRESHOLD) return;
+
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = ((clientX - rect.left) / rect.width)  *  2 - 1;
+  pointer.y = -((clientY - rect.top)  / rect.height) *  2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(cardMeshes.map(c => c.mesh));
   if(!hits.length) return;
-  const hit=hits[0];
-  const idx=cardMeshes.findIndex(c=>c.mesh===hit.object);
-  if(idx<0) return;
-  const uv=hit.uv;
-  if(uv&&uv.y<0.22){
+  const hit = hits[0];
+  const idx = cardMeshes.findIndex(c => c.mesh === hit.object);
+  if(idx < 0) return;
+  const uv = hit.uv;
+  if(uv && uv.y < 0.22){
     if(cardExpanded[idx]){
-      const socIdx=Math.floor(uv.x*5);
-      window.open(SOC_ICONS[Math.max(0,Math.min(4,socIdx))].href,'_blank');
-    } else { cardExpanded[idx]=true; redrawCard(idx); }
-  } else if(cardExpanded[idx]){ cardExpanded[idx]=false; redrawCard(idx); }
+      const socIdx = Math.floor(uv.x * 5);
+      window.open(SOC_ICONS[Math.max(0, Math.min(4, socIdx))].href, '_blank');
+    } else { cardExpanded[idx] = true; redrawCard(idx); }
+  } else if(cardExpanded[idx]){ cardExpanded[idx] = false; redrawCard(idx); }
 }
 canvas.addEventListener('pointerup', onPointerUp);
 canvas.addEventListener('touchend',  onPointerUp, {passive:true});
 
-// ── Глубина ──
+// ── Глибина ──
 function updateDepth(){
-  const dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-  cardMeshes.forEach(({mesh,angle})=>{
-    const cd=new THREE.Vector3(Math.sin(angle),0,-Math.cos(angle));
-    const dot=Math.max(-1,Math.min(1,dir.dot(cd)));
-    const t=(dot+1)/2;
-    mesh.material.opacity=0.4+t*0.6;
-    mesh.scale.setScalar(0.82+t*0.18);
+  const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  cardMeshes.forEach(({mesh, angle}) => {
+    const cd  = new THREE.Vector3(Math.sin(angle), 0, -Math.cos(angle));
+    const dot = Math.max(-1, Math.min(1, dir.dot(cd)));
+    const t   = (dot + 1) / 2;
+    mesh.material.opacity = 0.4 + t * 0.6;
+    mesh.scale.setScalar(0.82 + t * 0.18);
   });
 }
 
-// ── Гироскоп ──
-const qTarget=new THREE.Quaternion(), qCurrent=new THREE.Quaternion();
-let gyroActive=false, gyroCalibrated=false, gyroYawOffset=0;
+// ── Стан камери (єдиний euler, без qTarget/qCurrent конфлікту) ──
+const camEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+// ── Гіроскоп ──
+let gyroActive     = false;
+let gyroCalibrated = false;
+let gyroYawOffset  = 0;
+// Для плавного slerp тільки на гіроскопі
+const qGyroTarget  = new THREE.Quaternion();
+const qGyroCurrent = new THREE.Quaternion();
+let   useGyroSlerp = false;
 
 function onDeviceOrientation(e){
-  if(e.alpha==null||e.beta==null||e.gamma==null) return;
-  gyroActive=true;
-  const toR=Math.PI/180;
-  const qZ=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), e.alpha*toR);
-  const qX=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), e.beta*toR);
-  const qY=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),-e.gamma*toR);
-  const qDev=new THREE.Quaternion().multiply(qZ).multiply(qX).multiply(qY);
-  qDev.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-Math.PI/2));
-  const eu=new THREE.Euler().setFromQuaternion(qDev,'YXZ');
-  eu.z=0;
-  eu.x=Math.max(-Math.PI/2.5,Math.min(Math.PI/2.5,eu.x));
-  if(!gyroCalibrated){ gyroYawOffset=eu.y; gyroCalibrated=true; }
-  eu.y-=gyroYawOffset;
-  qTarget.setFromEuler(eu);
+  if(e.alpha == null || e.beta == null || e.gamma == null) return;
+  gyroActive = true;
+  useGyroSlerp = true;
+  const toR = Math.PI / 180;
+  const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),  e.alpha * toR);
+  const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),  e.beta  * toR);
+  const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -e.gamma * toR);
+  const qDev = new THREE.Quaternion().multiply(qZ).multiply(qX).multiply(qY);
+  qDev.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI / 2));
+  const eu = new THREE.Euler().setFromQuaternion(qDev, 'YXZ');
+  eu.z = 0;
+  eu.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, eu.x));
+  if(!gyroCalibrated){ gyroYawOffset = eu.y; gyroCalibrated = true; }
+  eu.y -= gyroYawOffset;
+  qGyroTarget.setFromEuler(eu);
 }
-document.addEventListener('dblclick',()=>{ gyroCalibrated=false; });
-let lastTap=0;
-document.addEventListener('touchend',()=>{ const n=Date.now(); if(n-lastTap<300) gyroCalibrated=false; lastTap=n; },{passive:true});
+
+// Подвійний тап / подвійний клік — рекалібрація гіроскопу
+document.addEventListener('dblclick', () => { gyroCalibrated = false; });
+let lastTap = 0;
+document.addEventListener('touchend', () => {
+  const n = Date.now();
+  if(n - lastTap < 300) gyroCalibrated = false;
+  lastTap = n;
+}, {passive:true});
 
 function startGyro(){
-  if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
-    DeviceOrientationEvent.requestPermission().then(r=>{ if(r==='granted') window.addEventListener('deviceorientation',onDeviceOrientation,true); }).catch(()=>{});
-  } else { window.addEventListener('deviceorientation',onDeviceOrientation,true); }
+  if(typeof DeviceOrientationEvent !== 'undefined' &&
+     typeof DeviceOrientationEvent.requestPermission === 'function'){
+    DeviceOrientationEvent.requestPermission()
+      .then(r => { if(r === 'granted') window.addEventListener('deviceorientation', onDeviceOrientation, true); })
+      .catch(() => {});
+  } else {
+    window.addEventListener('deviceorientation', onDeviceOrientation, true);
+  }
 }
 if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
-  document.addEventListener('touchstart',function ask(){ startGyro(); document.removeEventListener('touchstart',ask); },{once:true});
-} else { startGyro(); }
+  document.addEventListener('touchstart', function ask(){ startGyro(); document.removeEventListener('touchstart', ask); }, {once:true});
+} else {
+  startGyro();
+}
 
-// ── Мышь (десктоп) ──
-const eulerMouse=new THREE.Euler(0,0,0,'YXZ');
-let mouseDown=false, lastMX=0, lastMY=0;
-document.addEventListener('mousedown',e=>{ if(e.button!==0) return; mouseDown=true; lastMX=e.clientX; lastMY=e.clientY; });
-document.addEventListener('mouseup',()=>{ mouseDown=false; });
-document.addEventListener('mousemove',e=>{
-  if(!mouseDown||gyroActive) return;
-  eulerMouse.y-=(e.clientX-lastMX)*0.003; eulerMouse.x-=(e.clientY-lastMY)*0.002;
-  eulerMouse.x=Math.max(-0.6,Math.min(0.6,eulerMouse.x));
-  qTarget.setFromEuler(eulerMouse);
-  lastMX=e.clientX; lastMY=e.clientY;
+// ── Миша: пряме керування з інерцією ──
+// Немає qTarget — миша пише напряму в camEuler через швидкість
+let   mouseDown  = false;
+let   lastMX = 0, lastMY = 0;
+let   velYaw = 0, velPitch = 0;          // поточна кутова швидкість (рад/кадр)
+const MOUSE_SENS   = 0.0030;
+const INERTIA      = 0.88;               // коефіцієнт затухання (0..1)
+const VEL_DEADZONE = 0.00005;            // нижче — обнуляємо
+
+document.addEventListener('mousedown', e => {
+  if(e.button !== 0) return;
+  mouseDown = true;
+  velYaw = velPitch = 0;                 // зупиняємо інерцію при захопленні
+  lastMX = e.clientX;
+  lastMY = e.clientY;
+});
+document.addEventListener('mouseup', () => { mouseDown = false; });
+document.addEventListener('mousemove', e => {
+  if(!mouseDown || gyroActive) return;
+  const dx = e.clientX - lastMX;
+  const dy = e.clientY - lastMY;
+  velYaw   = -dx * MOUSE_SENS;
+  velPitch = -dy * MOUSE_SENS * 0.7;
+  lastMX = e.clientX;
+  lastMY = e.clientY;
 });
 
-// ── Авторотация ──
-let autoAngle=0;
-const eulerAuto=new THREE.Euler(0,0,0,'YXZ');
+// ── Touch-свайп (мобільний, без гіроскопу) ──
+let touchStartX = 0, touchStartY = 0;
+let lastTouchX  = 0, lastTouchY  = 0;
+let touchActive = false;
+const TOUCH_SENS = 0.0025;
+
+canvas.addEventListener('touchstart', e => {
+  if(gyroActive) return;
+  if(e.touches.length !== 1) return;
+  touchActive = true;
+  velYaw = velPitch = 0;
+  touchStartX = lastTouchX = e.touches[0].clientX;
+  touchStartY = lastTouchY = e.touches[0].clientY;
+  pointerDownX = touchStartX;
+  pointerDownY = touchStartY;
+}, {passive:true});
+
+canvas.addEventListener('touchmove', e => {
+  if(!touchActive || gyroActive) return;
+  if(e.touches.length !== 1) return;
+  const dx = e.touches[0].clientX - lastTouchX;
+  const dy = e.touches[0].clientY - lastTouchY;
+  velYaw   = -dx * TOUCH_SENS;
+  velPitch = -dy * TOUCH_SENS * 0.7;
+  lastTouchX = e.touches[0].clientX;
+  lastTouchY = e.touches[0].clientY;
+}, {passive:true});
+
+canvas.addEventListener('touchend', () => { touchActive = false; }, {passive:true});
 
 // ── Resize ──
-window.addEventListener('resize',()=>{
-  camera.aspect=window.innerWidth/window.innerHeight;
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-setTimeout(()=>{ document.getElementById('hint').classList.add('hidden'); },4000);
+setTimeout(() => { document.getElementById('hint').classList.add('hidden'); }, 4000);
 
-// ── Loop ──
+// ── Анімація ──
 (function animate(){
   requestAnimationFrame(animate);
-  if(!gyroActive&&!document.pointerLockElement){
-    autoAngle+=0.0002;
-    eulerAuto.set(0,autoAngle,0);
-    qTarget.setFromEuler(eulerAuto);
+
+  if(useGyroSlerp){
+    // Гіроскоп: плавний slerp до цілі
+    qGyroCurrent.slerp(qGyroTarget, 0.08);
+    camera.quaternion.copy(qGyroCurrent);
+  } else {
+    // Миша / свайп: інерція через euler
+    if(Math.abs(velYaw)   > VEL_DEADZONE || Math.abs(velPitch) > VEL_DEADZONE){
+      camEuler.y += velYaw;
+      camEuler.x += velPitch;
+      camEuler.x  = Math.max(-0.65, Math.min(0.65, camEuler.x));
+      velYaw   *= INERTIA;
+      velPitch *= INERTIA;
+      if(Math.abs(velYaw)   < VEL_DEADZONE) velYaw   = 0;
+      if(Math.abs(velPitch) < VEL_DEADZONE) velPitch = 0;
+    }
+    camera.quaternion.setFromEuler(camEuler);
   }
-  qCurrent.slerp(qTarget,0.08);
-  camera.quaternion.copy(qCurrent);
+
   updateDepth();
-  renderer.render(scene,camera);
+  renderer.render(scene, camera);
 })();
 
 })();
