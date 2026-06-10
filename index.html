@@ -7,23 +7,12 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { overflow:hidden; background:#1c2b0e; }
-  #dbg {
-    position:fixed; top:12px; left:12px; right:12px;
-    background:rgba(0,0,0,0.75); color:#fff;
-    font:12px/1.6 monospace; padding:10px 14px;
-    border-radius:8px; z-index:99; pointer-events:none;
-    white-space:pre-wrap; word-break:break-all;
-  }
 </style>
 </head>
 <body>
-<div id="dbg">инициализация...</div>
 <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 <script>
 (function () {
-
-  var dbg = document.getElementById('dbg');
-  function log(msg) { dbg.textContent = msg; }
 
   /* ── Renderer ── */
   var renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -32,76 +21,52 @@
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.autoClear = false; /* критично — мы сами управляем очисткой */
   document.body.appendChild(renderer.domElement);
 
-  var scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x8fa870, 0.012);
+  /* ── Две сцены: небо отдельно от мира ── */
+  /* skyScene рендерится первой без очистки depth-буфера,       */
+  /* затем depth очищается и рендерится mainScene поверх.       */
+  /* Это гарантирует что небо всегда за всеми объектами.        */
+  var skyScene  = new THREE.Scene();
+  var mainScene = new THREE.Scene();
+  mainScene.fog = new THREE.FogExp2(0x8fa870, 0.012);
 
+  /* Две камеры — одинаковые параметры, но skyCamera без позиции */
+  /* (небо не должно двигаться при перемещении игрока)           */
   var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
   camera.position.set(0, 1.7, 0);
-  scene.add(camera);
 
-  /* ── Sky dome geometry (shared) ── */
-  var skyGeo = new THREE.SphereGeometry(200, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  var skyCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
+
+  /* ── Sky dome ── */
+  var skyGeo = new THREE.SphereGeometry(500, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
   skyGeo.scale(-1, 1, 1);
 
-  /* Заглушка — будет заменена после загрузки текстуры */
-  var skyMat = new THREE.MeshBasicMaterial({
-    color: 0x7ab0d4,
-    side: THREE.FrontSide,
-    depthWrite: false,
-    depthTest: false
-  });
+  /* Заглушка */
+  var skyMat = new THREE.MeshBasicMaterial({ color: 0x7ab0d4 });
   var skyDome = new THREE.Mesh(skyGeo, skyMat);
-  skyDome.renderOrder = 0;
-  scene.add(skyDome);
+  skyScene.add(skyDome);
 
-  /* ── Загрузка текстуры ── */
-  /* Пробуем относительный путь */
-  var texUrl = 'Lite2autumn_field_puresky.webp';
-  log('загружаю: ' + texUrl);
-
+  /* Загрузка текстуры */
   new THREE.TextureLoader().load(
-    texUrl,
+    'Lite2autumn_field_puresky.webp',
     function (tex) {
-      log('OK! текстура загружена\nразмер: ' + tex.image.width + 'x' + tex.image.height);
-      tex.encoding = THREE.sRGBEncoding;
-      tex.wrapS    = THREE.RepeatWrapping;
-      tex.offset.x = 0.5;
-
-      /* Меняем материал на лету — но правильно: */
-      /* создаём новый материал и присваиваем мешу */
-      skyDome.material.dispose();
-      skyDome.material = new THREE.MeshBasicMaterial({
-        map: tex,
-        side: THREE.FrontSide,
-        depthWrite: false,
-        depthTest: false
-      });
-
-      /* Скрываем дебаг через 2 сек */
-      setTimeout(function(){ dbg.style.display='none'; }, 2000);
-    },
-    function (xhr) {
-      if (xhr.total > 0) {
-        log('загружаю: ' + Math.round(xhr.loaded/xhr.total*100) + '%');
-      }
-    },
-    function (err) {
-      log('ОШИБКА загрузки!\nurl: ' + texUrl + '\n' + (err && err.message ? err.message : String(err))
-        + '\n\nПроверь:\n1) Файл в корне репо рядом с index.html\n2) GitHub Pages включён (Settings > Pages)\n3) Имя файла точь-в-точь с заглавной L');
+      tex.encoding  = THREE.sRGBEncoding;
+      tex.wrapS     = THREE.RepeatWrapping;
+      tex.offset.x  = 0.5;
+      skyDome.material = new THREE.MeshBasicMaterial({ map: tex });
     }
   );
 
-  /* ── Horizon fill ── */
-  var horizon = new THREE.Mesh(
-    new THREE.CircleGeometry(201, 64),
-    new THREE.MeshBasicMaterial({ color: 0x8fa870, depthWrite: false, depthTest: false })
-  );
-  horizon.rotation.x = -Math.PI / 2;
-  horizon.position.y = -0.1;
-  horizon.renderOrder = 0;
-  scene.add(horizon);
+  /* Горизонтальная заплатка в skyScene — закрывает нижний край купола */
+  skyScene.add(Object.assign(
+    new THREE.Mesh(
+      new THREE.CircleGeometry(498, 64),
+      new THREE.MeshBasicMaterial({ color: 0x8fa870 })
+    ),
+    { rotation: new THREE.Euler(-Math.PI/2, 0, 0), position: new THREE.Vector3(0, -1, 0) }
+  ));
 
   /* ── Ground ── */
   var ground = new THREE.Mesh(
@@ -110,7 +75,7 @@
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
-  scene.add(ground);
+  mainScene.add(ground);
 
   /* ── Water ── */
   var waterGeo = new THREE.PlaneGeometry(28, 18, 40, 40);
@@ -124,7 +89,7 @@
   water.rotation.x = -Math.PI / 2;
   water.position.set(16, 0.06, -6);
   water.receiveShadow = true;
-  scene.add(water);
+  mainScene.add(water);
 
   /* ── Trees ── */
   function makeTree(x, z, h, cr, cc) {
@@ -140,7 +105,8 @@
       var m = new THREE.Mesh(new THREE.SphereGeometry(p[3],10,8), cmat);
       m.position.set(p[0],p[1],p[2]); m.castShadow = true; g.add(m);
     });
-    g.position.set(x, 0, z); scene.add(g);
+    g.position.set(x, 0, z);
+    mainScene.add(g);
   }
   [[-8,-4,3.5,2.2,0x4a8c2d],[-14,2,4.2,2.6,0x3a7b1e],[-6,6,3.0,1.8,0x5a9c3a],
    [-18,-8,5.0,3.0,0x3a8025],[-10,10,3.8,2.4,0x4a8c2e],[-4,-10,3.2,2.0,0x528533],
@@ -153,20 +119,23 @@
   ].forEach(function(d){ makeTree(d[0],d[1],d[2],d[3],d[4]); });
 
   /* ── Lights ── */
-  scene.add(new THREE.AmbientLight(0xfff4d0, 0.8));
+  mainScene.add(new THREE.AmbientLight(0xfff4d0, 0.8));
   var sun = new THREE.DirectionalLight(0xffe8a0, 1.1);
   sun.position.set(50, 70, -30); sun.castShadow = true;
-  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.mapSize.set(1024, 1024);
   sun.shadow.camera.near=1; sun.shadow.camera.far=250;
   sun.shadow.camera.left=sun.shadow.camera.bottom=-60;
   sun.shadow.camera.right=sun.shadow.camera.top=60;
-  scene.add(sun);
+  mainScene.add(sun);
 
-  /* ── Controls (quaternion) ── */
+  /* ── Controls (quaternion, no gimbal lock) ── */
   var qT=new THREE.Quaternion(), qC=new THREE.Quaternion();
   var _e=new THREE.Euler(), _q1=new THREE.Quaternion(), _q2=new THREE.Quaternion();
   var gyroOn=false, SLERP=0.07;
-  function screenAngle(){ return (window.screen&&window.screen.orientation)?(window.screen.orientation.angle||0):(window.orientation||0); }
+
+  function screenAngle(){
+    return (window.screen&&window.screen.orientation)?(window.screen.orientation.angle||0):(window.orientation||0);
+  }
   function onOri(e){
     if(e.alpha===null) return; gyroOn=true;
     _e.set(THREE.MathUtils.degToRad(e.beta),THREE.MathUtils.degToRad(e.alpha),-THREE.MathUtils.degToRad(e.gamma),'YXZ');
@@ -182,6 +151,7 @@
   var permDone=false;
   document.addEventListener('touchstart',function(){ if(!permDone){ permDone=true; startGyro(); } },{once:true});
   startGyro();
+
   var dy=0,dp=0.08,lx=null,ly=null,dn=false;
   renderer.domElement.addEventListener('mousedown',function(e){ dn=true; lx=e.clientX; ly=e.clientY; });
   window.addEventListener('mouseup',function(){ dn=false; });
@@ -199,32 +169,48 @@
       _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e); }
     tx=t.clientX; ty=t.clientY;
   },{passive:true});
+
   window.addEventListener('resize',function(){
-    camera.aspect=window.innerWidth/window.innerHeight;
+    var w=window.innerWidth, h=window.innerHeight;
+    camera.aspect=skyCamera.aspect=w/h;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth,window.innerHeight);
+    skyCamera.updateProjectionMatrix();
+    renderer.setSize(w,h);
   });
 
   /* ── Render loop ── */
   var animId=null, tick=0;
   _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e);
+
   function animate(){
-    animId=requestAnimationFrame(animate); tick+=0.016;
+    animId=requestAnimationFrame(animate);
+    tick+=0.016;
+
+    /* Волны воды */
     var wp=waterGeo.attributes.position;
     for(var i=0;i<wp.count;i++){
       var wx=wp.getX(i),wz=wOrigZ[i];
       wp.setZ(i,Math.sin(wx*.5+tick*1.8)*.04+Math.sin(wx*.9+wz*.4+tick*1.2)*.025);
     }
     wp.needsUpdate=true; waterGeo.computeVertexNormals();
-    skyDome.position.x=camera.position.x; skyDome.position.z=camera.position.z;
-    horizon.position.x=camera.position.x; horizon.position.z=camera.position.z;
-    qC.slerp(qT,SLERP); camera.quaternion.copy(qC);
-    renderer.render(scene,camera);
+
+    /* Синхронизируем вращение skyCamera с основной */
+    qC.slerp(qT, SLERP);
+    camera.quaternion.copy(qC);
+    skyCamera.quaternion.copy(qC); /* только вращение, без позиции */
+
+    /* Рендер: сначала небо, потом очистить depth, потом мир */
+    renderer.clear();
+    renderer.render(skyScene, skyCamera);
+    renderer.clearDepth();
+    renderer.render(mainScene, camera);
   }
+
   document.addEventListener('visibilitychange',function(){
     if(document.hidden){ cancelAnimationFrame(animId); animId=null; }
     else if(!animId) animate();
   });
+
   animate();
 })();
 </script>
