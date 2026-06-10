@@ -3,187 +3,289 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Gyro Skybox</title>
+<title>Paradise Garden</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { overflow: hidden; background: #000; }
-  canvas { display: block; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { overflow:hidden; background:#000; }
 </style>
 </head>
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function () {
+
+  /* ── Renderer ── */
   var renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.body.appendChild(renderer.domElement);
 
   var scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x000008);
+  scene.fog = new THREE.FogExp2(0x87ceeb, 0.018);
 
-  var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+  camera.position.set(0, 1.7, 0);
   scene.add(camera);
 
-  var RADIUS = 50;
-  var sphereGeo = new THREE.SphereGeometry(RADIUS, 32, 24);
-  sphereGeo.scale(-1, 1, 1);
-  var sphereMat = new THREE.MeshBasicMaterial({
-    color: 0x00ffcc, wireframe: true, transparent: true, opacity: 0.3
+  /* ── Sky dome (half-sphere, inverted normals) ── */
+  /* Процедурный градиент неба через ShaderMaterial */
+  var skyGeo = new THREE.SphereGeometry(200, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+  skyGeo.scale(-1, 1, 1);
+  var skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    uniforms: {
+      topColor:    { value: new THREE.Color(0x1a6ebb) }, /* TEXTURE: заменить на небо-текстуру */
+      bottomColor: { value: new THREE.Color(0x87ceeb) },
+      offset:      { value: 20 },
+      exponent:    { value: 0.5 }
+    },
+    vertexShader: [
+      'varying vec3 vWorldPos;',
+      'void main() {',
+      '  vec4 worldPos = modelMatrix * vec4(position, 1.0);',
+      '  vWorldPos = worldPos.xyz;',
+      '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+      '}'
+    ].join('\n'),
+    fragmentShader: [
+      'uniform vec3 topColor;',
+      'uniform vec3 bottomColor;',
+      'uniform float offset;',
+      'uniform float exponent;',
+      'varying vec3 vWorldPos;',
+      'void main() {',
+      '  float h = normalize(vWorldPos + offset).y;',
+      '  gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);',
+      '}'
+    ].join('\n')
   });
-  var sphere = new THREE.Mesh(sphereGeo, sphereMat);
-  scene.add(sphere);
+  var sky = new THREE.Mesh(skyGeo, skyMat);
+  sky.position.y = 0;
+  scene.add(sky);
 
-  var ringGeo = new THREE.TorusGeometry(RADIUS * 0.55, 0.07, 4, 90);
-  var ringMat = new THREE.MeshBasicMaterial({ color: 0x0055ff, transparent: true, opacity: 0.18 });
-  var ring = new THREE.Mesh(ringGeo, ringMat);
-  ring.rotation.x = Math.PI / 2;
-  scene.add(ring);
+  /* Горизонтальная заглушка чтобы не было дырки между куполом и полом */
+  var horizonGeo = new THREE.CircleGeometry(200, 64);
+  var horizonMat = new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.DoubleSide, depthWrite: false });
+  var horizon = new THREE.Mesh(horizonGeo, horizonMat);
+  horizon.rotation.x = -Math.PI / 2;
+  horizon.position.y = 0.01;
+  scene.add(horizon);
 
-  var starPos = new Float32Array(600 * 3);
-  for (var i = 0; i < 600 * 3; i++) starPos[i] = (Math.random() - 0.5) * RADIUS * 1.7;
-  var starGeo = new THREE.BufferGeometry();
-  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 })));
+  /* ── Ground ── */
+  var groundGeo = new THREE.PlaneGeometry(200, 200, 1, 1);
+  var groundMat = new THREE.MeshLambertMaterial({ color: 0x3a7d44 }); /* TEXTURE: map: grassTexture */
+  var ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
 
-  /* ---- Quaternion-based orientation ---- */
-  /* We keep a target quaternion and slerp the camera toward it each frame.
-     This completely avoids gimbal lock and horizon flipping. */
+  /* ── Water ── */
+  var WATER_W = 28, WATER_D = 18, WX = 16, WZ = -6, WY = 0.05;
+  var waterGeo = new THREE.PlaneGeometry(WATER_W, WATER_D, 40, 40);
+  var waterOrigY = [];
+  var pos = waterGeo.attributes.position;
+  for (var i = 0; i < pos.count; i++) waterOrigY.push(pos.getY(i));
+  var waterMat = new THREE.MeshLambertMaterial({
+    color: 0x1a6ebb, /* TEXTURE: заменить на воду-текстуру */
+    transparent: true,
+    opacity: 0.82
+  });
+  var water = new THREE.Mesh(waterGeo, waterMat);
+  water.rotation.x = -Math.PI / 2;
+  water.position.set(WX, WY, WZ);
+  water.receiveShadow = true;
+  scene.add(water);
 
+  /* ── Trees ── */
+  function makeTree(x, z, h, cr, cc) {
+    var g = new THREE.Group();
+    /* Trunk */
+    var trunkGeo = new THREE.CylinderGeometry(0.18, 0.28, h, 8);
+    var trunkMat = new THREE.MeshLambertMaterial({ color: 0x6b3f1e }); /* TEXTURE: bark */
+    var trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.y = h / 2;
+    trunk.castShadow = true;
+    g.add(trunk);
+    /* Canopy — three overlapping spheres for fullness */
+    var canopyMat = new THREE.MeshLambertMaterial({ color: cc }); /* TEXTURE: leaves */
+    [[0, h + cr * 0.55, 0, cr],
+     [-cr*0.5, h + cr*0.2, cr*0.3, cr*0.75],
+     [cr*0.5, h + cr*0.1, -cr*0.25, cr*0.8]
+    ].forEach(function(p) {
+      var cg = new THREE.SphereGeometry(p[3], 10, 8);
+      var cm = new THREE.Mesh(cg, canopyMat);
+      cm.position.set(p[0], p[1], p[2]);
+      cm.castShadow = true;
+      g.add(cm);
+    });
+    g.position.set(x, 0, z);
+    scene.add(g);
+  }
+
+  var treeData = [
+    [-8,  -4,  3.5, 2.2, 0x2d6a2d],
+    [-14,  2,  4.2, 2.6, 0x1e5c1e],
+    [-6,   6,  3.0, 1.8, 0x3a8a3a],
+    [-18, -8,  5.0, 3.0, 0x255225],
+    [-10,  10, 3.8, 2.4, 0x2e7a2e],
+    [-4,  -10, 3.2, 2.0, 0x337533],
+    [-20,  4,  4.5, 2.8, 0x1e5c1e],
+    [-16,  14, 3.6, 2.2, 0x2d6a2d],
+    [ 2,  -12, 3.0, 1.9, 0x3a8a3a],
+    [ 8,   12, 4.0, 2.5, 0x255225],
+    [-24, -2,  3.8, 2.3, 0x2e7a2e],
+    [-12, -14, 3.4, 2.1, 0x337533],
+    [ 6,  -18, 4.2, 2.6, 0x1e5c1e],
+    [-30,  8,  5.2, 3.2, 0x255225],
+    [-22,  18, 3.9, 2.4, 0x2d6a2d],
+    [ 32, -10, 4.0, 2.5, 0x2e7a2e],
+    [ 36,  4,  3.6, 2.2, 0x3a8a3a],
+    [ 40, -16, 5.0, 3.0, 0x1e5c1e],
+    [ 28,  14, 4.4, 2.7, 0x255225],
+    [ 42,  10, 3.8, 2.3, 0x337533],
+    [-2,   18, 3.2, 2.0, 0x2d6a2d],
+    [ 14, -22, 4.6, 2.9, 0x2e7a2e],
+    [-26, -18, 4.1, 2.5, 0x1e5c1e],
+    [ 20,  22, 3.5, 2.1, 0x3a8a3a]
+  ];
+  treeData.forEach(function(d) { makeTree(d[0], d[1], d[2], d[3], d[4]); });
+
+  /* ── Lights ── */
+  var ambient = new THREE.AmbientLight(0xfff4e0, 0.7);
+  scene.add(ambient);
+  var sun = new THREE.DirectionalLight(0xfff0cc, 1.2);
+  sun.position.set(60, 80, -20);
+  sun.castShadow = true;
+  sun.shadow.mapSize.width = 1024;
+  sun.shadow.mapSize.height = 1024;
+  sun.shadow.camera.near = 1;
+  sun.shadow.camera.far = 300;
+  sun.shadow.camera.left = -60;
+  sun.shadow.camera.right = 60;
+  sun.shadow.camera.top = 60;
+  sun.shadow.camera.bottom = -60;
+  scene.add(sun);
+
+  /* ── Gyroscope / mouse controls (quaternion, no gimbal lock) ── */
   var qTarget = new THREE.Quaternion();
   var qCurrent = new THREE.Quaternion();
   var SLERP = 0.07;
-
-  /* Reusable objects */
   var _euler = new THREE.Euler();
   var _q1 = new THREE.Quaternion();
   var _q2 = new THREE.Quaternion();
+  var gyroActive = false;
 
-  /* Correct for screen orientation so portrait/landscape both work */
-  function getScreenOrientationAngle() {
-    if (window.screen && window.screen.orientation && window.screen.orientation.angle !== undefined)
-      return window.screen.orientation.angle;
+  function getScreenAngle() {
+    if (window.screen && window.screen.orientation) return window.screen.orientation.angle || 0;
     return window.orientation || 0;
   }
 
-  var gyroActive = false;
-
-  function onDeviceOrientation(e) {
-    if (e.alpha === null || e.beta === null || e.gamma === null) return;
+  function onOrientation(e) {
+    if (e.alpha === null) return;
     gyroActive = true;
-
-    var alpha = THREE.MathUtils.degToRad(e.alpha);
-    var beta  = THREE.MathUtils.degToRad(e.beta);
-    var gamma = THREE.MathUtils.degToRad(e.gamma);
-
-    /* Standard W3C device orientation -> camera quaternion conversion.
-       Uses the approach from THREE.DeviceOrientationControls source,
-       which is numerically stable across all orientations. */
-    _euler.set(beta, alpha, -gamma, 'YXZ');
+    var a = THREE.MathUtils.degToRad(e.alpha);
+    var b = THREE.MathUtils.degToRad(e.beta);
+    var g = THREE.MathUtils.degToRad(e.gamma);
+    _euler.set(b, a, -g, 'YXZ');
     qTarget.setFromEuler(_euler);
-
-    /* Rotate from device frame to Three.js camera frame */
-    _q1.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+    _q1.setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI/2);
     qTarget.multiply(_q1);
-
-    /* Account for screen orientation */
-    var orient = THREE.MathUtils.degToRad(getScreenOrientationAngle());
-    _q2.setFromAxisAngle(new THREE.Vector3(0, 0, 1), orient);
+    _q2.setFromAxisAngle(new THREE.Vector3(0,0,1), THREE.MathUtils.degToRad(getScreenAngle()));
     qTarget.multiply(_q2);
   }
 
-  function requestGyro() {
+  function startGyro() {
     if (typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function') {
       DeviceOrientationEvent.requestPermission()
-        .then(function(state) {
-          if (state === 'granted')
-            window.addEventListener('deviceorientation', onDeviceOrientation, true);
-        }).catch(function() {});
+        .then(function(s){ if(s==='granted') window.addEventListener('deviceorientation', onOrientation, true); })
+        .catch(function(){});
     } else {
-      window.addEventListener('deviceorientation', onDeviceOrientation, true);
+      window.addEventListener('deviceorientation', onOrientation, true);
     }
   }
+  var permDone = false;
+  document.addEventListener('touchstart', function(){ if(!permDone){ permDone=true; startGyro(); } }, { once:true });
+  startGyro();
 
-  /* On iOS we need a user gesture to request permission.
-     We use the first touchstart as that gesture. */
-  var permRequested = false;
-  document.addEventListener('touchstart', function onTouch() {
-    if (!permRequested) {
-      permRequested = true;
-      requestGyro();
-    }
-  }, { once: true });
-  /* On Android/desktop try immediately */
-  requestGyro();
-
-  /* ---- Mouse / touch drag fallback ---- */
-  var dragYaw = 0, dragPitch = 0;
-  var lastX = null, lastY = null;
-  var isDragging = false;
-
-  renderer.domElement.addEventListener('mousedown', function(e) {
-    isDragging = true; lastX = e.clientX; lastY = e.clientY;
-  });
-  window.addEventListener('mouseup', function() { isDragging = false; lastX = null; lastY = null; });
-  window.addEventListener('mousemove', function(e) {
-    if (!isDragging || gyroActive) return;
-    dragYaw   -= (e.clientX - lastX) * 0.003;
-    dragPitch -= (e.clientY - lastY) * 0.003;
-    dragPitch  = Math.max(-1.4, Math.min(1.4, dragPitch));
-    lastX = e.clientX; lastY = e.clientY;
+  /* Mouse drag */
+  var dragYaw = 0, dragPitch = 0.1, lx = null, ly = null, down = false;
+  renderer.domElement.addEventListener('mousedown', function(e){ down=true; lx=e.clientX; ly=e.clientY; });
+  window.addEventListener('mouseup', function(){ down=false; lx=null; });
+  window.addEventListener('mousemove', function(e){
+    if(!down||gyroActive) return;
+    dragYaw   -= (e.clientX-lx)*0.003;
+    dragPitch -= (e.clientY-ly)*0.003;
+    dragPitch  = Math.max(-0.3, Math.min(1.2, dragPitch));
+    lx=e.clientX; ly=e.clientY;
     _euler.set(dragPitch, dragYaw, 0, 'YXZ');
     qTarget.setFromEuler(_euler);
   });
-
-  var tLastX = null, tLastY = null;
-  renderer.domElement.addEventListener('touchstart', function(e) {
-    var t = e.touches[0]; tLastX = t.clientX; tLastY = t.clientY;
-  }, { passive: true });
-  renderer.domElement.addEventListener('touchmove', function(e) {
-    if (gyroActive) return;
-    var t = e.touches[0];
-    if (tLastX !== null) {
-      dragYaw   -= (t.clientX - tLastX) * 0.004;
-      dragPitch -= (t.clientY - tLastY) * 0.004;
-      dragPitch  = Math.max(-1.4, Math.min(1.4, dragPitch));
+  var tx=null, ty=null;
+  renderer.domElement.addEventListener('touchstart', function(e){ var t=e.touches[0]; tx=t.clientX; ty=t.clientY; }, {passive:true});
+  renderer.domElement.addEventListener('touchmove', function(e){
+    if(gyroActive) return;
+    var t=e.touches[0];
+    if(tx!==null){
+      dragYaw   -= (t.clientX-tx)*0.004;
+      dragPitch -= (t.clientY-ty)*0.004;
+      dragPitch  = Math.max(-0.3, Math.min(1.2, dragPitch));
       _euler.set(dragPitch, dragYaw, 0, 'YXZ');
       qTarget.setFromEuler(_euler);
     }
-    tLastX = t.clientX; tLastY = t.clientY;
-  }, { passive: true });
+    tx=t.clientX; ty=t.clientY;
+  }, {passive:true});
 
-  /* ---- Resize ---- */
-  window.addEventListener('resize', function() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+  window.addEventListener('resize', function(){
+    camera.aspect = window.innerWidth/window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  /* ---- Render loop ---- */
+  /* ── Render loop ── */
   var animId = null;
   var tick = 0;
 
   function animate() {
     animId = requestAnimationFrame(animate);
-    tick += 0.004;
-    sphere.rotation.y = tick * 0.04;
-    ring.rotation.z   = tick * 0.025;
+    tick += 0.016;
 
-    /* Slerp camera quaternion — no gimbal lock possible */
+    /* Water wave animation */
+    var wpos = waterGeo.attributes.position;
+    for (var i = 0; i < wpos.count; i++) {
+      var x = wpos.getX(i);
+      var z = waterOrigY[i];
+      var wave = Math.sin(x * 0.5 + tick * 1.8) * 0.04
+               + Math.sin(x * 0.9 + z * 0.4 + tick * 1.2) * 0.025;
+      wpos.setZ(i, wave);
+    }
+    wpos.needsUpdate = true;
+    waterGeo.computeVertexNormals();
+
+    /* Keep sky dome and horizon centered on camera */
+    sky.position.x = camera.position.x;
+    sky.position.z = camera.position.z;
+    horizon.position.x = camera.position.x;
+    horizon.position.z = camera.position.z;
+
+    /* Slerp camera */
     qCurrent.slerp(qTarget, SLERP);
     camera.quaternion.copy(qCurrent);
 
     renderer.render(scene, camera);
   }
 
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-      cancelAnimationFrame(animId); animId = null;
-    } else if (!animId) {
-      animate();
-    }
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden){ cancelAnimationFrame(animId); animId=null; }
+    else if(!animId) animate();
   });
+
+  /* Init drag pose */
+  _euler.set(dragPitch, dragYaw, 0, 'YXZ');
+  qTarget.setFromEuler(_euler);
 
   animate();
 })();
