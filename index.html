@@ -6,213 +6,180 @@
 <title>Gyro Skybox</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { overflow: hidden; background: #000; font-family: sans-serif; }
-  #canvas-container { width: 100vw; height: 100vh; }
-  #ui {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    text-align: center; z-index: 10; pointer-events: none;
-  }
-  #gyro-btn {
-    pointer-events: all;
-    background: rgba(255,255,255,0.12);
-    color: #fff; border: 1px solid rgba(255,255,255,0.4);
-    padding: 14px 28px; font-size: 16px; border-radius: 50px;
-    cursor: pointer; backdrop-filter: blur(8px);
-    transition: background 0.2s, transform 0.1s;
-  }
-  #gyro-btn:active { transform: scale(0.96); }
-  #gyro-btn.hidden { display: none; }
-  #status {
-    color: rgba(255,255,255,0.5); font-size: 12px;
-    margin-top: 10px; letter-spacing: 0.05em;
-  }
-  #hint {
-    position: fixed; bottom: 24px; left: 50%;
-    transform: translateX(-50%);
-    color: rgba(255,255,255,0.35); font-size: 11px;
-    letter-spacing: 0.08em; pointer-events: none;
-  }
+  body { overflow: hidden; background: #000; }
+  canvas { display: block; }
 </style>
 </head>
 <body>
-<div id="canvas-container"></div>
-<div id="ui">
-  <button id="gyro-btn">&#127761; Включить гироскоп</button>
-  <div id="status">наклоните устройство</div>
-</div>
-<div id="hint">GYRO SKYBOX</div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-(function() {
-  const container = document.getElementById('canvas-container');
-  const btn = document.getElementById('gyro-btn');
-  const statusEl = document.getElementById('status');
-
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+(function () {
+  var renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
-  container.appendChild(renderer.domElement);
+  document.body.appendChild(renderer.domElement);
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x000005);
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000008);
 
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 0, 0);
+  var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   scene.add(camera);
 
-  /* --- Wireframe skybox sphere (inverted normals) --- */
-  const RADIUS = 50;
-  const geo = new THREE.SphereGeometry(RADIUS, 32, 24);
-  geo.scale(-1, 1, 1); // invert normals
-
-  const mat = new THREE.MeshBasicMaterial({
-    color: 0x00ffcc,
-    wireframe: true,
-    transparent: true,
-    opacity: 0.35
+  var RADIUS = 50;
+  var sphereGeo = new THREE.SphereGeometry(RADIUS, 32, 24);
+  sphereGeo.scale(-1, 1, 1);
+  var sphereMat = new THREE.MeshBasicMaterial({
+    color: 0x00ffcc, wireframe: true, transparent: true, opacity: 0.3
   });
-  const sphere = new THREE.Mesh(geo, mat);
+  var sphere = new THREE.Mesh(sphereGeo, sphereMat);
   scene.add(sphere);
 
-  /* Subtle inner glow ring */
-  const ringGeo = new THREE.TorusGeometry(RADIUS * 0.6, 0.08, 4, 80);
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0x0066ff, transparent: true, opacity: 0.2 });
-  const ring = new THREE.Mesh(ringGeo, ringMat);
+  var ringGeo = new THREE.TorusGeometry(RADIUS * 0.55, 0.07, 4, 90);
+  var ringMat = new THREE.MeshBasicMaterial({ color: 0x0055ff, transparent: true, opacity: 0.18 });
+  var ring = new THREE.Mesh(ringGeo, ringMat);
   ring.rotation.x = Math.PI / 2;
   scene.add(ring);
 
-  /* Stars */
-  const starCount = 400;
-  const starPositions = new Float32Array(starCount * 3);
-  for (let i = 0; i < starCount * 3; i++) {
-    starPositions[i] = (Math.random() - 0.5) * RADIUS * 1.8;
+  var starPos = new Float32Array(600 * 3);
+  for (var i = 0; i < 600 * 3; i++) starPos[i] = (Math.random() - 0.5) * RADIUS * 1.7;
+  var starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 })));
+
+  /* ---- Quaternion-based orientation ---- */
+  /* We keep a target quaternion and slerp the camera toward it each frame.
+     This completely avoids gimbal lock and horizon flipping. */
+
+  var qTarget = new THREE.Quaternion();
+  var qCurrent = new THREE.Quaternion();
+  var SLERP = 0.07;
+
+  /* Reusable objects */
+  var _euler = new THREE.Euler();
+  var _q1 = new THREE.Quaternion();
+  var _q2 = new THREE.Quaternion();
+
+  /* Correct for screen orientation so portrait/landscape both work */
+  function getScreenOrientationAngle() {
+    if (window.screen && window.screen.orientation && window.screen.orientation.angle !== undefined)
+      return window.screen.orientation.angle;
+    return window.orientation || 0;
   }
-  const starGeo = new THREE.BufferGeometry();
-  starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-  const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.12, sizeAttenuation: true });
-  scene.add(new THREE.Points(starGeo, starMat));
 
-  /* --- Orientation state --- */
-  const target = new THREE.Euler(0, 0, 0, 'YXZ');
-  const current = new THREE.Euler(0, 0, 0, 'YXZ');
-  const LERP = 0.06; // smoothing factor (lower = more viscous)
+  var gyroActive = false;
 
-  let gyroActive = false;
-  let lastMouseX = null, lastMouseY = null;
-  let yawOffset = 0, pitchOffset = 0;
-  let yawMouse = 0, pitchMouse = 0;
-
-  /* --- Mouse fallback for desktop --- */
-  container.addEventListener('mousemove', e => {
-    if (gyroActive) return;
-    if (lastMouseX !== null) {
-      yawMouse   -= (e.clientX - lastMouseX) * 0.003;
-      pitchMouse -= (e.clientY - lastMouseY) * 0.003;
-      pitchMouse  = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitchMouse));
-    }
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
-  });
-
-  /* Touch drag */
-  let lastTouchX = null, lastTouchY = null;
-  container.addEventListener('touchstart', e => {
-    if (gyroActive) return;
-    const t = e.touches[0];
-    lastTouchX = t.clientX; lastTouchY = t.clientY;
-  }, {passive: true});
-  container.addEventListener('touchmove', e => {
-    if (gyroActive) return;
-    const t = e.touches[0];
-    if (lastTouchX !== null) {
-      yawMouse   -= (t.clientX - lastTouchX) * 0.004;
-      pitchMouse -= (t.clientY - lastTouchY) * 0.004;
-      pitchMouse  = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitchMouse));
-    }
-    lastTouchX = t.clientX; lastTouchY = t.clientY;
-  }, {passive: true});
-
-  /* --- Gyroscope --- */
-  function toRad(d) { return d * Math.PI / 180; }
-
-  function enableGyro() {
-    const handler = e => {
-      if (e.alpha === null) {
-        statusEl.textContent = 'Гироскоп недоступен';
-        return;
-      }
-      /* Convert device orientation to camera euler */
-      /* alpha: compass heading, beta: front-back tilt, gamma: left-right tilt */
-      const alpha = toRad(e.alpha || 0);
-      const beta  = toRad(e.beta  || 0);
-      const gamma = toRad(e.gamma || 0);
-
-      /* Build rotation from device orientation */
-      target.set(
-        beta  - Math.PI / 2, // pitch: tilt forward/back
-        alpha + yawOffset,   // yaw: compass
-        -gamma,              // roll: left-right
-        'YXZ'
-      );
-    };
-    window.addEventListener('deviceorientation', handler, true);
+  function onDeviceOrientation(e) {
+    if (e.alpha === null || e.beta === null || e.gamma === null) return;
     gyroActive = true;
-    btn.classList.add('hidden');
-    statusEl.textContent = 'гироскоп активен';
+
+    var alpha = THREE.MathUtils.degToRad(e.alpha);
+    var beta  = THREE.MathUtils.degToRad(e.beta);
+    var gamma = THREE.MathUtils.degToRad(e.gamma);
+
+    /* Standard W3C device orientation -> camera quaternion conversion.
+       Uses the approach from THREE.DeviceOrientationControls source,
+       which is numerically stable across all orientations. */
+    _euler.set(beta, alpha, -gamma, 'YXZ');
+    qTarget.setFromEuler(_euler);
+
+    /* Rotate from device frame to Three.js camera frame */
+    _q1.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+    qTarget.multiply(_q1);
+
+    /* Account for screen orientation */
+    var orient = THREE.MathUtils.degToRad(getScreenOrientationAngle());
+    _q2.setFromAxisAngle(new THREE.Vector3(0, 0, 1), orient);
+    qTarget.multiply(_q2);
   }
 
-  btn.addEventListener('click', () => {
+  function requestGyro() {
     if (typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function') {
       DeviceOrientationEvent.requestPermission()
-        .then(state => {
-          if (state === 'granted') enableGyro();
-          else statusEl.textContent = 'Доступ отклонён';
-        })
-        .catch(() => statusEl.textContent = 'Ошибка разрешения');
+        .then(function(state) {
+          if (state === 'granted')
+            window.addEventListener('deviceorientation', onDeviceOrientation, true);
+        }).catch(function() {});
     } else {
-      enableGyro();
+      window.addEventListener('deviceorientation', onDeviceOrientation, true);
     }
+  }
+
+  /* On iOS we need a user gesture to request permission.
+     We use the first touchstart as that gesture. */
+  var permRequested = false;
+  document.addEventListener('touchstart', function onTouch() {
+    if (!permRequested) {
+      permRequested = true;
+      requestGyro();
+    }
+  }, { once: true });
+  /* On Android/desktop try immediately */
+  requestGyro();
+
+  /* ---- Mouse / touch drag fallback ---- */
+  var dragYaw = 0, dragPitch = 0;
+  var lastX = null, lastY = null;
+  var isDragging = false;
+
+  renderer.domElement.addEventListener('mousedown', function(e) {
+    isDragging = true; lastX = e.clientX; lastY = e.clientY;
+  });
+  window.addEventListener('mouseup', function() { isDragging = false; lastX = null; lastY = null; });
+  window.addEventListener('mousemove', function(e) {
+    if (!isDragging || gyroActive) return;
+    dragYaw   -= (e.clientX - lastX) * 0.003;
+    dragPitch -= (e.clientY - lastY) * 0.003;
+    dragPitch  = Math.max(-1.4, Math.min(1.4, dragPitch));
+    lastX = e.clientX; lastY = e.clientY;
+    _euler.set(dragPitch, dragYaw, 0, 'YXZ');
+    qTarget.setFromEuler(_euler);
   });
 
-  /* --- Resize --- */
-  window.addEventListener('resize', () => {
+  var tLastX = null, tLastY = null;
+  renderer.domElement.addEventListener('touchstart', function(e) {
+    var t = e.touches[0]; tLastX = t.clientX; tLastY = t.clientY;
+  }, { passive: true });
+  renderer.domElement.addEventListener('touchmove', function(e) {
+    if (gyroActive) return;
+    var t = e.touches[0];
+    if (tLastX !== null) {
+      dragYaw   -= (t.clientX - tLastX) * 0.004;
+      dragPitch -= (t.clientY - tLastY) * 0.004;
+      dragPitch  = Math.max(-1.4, Math.min(1.4, dragPitch));
+      _euler.set(dragPitch, dragYaw, 0, 'YXZ');
+      qTarget.setFromEuler(_euler);
+    }
+    tLastX = t.clientX; tLastY = t.clientY;
+  }, { passive: true });
+
+  /* ---- Resize ---- */
+  window.addEventListener('resize', function() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  /* --- Render loop --- */
-  let animId = null;
-  let t = 0;
+  /* ---- Render loop ---- */
+  var animId = null;
+  var tick = 0;
 
   function animate() {
     animId = requestAnimationFrame(animate);
-    t += 0.004;
+    tick += 0.004;
+    sphere.rotation.y = tick * 0.04;
+    ring.rotation.z   = tick * 0.025;
 
-    /* Animate sphere rotation slowly */
-    sphere.rotation.y = t * 0.05;
-    ring.rotation.z   = t * 0.03;
-
-    /* Lerp camera orientation */
-    if (gyroActive) {
-      current.x += (target.x - current.x) * LERP;
-      current.y += (target.y - current.y) * LERP;
-      current.z += (target.z - current.z) * LERP;
-      camera.rotation.copy(current);
-    } else {
-      camera.rotation.y += (yawMouse   - camera.rotation.y) * (LERP * 2);
-      camera.rotation.x += (pitchMouse - camera.rotation.x) * (LERP * 2);
-    }
+    /* Slerp camera quaternion — no gimbal lock possible */
+    qCurrent.slerp(qTarget, SLERP);
+    camera.quaternion.copy(qCurrent);
 
     renderer.render(scene, camera);
   }
 
-  document.addEventListener('visibilitychange', () => {
+  document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
-      cancelAnimationFrame(animId);
-      animId = null;
+      cancelAnimationFrame(animId); animId = null;
     } else if (!animId) {
       animate();
     }
