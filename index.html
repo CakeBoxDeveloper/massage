@@ -65,7 +65,7 @@ scene.add(skyMesh);
 const loader = new THREE.TextureLoader();
 loader.crossOrigin = 'anonymous';
 loader.load(
-  'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Lite2pillars.webp',
+  'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/%7B__prompt____An_equirectangular_360-degree_202606110114.jpeg',
   function(tex){
     tex.encoding = THREE.sRGBEncoding;
     skyMesh.material = new THREE.MeshBasicMaterial({ map: tex });
@@ -250,13 +250,15 @@ if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
 
 // ── Мышь (десктоп) ──
 const eulerMouse=new THREE.Euler(0,0,0,'YXZ');
-document.addEventListener('mousedown',e=>{ if(e.button!==0) return; canvas.requestPointerLock(); });
-document.addEventListener('mouseup',()=>{ if(document.pointerLockElement) document.exitPointerLock(); });
+let mouseDown=false, lastMX=0, lastMY=0;
+document.addEventListener('mousedown',e=>{ if(e.button!==0) return; mouseDown=true; lastMX=e.clientX; lastMY=e.clientY; });
+document.addEventListener('mouseup',()=>{ mouseDown=false; });
 document.addEventListener('mousemove',e=>{
-  if(!document.pointerLockElement||gyroActive) return;
-  eulerMouse.y-=e.movementX*0.003; eulerMouse.x-=e.movementY*0.002;
+  if(!mouseDown||gyroActive) return;
+  eulerMouse.y-=(e.clientX-lastMX)*0.003; eulerMouse.x-=(e.clientY-lastMY)*0.002;
   eulerMouse.x=Math.max(-0.6,Math.min(0.6,eulerMouse.x));
   qTarget.setFromEuler(eulerMouse);
+  lastMX=e.clientX; lastMY=e.clientY;
 });
 
 // ── Авторотация ──
