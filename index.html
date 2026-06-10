@@ -7,72 +7,17 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body { width:100%; height:100%; overflow:hidden; background:#000; }
-  #gc { position:fixed; inset:0; width:100%; height:100%; display:block; }
-
-  #overlay { position:fixed; inset:0; pointer-events:none; z-index:10; }
-
-  .card {
-    position: absolute;
-    width: 210px;
-    border-radius: 20px;
-    backdrop-filter: blur(24px) saturate(1.5);
-    -webkit-backdrop-filter: blur(24px) saturate(1.5);
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.45);
-    box-shadow: 0 4px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.22);
-    padding: 20px 18px 16px;
-    color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
-    cursor: pointer;
-    /* NO transition — обновляем каждый кадр, transition даёт лаг */
-    user-select: none; -webkit-user-select: none;
-    will-change: transform, opacity;
-  }
-  .card h2 {
-    font-size: 16px; font-weight: 700; line-height: 1.3;
-    margin-bottom: 8px;
-    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
-  }
-  .card .sep { height:1px; background:rgba(255,255,255,0.22); margin-bottom:9px; }
-  .card .desc {
-    font-size: 12.5px; line-height: 1.5;
-    color: rgba(255,255,255,0.88);
-    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-    margin-bottom: 13px;
-  }
-  .card .pill {
-    background: rgba(255,255,255,0.13);
-    border: 1px solid rgba(255,255,255,0.28);
-    border-radius: 11px;
-    text-align: center;
-    padding: 9px 6px;
-    font-size: 12.5px; font-weight: 600;
-    color: rgba(255,255,255,0.95);
-    text-shadow: 0 1px 4px rgba(0,0,0,0.35);
-  }
-  .card .soc-row {
-    display:flex; justify-content:space-around; align-items:center; padding:4px 0;
-  }
-  .card .soc-row a {
-    display:flex; align-items:center; justify-content:center;
-    width:34px; height:34px; pointer-events:auto;
-  }
-  .card .soc-row img {
-    width:26px; height:26px;
-    filter: brightness(0) invert(1); opacity:0.92;
-  }
-
+  #gc { display:block; }
   #hint {
     position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
     font-size:14px; color:rgba(255,255,255,0.85); pointer-events:none;
     background:rgba(0,0,0,0.3); padding:5px 16px; border-radius:20px;
-    transition:opacity 1.2s; font-family:sans-serif; z-index:20;
+    transition:opacity 1.2s; font-family:sans-serif;
   }
 </style>
 </head>
 <body>
 <canvas id="gc"></canvas>
-<div id="overlay"></div>
 <div id="hint">Тяните мышью для поворота</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script>
@@ -87,7 +32,7 @@ var CARDS = [
   { name:'Спортивный массаж',    desc:'Восстановление после тренировок, профилактика травм, повышение гибкости и тонуса мышц. До и после нагрузок.',              duration:'60 мин',        price:'700 грн'        },
 ];
 
-var SOC = [
+var SOC_ICONS = [
   { href:'https://threads.net/',           src:'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/hreads.svg'   },
   { href:'https://t.me/username',          src:'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/telegram.svg' },
   { href:'https://instagram.com/username', src:'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/insta.svg'    },
@@ -108,6 +53,8 @@ renderer.toneMappingExposure = 1.0;
 renderer.autoClear = false;
 
 var skyScene  = new THREE.Scene();
+var mainScene = new THREE.Scene();
+
 var camera    = new THREE.PerspectiveCamera(75, W/H, 0.1, 500);
 var skyCamera = new THREE.PerspectiveCamera(75, W/H, 1, 1000);
 camera.position.set(0, 1.6, 0);
@@ -136,128 +83,214 @@ loader.load(
   }
 );
 
-/* ── HTML Cards ── */
-var RADIUS   = 5.5;
-var CARD_Y   = 1.6; /* совпадает с camera.position.y — карточки на уровне глаз */
-var overlay  = document.getElementById('overlay');
+/* ── Cards ── */
+var CARD_RADIUS = 5.5;
+var CARD_Y      = 1.6;
+var CARD_W      = 2.2;
+var CARD_H      = 3.2;
+var TW = 560, TH = 800;
+
 var cardExpanded = new Array(CARDS.length).fill(false);
-var cardEls  = [];
-var cardPos  = []; /* мировые позиции карточек */
 
-CARDS.forEach(function(data, i){
-  var angle = (i / CARDS.length) * Math.PI * 2;
-  cardPos.push(new THREE.Vector3(
-    Math.sin(angle) * RADIUS,
-    CARD_Y,
-    -Math.cos(angle) * RADIUS
-  ));
+var socImages = SOC_ICONS.map(function(s){
+  var img = new Image(); img.crossOrigin = 'anonymous'; img.src = s.src; return img;
+});
 
-  var el = document.createElement('div');
-  el.className = 'card';
-  el.innerHTML =
-    '<h2>' + data.name + '</h2>' +
-    '<div class="sep"></div>' +
-    '<div class="desc">' + data.desc + '</div>' +
-    '<div class="pill" data-pill>' + data.duration + '  ·  ' + data.price + '</div>';
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+function wrapText(ctx,text,x,y,maxW,lineH){
+  var words=text.split(' '), line='';
+  for(var i=0;i<words.length;i++){
+    var test=line+words[i]+' ';
+    if(ctx.measureText(test).width>maxW&&i>0){ ctx.fillText(line.trim(),x,y); line=words[i]+' '; y+=lineH; }
+    else line=test;
+  }
+  ctx.fillText(line.trim(),x,y);
+}
 
-  overlay.appendChild(el);
-  cardEls.push(el);
+function drawWhiteIcon(ctx, img, x, y, size){
+  var off = document.createElement('canvas'); off.width=size; off.height=size;
+  var oc  = off.getContext('2d');
+  oc.fillStyle = '#ffffff'; oc.fillRect(0,0,size,size);
+  oc.globalCompositeOperation = 'destination-in';
+  oc.drawImage(img, 0, 0, size, size);
+  ctx.drawImage(off, x, y);
+}
 
-  (function(idx, el, d){
-    el.addEventListener('click', function(e){
-      e.stopPropagation();
-      cardExpanded[idx] = !cardExpanded[idx];
-      var pill = el.querySelector('[data-pill]');
-      if(cardExpanded[idx]){
-        var row = document.createElement('div');
-        row.className = 'soc-row';
-        SOC.forEach(function(s){
-          var a = document.createElement('a');
-          a.href = s.href; a.target = '_blank';
-          a.addEventListener('click', function(ev){ ev.stopPropagation(); });
-          var img = document.createElement('img');
-          img.src = s.src;
-          a.appendChild(img);
-          row.appendChild(a);
-        });
-        pill.innerHTML = '';
-        pill.appendChild(row);
+function drawCard(cc, data, expanded){
+  var ctx = cc.getContext('2d');
+  ctx.clearRect(0,0,TW,TH);
+
+  /* ── фон: тёмное затемнение + лёгкий градиент ── */
+  roundRect(ctx,0,0,TW,TH,60);
+  ctx.fillStyle = 'rgba(0,0,0,0.42)';
+  ctx.fill();
+
+  /* чуть тёплый оттенок снизу */
+  var vgn = ctx.createLinearGradient(0,0,0,TH);
+  vgn.addColorStop(0, 'rgba(30,20,10,0.00)');
+  vgn.addColorStop(1, 'rgba(10,5,0,0.25)');
+  roundRect(ctx,0,0,TW,TH,60);
+  ctx.fillStyle = vgn; ctx.fill();
+
+  /* блик сверху */
+  var shine = ctx.createLinearGradient(0,0,0,TH*0.28);
+  shine.addColorStop(0, 'rgba(255,255,255,0.10)');
+  shine.addColorStop(1, 'rgba(255,255,255,0.00)');
+  roundRect(ctx,0,0,TW,TH,60);
+  ctx.fillStyle = shine; ctx.fill();
+
+  /* рамка */
+  ctx.strokeStyle = 'rgba(255,255,255,0.32)'; ctx.lineWidth = 1.5;
+  roundRect(ctx,1,1,TW-2,TH-2,59); ctx.stroke();
+
+  /* заголовок */
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 46px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+  ctx.textAlign = 'left';
+  ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 10;
+  wrapText(ctx, data.name, 44, 86, TW-88, 56);
+  ctx.shadowBlur = 0;
+
+  /* разделитель */
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(44,130); ctx.lineTo(TW-44,130); ctx.stroke();
+
+  /* описание */
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = '28px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6;
+  wrapText(ctx, data.desc, 44, 180, TW-88, 40);
+  ctx.shadowBlur = 0;
+
+  /* нижняя пилюля */
+  var pillY = TH-148, pillH = 110;
+
+  /* фон пилюли */
+  roundRect(ctx,36,pillY,TW-72,pillH,28);
+  ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.2; ctx.stroke();
+
+  if(!expanded){
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.font = '30px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 5;
+    ctx.fillText(data.duration + '  ·  ' + data.price, TW/2, pillY+66);
+    ctx.shadowBlur = 0;
+  } else {
+    var iconSize = 40, totalW = TW-72, step = totalW/5;
+    SOC_ICONS.forEach(function(soc, idx){
+      var ix = 36 + step*idx + step/2 - iconSize/2;
+      var iy = pillY + (pillH-iconSize)/2;
+      if(socImages[idx].complete && socImages[idx].naturalWidth > 0){
+        ctx.globalAlpha = 0.92;
+        drawWhiteIcon(ctx, socImages[idx], ix, iy, iconSize);
+        ctx.globalAlpha = 1;
       } else {
-        pill.innerHTML = d.duration + '  ·  ' + d.price;
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath(); ctx.arc(ix+iconSize/2, iy+iconSize/2, iconSize/2, 0, Math.PI*2); ctx.fill();
       }
     });
-  })(i, el, data);
+  }
+}
+
+var cardMeshes = [];
+CARDS.forEach(function(data, i){
+  var angle = (i / CARDS.length) * Math.PI * 2;
+  var x = Math.sin(angle) * CARD_RADIUS;
+  var z = -Math.cos(angle) * CARD_RADIUS;
+  var cc = document.createElement('canvas');
+  cc.width = TW; cc.height = TH;
+  drawCard(cc, data, false);
+  var tex = new THREE.CanvasTexture(cc);
+  tex.encoding = THREE.sRGBEncoding;
+  var geo = new THREE.PlaneGeometry(CARD_W, CARD_H);
+  var mat = new THREE.MeshBasicMaterial({map:tex, transparent:true, side:THREE.DoubleSide, depthWrite:false});
+  var mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, CARD_Y, z);
+  mesh.lookAt(0, CARD_Y, 0);
+  mainScene.add(mesh);
+  cardMeshes.push({mesh:mesh, angle:angle, tex:tex, cc:cc, data:data});
 });
 
-/* закрыть все карточки кликом на канвас */
-canvas.addEventListener('click', function(){
-  CARDS.forEach(function(d, i){
-    if(!cardExpanded[i]) return;
-    cardExpanded[i] = false;
-    cardEls[i].querySelector('[data-pill]').innerHTML = d.duration + '  ·  ' + d.price;
+function redrawCard(i){
+  drawCard(cardMeshes[i].cc, cardMeshes[i].data, cardExpanded[i]);
+  cardMeshes[i].tex.needsUpdate = true;
+}
+socImages.forEach(function(img){
+  img.onload = function(){ cardMeshes.forEach(function(_,i){ redrawCard(i); }); };
+});
+
+/* ── Глубина / прозрачность ── */
+function updateDepth(){
+  var dir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+  cardMeshes.forEach(function(c){
+    var cd  = new THREE.Vector3(Math.sin(c.angle), 0, -Math.cos(c.angle));
+    var dot = Math.max(-1, Math.min(1, dir.dot(cd)));
+    var t   = (dot+1)/2;
+    c.mesh.material.opacity = 0.35 + t*0.65;
+    c.mesh.scale.setScalar(0.80 + t*0.20);
   });
+}
+
+/* ── Raycaster ── */
+var raycaster = new THREE.Raycaster();
+var pointer   = new THREE.Vector2();
+var pdx=0, pdy=0;
+var skipNextTouch = false;
+
+canvas.addEventListener('mousedown', function(e){ pdx=e.clientX; pdy=e.clientY; });
+canvas.addEventListener('mouseup', function(e){
+  if(Math.abs(e.clientX-pdx)>8||Math.abs(e.clientY-pdy)>8) return;
+  handleClick(e.clientX, e.clientY, false);
 });
+canvas.addEventListener('touchstart', function(e){
+  if(e.touches.length===1){ pdx=e.touches[0].clientX; pdy=e.touches[0].clientY; }
+},{passive:true});
+canvas.addEventListener('touchend', function(e){
+  if(skipNextTouch){ skipNextTouch=false; return; }
+  if(e.changedTouches.length!==1) return;
+  var t=e.changedTouches[0];
+  if(Math.abs(t.clientX-pdx)>8||Math.abs(t.clientY-pdy)>8) return;
+  handleClick(t.clientX, t.clientY, true);
+},{passive:true});
 
-/* ── Проекция 3D → 2D ──
-   Важно: camera.updateMatrixWorld() должен быть вызван ПОСЛЕ
-   применения нового quaternion, ДО project().               */
-var _v = new THREE.Vector3();
-
-function updateCards(){
-  /* camera.matrixWorldNeedsUpdate устанавливается при изменении quaternion,
-     updateMatrixWorld() вызывается здесь явно чтобы гарантировать свежую матрицу */
-  camera.updateMatrixWorld(true);
-
-  var fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-
-  for(var i = 0; i < CARDS.length; i++){
-    var pos = cardPos[i];
-
-    /* вектор от камеры к карточке */
-    var toCard = _v.set(
-      pos.x - camera.position.x,
-      pos.y - camera.position.y,
-      pos.z - camera.position.z
-    ).normalize();
-
-    var dot = fwd.dot(toCard); /* 1 = прямо, -1 = сзади */
-
-    if(dot <= 0){
-      /* карточка сзади — полностью скрыть */
-      cardEls[i].style.visibility = 'hidden';
-      cardEls[i].style.pointerEvents = 'none';
-      continue;
+function handleClick(cx, cy, isTouch){
+  var rect = canvas.getBoundingClientRect();
+  pointer.x =  ((cx-rect.left)/rect.width )*2-1;
+  pointer.y = -((cy-rect.top) /rect.height)*2+1;
+  raycaster.setFromCamera(pointer, camera);
+  var hits = raycaster.intersectObjects(cardMeshes.map(function(c){return c.mesh;}));
+  if(!hits.length) return;
+  var idx = cardMeshes.findIndex(function(c){return c.mesh===hits[0].object;});
+  if(idx<0) return;
+  var uv = hits[0].uv;
+  if(uv && uv.y < 0.20){
+    if(cardExpanded[idx]){
+      var si = Math.floor(uv.x*5);
+      if(isTouch) skipNextTouch = true;
+      window.open(SOC_ICONS[Math.max(0,Math.min(4,si))].href, '_blank');
+    } else {
+      cardExpanded[idx] = true; redrawCard(idx);
     }
-
-    /* проекция в NDC */
-    var proj = pos.clone();
-    proj.project(camera);
-
-    /* NDC → пиксели */
-    var sx = ( proj.x * 0.5 + 0.5) * W;
-    var sy = (-proj.y * 0.5 + 0.5) * H;
-
-    var t  = (dot + 1) / 2;             /* 0.5..1 когда спереди */
-    var sc = 0.65 + t * 0.35;           /* масштаб */
-    var op = Math.max(0, (dot - 0.05) / 0.95); /* плавно гасим у края */
-
-    cardEls[i].style.visibility = 'visible';
-    cardEls[i].style.pointerEvents = op > 0.4 ? 'auto' : 'none';
-    cardEls[i].style.opacity = op.toFixed(3);
-    cardEls[i].style.zIndex  = Math.round(dot * 100);
-    cardEls[i].style.left    = sx + 'px';
-    cardEls[i].style.top     = sy + 'px';
-    cardEls[i].style.transform = 'translate(-50%,-50%) scale(' + sc.toFixed(4) + ')';
+  } else if(cardExpanded[idx]){
+    cardExpanded[idx] = false; redrawCard(idx);
   }
 }
 
 /* ── Resize ── */
 window.addEventListener('resize', function(){
-  W = window.innerWidth; H = window.innerHeight;
-  camera.aspect = skyCamera.aspect = W / H;
+  W=window.innerWidth; H=window.innerHeight;
+  camera.aspect = skyCamera.aspect = W/H;
   camera.updateProjectionMatrix();
   skyCamera.updateProjectionMatrix();
-  renderer.setSize(W, H);
+  renderer.setSize(W,H);
 });
 
 /* ── Controls ── */
@@ -303,21 +336,17 @@ canvas.addEventListener('touchmove',function(e){
 setTimeout(function(){var h=document.getElementById('hint');if(h)h.style.opacity='0';},3500);
 
 /* ── Render loop ── */
-var animId = null;
+var animId=null;
 function animate(){
-  animId = requestAnimationFrame(animate);
-
-  /* 1. обновляем quaternion камеры */
+  animId=requestAnimationFrame(animate);
   qC.slerp(qT, SLERP);
   camera.quaternion.copy(qC);
   skyCamera.quaternion.copy(qC);
-
-  /* 2. сразу обновляем матрицы и позиции карточек */
-  updateCards();
-
-  /* 3. рендерим небо */
+  updateDepth();
   renderer.clear();
   renderer.render(skyScene, skyCamera);
+  renderer.clearDepth();
+  renderer.render(mainScene, camera);
 }
 document.addEventListener('visibilitychange',function(){
   if(document.hidden){cancelAnimationFrame(animId);animId=null;}
