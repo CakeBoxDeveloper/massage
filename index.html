@@ -6,13 +6,12 @@
 <title>Paradise Garden</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { overflow:hidden; background:#1a1a0a; }
+  body { overflow:hidden; background:#87a96b; }
   #loading {
-    position:fixed; inset:0; background:#1a1a0a;
+    position:fixed; inset:0; background:#1c2b0e;
     display:flex; align-items:center; justify-content:center;
-    color:#c8a96e; font-family:sans-serif; font-size:14px;
-    letter-spacing:0.1em; z-index:99;
-    transition: opacity 0.8s;
+    color:#c8d89e; font-family:sans-serif; font-size:13px;
+    letter-spacing:0.12em; z-index:99; transition:opacity 0.8s;
   }
 </style>
 </head>
@@ -32,86 +31,89 @@
   document.body.appendChild(renderer.domElement);
 
   var scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x8faa6e, 0.014);
+  /* Цвет тумана = доминирующий цвет горизонта панорамы */
+  scene.fog = new THREE.FogExp2(0x8fa870, 0.013);
 
   var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
   camera.position.set(0, 1.7, 0);
   scene.add(camera);
 
-  /* ── Sky dome — equirectangular панорама ── */
-  /* Полусфера (только верхняя половина, phiLength = PI/2) */
-  /* Нормали инвертированы через scale(-1,1,1) — смотрим изнутри */
-  var SKY_URL = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Lite2autumn_field_puresky.webp';
-  /* Для локального использования замени на: 'Lite2autumn_field_puresky.webp' */
-
-  var loader = new THREE.TextureLoader();
-  loader.crossOrigin = 'anonymous';
-
-  var skyDome, skyMat;
+  /* ── Sky dome ── */
+  /* Полусфера радиус 200, только верхняя половина (phiLength = PI/2) */
+  /* scale(-1,1,1) — инвертируем нормали, смотрим изнутри */
   var skyGeo = new THREE.SphereGeometry(200, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
   skyGeo.scale(-1, 1, 1);
 
-  /* Пока текстура грузится — заглушка цветом */
-  skyMat = new THREE.MeshBasicMaterial({
+  /* Заглушка пока грузится */
+  var skyMat = new THREE.MeshBasicMaterial({
     color: 0x7ab0d4,
-    side: THREE.BackSide,
-    depthWrite: false
+    side: THREE.FrontSide,
+    depthWrite: false,
+    depthTest: false
   });
-  skyDome = new THREE.Mesh(skyGeo, skyMat);
-  skyDome.renderOrder = -1;
+  var skyDome = new THREE.Mesh(skyGeo, skyMat);
+  skyDome.renderOrder = 0;
   scene.add(skyDome);
 
-  /* Загрузка текстуры */
+  /* Относительный путь — файл лежит рядом с index.html в том же репо */
+  var loader = new THREE.TextureLoader();
   loader.load(
-    SKY_URL,
+    'Lite2autumn_field_puresky.webp',
     function (tex) {
       tex.encoding = THREE.sRGBEncoding;
-      /* Equirectangular: сдвигаем UV по горизонтали на половину */
-      /* чтобы "перёд" панорамы смотрел в сторону -Z (юг) */
+      /* Горизонтальный сдвиг UV чтобы красивая часть панорамы */
+      /* смотрела вперёд. Крути от 0 до 1 по вкусу. */
       tex.wrapS = THREE.RepeatWrapping;
       tex.offset.x = 0.5;
       skyMat.map = tex;
       skyMat.color.set(0xffffff);
       skyMat.needsUpdate = true;
-      hideLoading();
+      var el = document.getElementById('loading');
+      if (el) { el.style.opacity = '0'; setTimeout(function(){ el.remove(); }, 900); }
     },
     undefined,
-    function () {
-      /* Если CORS не пустил — остаётся градиентный цвет */
-      console.warn('Sky texture CORS error — using fallback color');
-      hideLoading();
+    function (err) {
+      console.warn('Texture load error:', err);
+      var el = document.getElementById('loading');
+      if (el) { el.style.opacity = '0'; setTimeout(function(){ el.remove(); }, 900); }
     }
   );
 
-  function hideLoading() {
-    var el = document.getElementById('loading');
-    if (el) { el.style.opacity = '0'; setTimeout(function(){ el.remove(); }, 900); }
-  }
-
-  /* Горизонтальная заглушка — цвет берём из нижней полосы панорамы (осенний горизонт) */
-  var horizonMat = new THREE.MeshBasicMaterial({ color: 0xa0b878, depthWrite: false });
-  var horizon = new THREE.Mesh(new THREE.CircleGeometry(200, 64), horizonMat);
+  /* Горизонтальная заглушка — закрывает щель между куполом и землёй */
+  /* Цвет подобран под осенний горизонт панорамы */
+  var horizonMat = new THREE.MeshBasicMaterial({
+    color: 0x8fa870,
+    depthWrite: false,
+    depthTest: false
+  });
+  var horizon = new THREE.Mesh(new THREE.CircleGeometry(201, 64), horizonMat);
   horizon.rotation.x = -Math.PI / 2;
-  horizon.position.y = 0.02;
-  horizon.renderOrder = -1;
+  horizon.position.y = -0.1;
+  horizon.renderOrder = 0;
   scene.add(horizon);
 
-  /* ── Ground (трава) ── */
-  var groundMat = new THREE.MeshLambertMaterial({ color: 0x4a7c3f });
-  var ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 1, 1), groundMat);
+  /* ── Ground ── */
+  var ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(200, 200),
+    new THREE.MeshLambertMaterial({ color: 0x5a8c3f })
+  );
   ground.rotation.x = -Math.PI / 2;
+  ground.renderOrder = 1;
   ground.receiveShadow = true;
   scene.add(ground);
 
   /* ── Water ── */
   var waterGeo = new THREE.PlaneGeometry(28, 18, 40, 40);
-  var waterOrigZ = [];
-  var wpos = waterGeo.attributes.position;
-  for (var i = 0; i < wpos.count; i++) waterOrigZ.push(wpos.getY(i));
-  var waterMat = new THREE.MeshLambertMaterial({ color: 0x3a7fbf, transparent: true, opacity: 0.78 });
-  var water = new THREE.Mesh(waterGeo, waterMat);
+  var wOrigZ = [];
+  var wp0 = waterGeo.attributes.position;
+  for (var i = 0; i < wp0.count; i++) wOrigZ.push(wp0.getY(i));
+  var water = new THREE.Mesh(
+    waterGeo,
+    new THREE.MeshLambertMaterial({ color: 0x3a7fbf, transparent: true, opacity: 0.78 })
+  );
   water.rotation.x = -Math.PI / 2;
-  water.position.set(16, 0.05, -6);
+  water.position.set(16, 0.06, -6);
+  water.renderOrder = 2;
   water.receiveShadow = true;
   scene.add(water);
 
@@ -120,95 +122,92 @@
     var g = new THREE.Group();
     var trunk = new THREE.Mesh(
       new THREE.CylinderGeometry(0.18, 0.28, h, 8),
-      new THREE.MeshLambertMaterial({ color: 0x6b3f1e })
+      new THREE.MeshLambertMaterial({ color: 0x7a4f28 })
     );
     trunk.position.y = h / 2;
     trunk.castShadow = true;
     g.add(trunk);
     var cmat = new THREE.MeshLambertMaterial({ color: cc });
-    [[0, h+cr*0.55, 0, cr], [-cr*0.5, h+cr*0.2, cr*0.3, cr*0.75], [cr*0.5, h+cr*0.1, -cr*0.25, cr*0.8]]
-    .forEach(function(p) {
-      var m = new THREE.Mesh(new THREE.SphereGeometry(p[3], 10, 8), cmat);
-      m.position.set(p[0], p[1], p[2]);
-      m.castShadow = true;
-      g.add(m);
+    [[0,h+cr*0.55,0,cr],[-cr*.5,h+cr*.2,cr*.3,cr*.75],[cr*.5,h+cr*.1,-cr*.25,cr*.8]]
+    .forEach(function(p){
+      var m = new THREE.Mesh(new THREE.SphereGeometry(p[3],10,8), cmat);
+      m.position.set(p[0],p[1],p[2]); m.castShadow = true; g.add(m);
     });
     g.position.set(x, 0, z);
     scene.add(g);
   }
-
-  [[-8,-4,3.5,2.2,0x4a7c2d],[-14,2,4.2,2.6,0x3a6b1e],[-6,6,3.0,1.8,0x5a8c3a],
-   [-18,-8,5.0,3.0,0x3a7025],[-10,10,3.8,2.4,0x4a7c2e],[-4,-10,3.2,2.0,0x527533],
-   [-20,4,4.5,2.8,0x3a6b1e],[-16,14,3.6,2.2,0x4a7c2d],[2,-12,3.0,1.9,0x5a8c3a],
-   [8,12,4.0,2.5,0x3a7025],[-24,-2,3.8,2.3,0x4a7c2e],[-12,-14,3.4,2.1,0x527533],
-   [6,-18,4.2,2.6,0x3a6b1e],[-30,8,5.2,3.2,0x3a7025],[-22,18,3.9,2.4,0x4a7c2d],
-   [32,-10,4.0,2.5,0x4a7c2e],[36,4,3.6,2.2,0x5a8c3a],[40,-16,5.0,3.0,0x3a6b1e],
-   [28,14,4.4,2.7,0x3a7025],[42,10,3.8,2.3,0x527533],[-2,18,3.2,2.0,0x4a7c2d],
-   [14,-22,4.6,2.9,0x4a7c2e],[-26,-18,4.1,2.5,0x3a6b1e],[20,22,3.5,2.1,0x5a8c3a]
+  [[-8,-4,3.5,2.2,0x4a8c2d],[-14,2,4.2,2.6,0x3a7b1e],[-6,6,3.0,1.8,0x5a9c3a],
+   [-18,-8,5.0,3.0,0x3a8025],[-10,10,3.8,2.4,0x4a8c2e],[-4,-10,3.2,2.0,0x528533],
+   [-20,4,4.5,2.8,0x3a7b1e],[-16,14,3.6,2.2,0x4a8c2d],[2,-12,3.0,1.9,0x5a9c3a],
+   [8,12,4.0,2.5,0x3a8025],[-24,-2,3.8,2.3,0x4a8c2e],[-12,-14,3.4,2.1,0x528533],
+   [6,-18,4.2,2.6,0x3a7b1e],[-30,8,5.2,3.2,0x3a8025],[-22,18,3.9,2.4,0x4a8c2d],
+   [32,-10,4.0,2.5,0x4a8c2e],[36,4,3.6,2.2,0x5a9c3a],[40,-16,5.0,3.0,0x3a7b1e],
+   [28,14,4.4,2.7,0x3a8025],[42,10,3.8,2.3,0x528533],[-2,18,3.2,2.0,0x4a8c2d],
+   [14,-22,4.6,2.9,0x4a8c2e],[-26,-18,4.1,2.5,0x3a7b1e],[20,22,3.5,2.1,0x5a9c3a]
   ].forEach(function(d){ makeTree(d[0],d[1],d[2],d[3],d[4]); });
 
   /* ── Lights ── */
-  scene.add(new THREE.AmbientLight(0xfff4d0, 0.75));
+  scene.add(new THREE.AmbientLight(0xfff4d0, 0.8));
   var sun = new THREE.DirectionalLight(0xffe8a0, 1.1);
   sun.position.set(50, 70, -30);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = 250;
-  sun.shadow.camera.left = sun.shadow.camera.bottom = -55;
-  sun.shadow.camera.right = sun.shadow.camera.top = 55;
+  sun.shadow.camera.left = sun.shadow.camera.bottom = -60;
+  sun.shadow.camera.right = sun.shadow.camera.top = 60;
   scene.add(sun);
 
-  /* ── Gyroscope / mouse (quaternion, no gimbal lock) ── */
-  var qTarget = new THREE.Quaternion();
-  var qCurrent = new THREE.Quaternion();
-  var SLERP = 0.07;
+  /* ── Gyroscope / mouse controls (quaternion) ── */
+  var qT = new THREE.Quaternion();
+  var qC = new THREE.Quaternion();
   var _e = new THREE.Euler();
   var _q1 = new THREE.Quaternion();
   var _q2 = new THREE.Quaternion();
   var gyroOn = false;
+  var SLERP = 0.07;
 
   function screenAngle() {
-    return (window.screen && window.screen.orientation) ? (window.screen.orientation.angle||0) : (window.orientation||0);
+    return (window.screen&&window.screen.orientation) ? (window.screen.orientation.angle||0) : (window.orientation||0);
   }
   function onOri(e) {
     if (e.alpha===null) return;
     gyroOn = true;
     _e.set(THREE.MathUtils.degToRad(e.beta), THREE.MathUtils.degToRad(e.alpha), -THREE.MathUtils.degToRad(e.gamma), 'YXZ');
-    qTarget.setFromEuler(_e);
+    qT.setFromEuler(_e);
     _q1.setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI/2);
-    qTarget.multiply(_q1);
+    qT.multiply(_q1);
     _q2.setFromAxisAngle(new THREE.Vector3(0,0,1), THREE.MathUtils.degToRad(screenAngle()));
-    qTarget.multiply(_q2);
+    qT.multiply(_q2);
   }
   function startGyro() {
-    if (typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function') {
+    if (typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function') {
       DeviceOrientationEvent.requestPermission().then(function(s){ if(s==='granted') window.addEventListener('deviceorientation',onOri,true); }).catch(function(){});
     } else {
       window.addEventListener('deviceorientation', onOri, true);
     }
   }
   var permDone = false;
-  document.addEventListener('touchstart', function(){ if(!permDone){ permDone=true; startGyro(); } }, { once:true });
+  document.addEventListener('touchstart', function(){ if(!permDone){ permDone=true; startGyro(); } }, {once:true});
   startGyro();
 
-  /* Mouse / touch drag */
+  /* Mouse drag */
   var dy=0, dp=0.08, lx=null, ly=null, dn=false;
   renderer.domElement.addEventListener('mousedown', function(e){ dn=true; lx=e.clientX; ly=e.clientY; });
   window.addEventListener('mouseup', function(){ dn=false; });
   window.addEventListener('mousemove', function(e){
     if(!dn||gyroOn) return;
     dy-=(e.clientX-lx)*0.003; dp-=(e.clientY-ly)*0.003;
-    dp=Math.max(-0.25,Math.min(1.3,dp)); lx=e.clientX; ly=e.clientY;
-    _e.set(dp,dy,0,'YXZ'); qTarget.setFromEuler(_e);
+    dp=Math.max(-0.3,Math.min(1.3,dp)); lx=e.clientX; ly=e.clientY;
+    _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e);
   });
   var tx=null,ty=null;
   renderer.domElement.addEventListener('touchstart',function(e){ var t=e.touches[0]; tx=t.clientX; ty=t.clientY; },{passive:true});
   renderer.domElement.addEventListener('touchmove',function(e){
     if(gyroOn) return;
     var t=e.touches[0];
-    if(tx!==null){ dy-=(t.clientX-tx)*0.004; dp-=(t.clientY-ty)*0.004; dp=Math.max(-0.25,Math.min(1.3,dp));
-      _e.set(dp,dy,0,'YXZ'); qTarget.setFromEuler(_e); }
+    if(tx!==null){ dy-=(t.clientX-tx)*0.004; dp-=(t.clientY-ty)*0.004; dp=Math.max(-0.3,Math.min(1.3,dp));
+      _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e); }
     tx=t.clientX; ty=t.clientY;
   },{passive:true});
 
@@ -220,7 +219,7 @@
 
   /* ── Render loop ── */
   var animId=null, tick=0;
-  _e.set(dp,dy,0,'YXZ'); qTarget.setFromEuler(_e);
+  _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e);
 
   function animate() {
     animId = requestAnimationFrame(animate);
@@ -229,9 +228,8 @@
     /* Волны воды */
     var wp = waterGeo.attributes.position;
     for (var i=0; i<wp.count; i++) {
-      var wx = wp.getX(i);
-      var wz = waterOrigZ[i];
-      wp.setZ(i, Math.sin(wx*0.5+tick*1.8)*0.04 + Math.sin(wx*0.9+wz*0.4+tick*1.2)*0.025);
+      var wx=wp.getX(i), wz=wOrigZ[i];
+      wp.setZ(i, Math.sin(wx*.5+tick*1.8)*.04 + Math.sin(wx*.9+wz*.4+tick*1.2)*.025);
     }
     wp.needsUpdate = true;
     waterGeo.computeVertexNormals();
@@ -242,8 +240,8 @@
     horizon.position.x = camera.position.x;
     horizon.position.z = camera.position.z;
 
-    qCurrent.slerp(qTarget, SLERP);
-    camera.quaternion.copy(qCurrent);
+    qC.slerp(qT, SLERP);
+    camera.quaternion.copy(qC);
     renderer.render(scene, camera);
   }
 
