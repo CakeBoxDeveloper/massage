@@ -115,87 +115,137 @@ function wrapText(ctx,text,x,y,maxW,lineH){
   ctx.fillText(line.trim(),x,y);
 }
 
+// ── Gaussian blur helper (box-blur approx, runs on offscreen canvas) ──
+function blurCanvas(src, radius){
+  var w=src.width, h=src.height;
+  var tmp=document.createElement('canvas'); tmp.width=w; tmp.height=h;
+  var tc=tmp.getContext('2d');
+  // 3-pass box blur ≈ gaussian
+  for(var pass=0;pass<3;pass++){
+    tc.clearRect(0,0,w,h);
+    tc.filter='blur('+radius+'px)';
+    tc.drawImage(src,0,0);
+    src=tmp;
+    tmp=document.createElement('canvas'); tmp.width=w; tmp.height=h;
+    tc=tmp.getContext('2d');
+  }
+  return src;
+}
+
+// Рисует иконку белой через compositing: сначала белый прямоугольник, потом destination-in с самой иконкой
+function drawWhiteIcon(ctx, img, x, y, size){
+  var off=document.createElement('canvas'); off.width=size; off.height=size;
+  var oc=off.getContext('2d');
+  oc.fillStyle='#ffffff';
+  oc.fillRect(0,0,size,size);
+  oc.globalCompositeOperation='destination-in';
+  oc.drawImage(img,0,0,size,size);
+  ctx.drawImage(off,x,y);
+}
+
 function drawCard(cardCanvas, data, expanded){
   var ctx = cardCanvas.getContext('2d');
   ctx.clearRect(0,0,TW,TH);
 
-  // --- frosted glass background ---
-  // тёмная полупрозрачная подложка для имитации blur
-  roundRect(ctx,0,0,TW,TH,60);
-  ctx.fillStyle='rgba(10,20,10,0.55)';
-  ctx.fill();
-
-  // цветной градиент поверх
-  var bg=ctx.createLinearGradient(0,0,0,TH);
-  bg.addColorStop(0,'rgba(120,180,120,0.22)');
-  bg.addColorStop(1,'rgba(60,100,60,0.12)');
-  roundRect(ctx,0,0,TW,TH,60); ctx.fillStyle=bg; ctx.fill();
+  // ── Frosted glass: реальный blur ──
+  // 1. Рисуем содержимое на офскрин
+  var bg2=document.createElement('canvas'); bg2.width=TW; bg2.height=TH;
+  var bc=bg2.getContext('2d');
+  // градиентная заливка как «материал» за стеклом
+  var grd=bc.createLinearGradient(0,0,TW,TH);
+  grd.addColorStop(0,'rgba(180,220,180,0.85)');
+  grd.addColorStop(0.5,'rgba(140,190,160,0.80)');
+  grd.addColorStop(1,'rgba(100,150,120,0.85)');
+  bc.fillStyle=grd; bc.fillRect(0,0,TW,TH);
+  // 2. Блюрим
+  var blurred=blurCanvas(bg2, 18);
+  // 3. Клип по скруглённому прямоугольнику и рисуем размытый фон
+  ctx.save();
+  roundRect(ctx,0,0,TW,TH,60); ctx.clip();
+  ctx.drawImage(blurred,0,0);
+  // 4. Тонкий белый туман поверх (frosted эффект)
+  var fog=ctx.createLinearGradient(0,0,0,TH);
+  fog.addColorStop(0,'rgba(255,255,255,0.28)');
+  fog.addColorStop(1,'rgba(255,255,255,0.10)');
+  ctx.fillStyle=fog; ctx.fillRect(0,0,TW,TH);
+  ctx.restore();
 
   // блик сверху
-  var shine=ctx.createLinearGradient(0,0,0,TH*0.35);
-  shine.addColorStop(0,'rgba(255,255,255,0.18)');
+  ctx.save();
+  roundRect(ctx,0,0,TW,TH,60); ctx.clip();
+  var shine=ctx.createLinearGradient(0,0,0,TH*0.30);
+  shine.addColorStop(0,'rgba(255,255,255,0.30)');
   shine.addColorStop(1,'rgba(255,255,255,0.00)');
-  roundRect(ctx,0,0,TW,TH,60); ctx.fillStyle=shine; ctx.fill();
+  ctx.fillStyle=shine; ctx.fillRect(0,0,TW,TH*0.30);
+  ctx.restore();
 
   // внешняя рамка
-  ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=2;
+  ctx.strokeStyle='rgba(255,255,255,0.70)'; ctx.lineWidth=2;
   roundRect(ctx,1,1,TW-2,TH-2,59); ctx.stroke();
-
-  // внутренняя тонкая рамка (двойной эффект стекла)
-  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1;
-  roundRect(ctx,6,6,TW-12,TH-12,55); ctx.stroke();
+  // внутренняя тонкая рамка
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1;
+  roundRect(ctx,5,5,TW-10,TH-10,56); ctx.stroke();
 
   // заголовок
   ctx.fillStyle='#ffffff';
   ctx.font='bold 46px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
   ctx.textAlign='left';
-  ctx.shadowColor='rgba(0,0,0,0.6)'; ctx.shadowBlur=8;
+  ctx.shadowColor='rgba(0,0,0,0.55)'; ctx.shadowBlur=10;
   wrapText(ctx,data.name,44,86,TW-88,56);
   ctx.shadowBlur=0;
 
   // разделитель
-  ctx.strokeStyle='rgba(255,255,255,0.20)'; ctx.lineWidth=1.5;
+  ctx.strokeStyle='rgba(255,255,255,0.30)'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.moveTo(44,128); ctx.lineTo(TW-44,128); ctx.stroke();
 
   // описание
-  ctx.fillStyle='rgba(255,255,255,0.88)';
+  ctx.fillStyle='rgba(255,255,255,0.92)';
   ctx.font='28px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
-  ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=6;
+  ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=6;
   wrapText(ctx,data.desc,44,178,TW-88,40);
   ctx.shadowBlur=0;
 
   // нижняя пилюля
-  var pillY=TH-158, pillH=116;
+  var pillY=TH-140, pillH=112;
   roundRect(ctx,36,pillY,TW-72,pillH,32);
 
   if(!expanded){
-    var pillBg=ctx.createLinearGradient(0,pillY,0,pillY+pillH);
-    pillBg.addColorStop(0,'rgba(255,255,255,0.16)');
-    pillBg.addColorStop(1,'rgba(255,255,255,0.06)');
-    ctx.fillStyle=pillBg; ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.30)'; ctx.lineWidth=1.5; ctx.stroke();
+    // пилюля с блюром тоже
+    var pb=document.createElement('canvas'); pb.width=TW-72; pb.height=pillH;
+    var pc=pb.getContext('2d');
+    pc.fillStyle='rgba(255,255,255,0.25)'; pc.fillRect(0,0,TW-72,pillH);
+    var pbBlur=blurCanvas(pb,10);
+    ctx.save();
+    roundRect(ctx,36,pillY,TW-72,pillH,32); ctx.clip();
+    ctx.drawImage(pbBlur,36,pillY);
+    ctx.fillStyle='rgba(255,255,255,0.10)'; ctx.fillRect(36,pillY,TW-72,pillH);
+    ctx.restore();
+    ctx.strokeStyle='rgba(255,255,255,0.40)'; ctx.lineWidth=1.5;
+    roundRect(ctx,36,pillY,TW-72,pillH,32); ctx.stroke();
+
     ctx.fillStyle='rgba(255,255,255,0.95)';
     ctx.font='30px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
     ctx.textAlign='center';
-    ctx.shadowColor='rgba(0,0,0,0.4)'; ctx.shadowBlur=4;
-    ctx.fillText(data.duration+'  ·  '+data.price, TW/2, pillY+68);
+    ctx.shadowColor='rgba(0,0,0,0.35)'; ctx.shadowBlur=4;
+    ctx.fillText(data.duration+'  ·  '+data.price, TW/2, pillY+65);
     ctx.shadowBlur=0;
-    ctx.fillStyle='rgba(255,255,255,0.35)';
-    ctx.font='22px -apple-system,sans-serif';
-    ctx.fillText('Нажмите для записи', TW/2, TH-26);
   } else {
-    var pillBg2=ctx.createLinearGradient(0,pillY,0,pillY+pillH);
-    pillBg2.addColorStop(0,'rgba(255,255,255,0.18)');
-    pillBg2.addColorStop(1,'rgba(255,255,255,0.08)');
-    ctx.fillStyle=pillBg2; ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.save();
+    roundRect(ctx,36,pillY,TW-72,pillH,32); ctx.clip();
+    ctx.fillStyle='rgba(255,255,255,0.20)'; ctx.fillRect(36,pillY,TW-72,pillH);
+    ctx.restore();
+    ctx.strokeStyle='rgba(255,255,255,0.40)'; ctx.lineWidth=1.5;
+    roundRect(ctx,36,pillY,TW-72,pillH,32); ctx.stroke();
+
     var iconSize=40, totalW=TW-72, step=totalW/5;
     SOC_ICONS.forEach(function(soc,idx){
       var ix=36+step*idx+step/2-iconSize/2, iy=pillY+(pillH-iconSize)/2;
       if(socImages[idx].complete&&socImages[idx].naturalWidth>0){
-        ctx.globalAlpha=0.90; ctx.drawImage(socImages[idx],ix,iy,iconSize,iconSize); ctx.globalAlpha=1;
+        ctx.globalAlpha=0.92;
+        drawWhiteIcon(ctx,socImages[idx],ix,iy,iconSize);
+        ctx.globalAlpha=1;
       } else {
-        ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.beginPath();
+        ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.beginPath();
         ctx.arc(ix+iconSize/2,iy+iconSize/2,iconSize/2,0,Math.PI*2); ctx.fill();
       }
     });
@@ -243,21 +293,23 @@ function updateDepth(){
 var raycaster = new THREE.Raycaster();
 var pointer   = new THREE.Vector2();
 var pdx=0, pdy=0;
+var skipNextTouch = false; // блокировка после открытия соцсети
 
 canvas.addEventListener('mousedown', function(e){ pdx=e.clientX; pdy=e.clientY; });
 canvas.addEventListener('mouseup', function(e){
   if(Math.abs(e.clientX-pdx)>8||Math.abs(e.clientY-pdy)>8) return;
-  handleClick(e.clientX, e.clientY);
+  handleClick(e.clientX, e.clientY, false);
 });
 canvas.addEventListener('touchstart', function(e){ if(e.touches.length===1){pdx=e.touches[0].clientX;pdy=e.touches[0].clientY;} },{passive:true});
 canvas.addEventListener('touchend', function(e){
+  if(skipNextTouch){ skipNextTouch=false; return; }
   if(e.changedTouches.length!==1) return;
   var t=e.changedTouches[0];
   if(Math.abs(t.clientX-pdx)>8||Math.abs(t.clientY-pdy)>8) return;
-  handleClick(t.clientX, t.clientY);
+  handleClick(t.clientX, t.clientY, true);
 },{passive:true});
 
-function handleClick(cx,cy){
+function handleClick(cx,cy,isTouch){
   var rect=canvas.getBoundingClientRect();
   pointer.x=((cx-rect.left)/rect.width)*2-1;
   pointer.y=-((cy-rect.top)/rect.height)*2+1;
@@ -270,6 +322,7 @@ function handleClick(cx,cy){
   if(uv&&uv.y<0.20){
     if(cardExpanded[idx]){
       var si=Math.floor(uv.x*5);
+      if(isTouch) skipNextTouch=true; // блокируем следующий touchend
       window.open(SOC_ICONS[Math.max(0,Math.min(4,si))].href,'_blank');
     } else { cardExpanded[idx]=true; redrawCard(idx); }
   } else if(cardExpanded[idx]){ cardExpanded[idx]=false; redrawCard(idx); }
