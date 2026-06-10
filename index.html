@@ -74,8 +74,8 @@
     skyMesh.material = new THREE.MeshBasicMaterial({map:tex});
   });
 
-  /* Ground */
-  var REPEAT = 36;
+  /* Ground — repeat вдвое меньше (было 36, стало 18) */
+  var REPEAT = 18;
   var groundMat = new THREE.MeshStandardMaterial({color:0x6a9a4a, roughness:0.85, metalness:0.0});
   var ground = new THREE.Mesh(new THREE.PlaneGeometry(200,200,128,128), groundMat);
   ground.rotation.x = -Math.PI/2;
@@ -110,18 +110,19 @@
   sun.shadow.camera.right=sun.shadow.camera.top=80;
   mainScene.add(sun);
 
-  /* ── BUSHES ── */
+  /* ── BUSHES — billboard (lookAt по Y) ── */
   var bushNames = ['Bush1.webp','Bush2.webp','Bush3.webp'];
-  var bushMats = [];
+  var bushMats  = [];
+  var bushMeshes = [];   // храним все меши для обновления в animate
   var bushesReady = 0;
 
   function spawnBushes(){
     var rng = mulberry32(42);
     var COUNT = 120;
 
-    for(var i=0; i<COUNT; i++){
+    for(var i = 0; i < COUNT; i++){
       var texIdx = Math.floor(rng() * 3);
-      var mat = bushMats[texIdx];
+      var mat    = bushMats[texIdx];
 
       var angle = rng() * Math.PI * 2;
       var dist  = 3 + rng() * 57;
@@ -130,24 +131,13 @@
 
       var w = 1.2 + rng() * 2.0;
       var h = w * (0.7 + rng() * 0.5);
-      var rotY = rng() * Math.PI * 2;
 
-      var group = makeCross(w, h, mat, rotY);
-      group.position.set(x, h * 0.5 - 0.05, z);
-      mainScene.add(group);
+      var geo  = new THREE.PlaneGeometry(w, h);
+      var mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, h * 0.5 - 0.05, z);
+      mainScene.add(mesh);
+      bushMeshes.push(mesh);
     }
-  }
-
-  function makeCross(w, h, mat, rotY){
-    var geo = new THREE.PlaneGeometry(w, h);
-    var m1 = new THREE.Mesh(geo, mat);
-    var m2 = new THREE.Mesh(geo, mat);
-    m2.rotation.y = Math.PI / 2;
-    var group = new THREE.Group();
-    group.add(m1);
-    group.add(m2);
-    group.rotation.y = rotY;
-    return group;
   }
 
   bushNames.forEach(function(name, idx){
@@ -231,6 +221,9 @@
 
   setTimeout(function(){var h=document.getElementById('hint');if(h)h.style.opacity='0';},3500);
 
+  /* Вспомогательный вектор для billboard */
+  var _billboardTarget = new THREE.Vector3();
+
   /* Render loop */
   var animId=null;
   function animate(){
@@ -238,6 +231,14 @@
     qC.slerp(qT,SLERP);
     camera.quaternion.copy(qC);
     skyCamera.quaternion.copy(qC);
+
+    /* Billboard: поворачиваем каждый куст к камере только по оси Y */
+    for(var i = 0; i < bushMeshes.length; i++){
+      var m = bushMeshes[i];
+      _billboardTarget.set(camera.position.x, m.position.y, camera.position.z);
+      m.lookAt(_billboardTarget);
+    }
+
     renderer.clear();
     renderer.render(skyScene,skyCamera);
     renderer.clearDepth();
