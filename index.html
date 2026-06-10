@@ -7,27 +7,23 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { overflow:hidden; background:#1c2b0e; }
-  #loading {
-    position:fixed; inset:0; background:#1c2b0e;
-    display:flex; align-items:center; justify-content:center;
-    color:#c8d89e; font-family:sans-serif; font-size:13px;
-    letter-spacing:0.12em; z-index:99; transition:opacity 0.8s;
+  #dbg {
+    position:fixed; top:12px; left:12px; right:12px;
+    background:rgba(0,0,0,0.75); color:#fff;
+    font:12px/1.6 monospace; padding:10px 14px;
+    border-radius:8px; z-index:99; pointer-events:none;
+    white-space:pre-wrap; word-break:break-all;
   }
 </style>
 </head>
 <body>
-<div id="loading">загрузка...</div>
-
+<div id="dbg">инициализация...</div>
 <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/BokehPass.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/shaders/BokehShader.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-
 <script>
 (function () {
+
+  var dbg = document.getElementById('dbg');
+  function log(msg) { dbg.textContent = msg; }
 
   /* ── Renderer ── */
   var renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -45,65 +41,59 @@
   camera.position.set(0, 1.7, 0);
   scene.add(camera);
 
-  /* ── EffectComposer + BokehPass ── */
-  var composer = new THREE.EffectComposer(renderer);
-  composer.addPass(new THREE.RenderPass(scene, camera));
-
-  var bokehPass = new THREE.BokehPass(scene, camera, {
-    focus:    0.72,   /* дистанция фокуса: 0 = близко, 1 = далеко */
-    aperture: 0.00008, /* диафрагма: больше = сильнее боке          */
-    maxblur:  0.006,  /* максимальное размытие                     */
-    width:    window.innerWidth,
-    height:   window.innerHeight
-  });
-  bokehPass.renderToScreen = true;
-  composer.addPass(bokehPass);
-
-  /* ── Sky dome ── */
-  /* Ключевое исправление: меш создаётся ВНУТРИ коллбэка loader.load,
-     уже с готовой текстурой — никакого needsUpdate не нужно */
+  /* ── Sky dome geometry (shared) ── */
   var skyGeo = new THREE.SphereGeometry(200, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
   skyGeo.scale(-1, 1, 1);
 
-  /* Заглушка на время загрузки */
-  var skyPlaceholder = new THREE.Mesh(
-    skyGeo,
-    new THREE.MeshBasicMaterial({ color: 0x7ab0d4, side: THREE.FrontSide, depthWrite: false, depthTest: false })
-  );
-  skyPlaceholder.renderOrder = 0;
-  scene.add(skyPlaceholder);
+  /* Заглушка — будет заменена после загрузки текстуры */
+  var skyMat = new THREE.MeshBasicMaterial({
+    color: 0x7ab0d4,
+    side: THREE.FrontSide,
+    depthWrite: false,
+    depthTest: false
+  });
+  var skyDome = new THREE.Mesh(skyGeo, skyMat);
+  skyDome.renderOrder = 0;
+  scene.add(skyDome);
+
+  /* ── Загрузка текстуры ── */
+  /* Пробуем относительный путь */
+  var texUrl = 'Lite2autumn_field_puresky.webp';
+  log('загружаю: ' + texUrl);
 
   new THREE.TextureLoader().load(
-    'Lite2autumn_field_puresky.webp',
+    texUrl,
     function (tex) {
-      tex.encoding  = THREE.sRGBEncoding;
-      tex.wrapS     = THREE.RepeatWrapping;
-      tex.offset.x  = 0.5; /* сдвиг панорамы — крути 0.0–1.0 по вкусу */
+      log('OK! текстура загружена\nразмер: ' + tex.image.width + 'x' + tex.image.height);
+      tex.encoding = THREE.sRGBEncoding;
+      tex.wrapS    = THREE.RepeatWrapping;
+      tex.offset.x = 0.5;
 
-      /* Удаляем заглушку, создаём реальный меш с текстурой */
-      scene.remove(skyPlaceholder);
-      skyPlaceholder.material.dispose();
+      /* Меняем материал на лету — но правильно: */
+      /* создаём новый материал и присваиваем мешу */
+      skyDome.material.dispose();
+      skyDome.material = new THREE.MeshBasicMaterial({
+        map: tex,
+        side: THREE.FrontSide,
+        depthWrite: false,
+        depthTest: false
+      });
 
-      var skyMesh = new THREE.Mesh(
-        skyGeo,
-        new THREE.MeshBasicMaterial({ map: tex, side: THREE.FrontSide, depthWrite: false, depthTest: false })
-      );
-      skyMesh.renderOrder = 0;
-      skyMesh.name = 'skyDome';
-      scene.add(skyMesh);
-
-      var el = document.getElementById('loading');
-      if (el) { el.style.opacity = '0'; setTimeout(function(){ el.remove(); }, 900); }
+      /* Скрываем дебаг через 2 сек */
+      setTimeout(function(){ dbg.style.display='none'; }, 2000);
     },
-    undefined,
-    function () {
-      /* CORS или 404 — убираем лоадер, остаётся голубая заглушка */
-      var el = document.getElementById('loading');
-      if (el) { el.style.opacity = '0'; setTimeout(function(){ el.remove(); }, 900); }
+    function (xhr) {
+      if (xhr.total > 0) {
+        log('загружаю: ' + Math.round(xhr.loaded/xhr.total*100) + '%');
+      }
+    },
+    function (err) {
+      log('ОШИБКА загрузки!\nurl: ' + texUrl + '\n' + (err && err.message ? err.message : String(err))
+        + '\n\nПроверь:\n1) Файл в корне репо рядом с index.html\n2) GitHub Pages включён (Settings > Pages)\n3) Имя файла точь-в-точь с заглавной L');
     }
   );
 
-  /* Горизонтальная заплатка — цвет горизонта панорамы */
+  /* ── Horizon fill ── */
   var horizon = new THREE.Mesh(
     new THREE.CircleGeometry(201, 64),
     new THREE.MeshBasicMaterial({ color: 0x8fa870, depthWrite: false, depthTest: false })
@@ -119,7 +109,6 @@
     new THREE.MeshLambertMaterial({ color: 0x5a8c3f })
   );
   ground.rotation.x = -Math.PI / 2;
-  ground.renderOrder = 1;
   ground.receiveShadow = true;
   scene.add(ground);
 
@@ -144,17 +133,14 @@
       new THREE.CylinderGeometry(0.18, 0.28, h, 8),
       new THREE.MeshLambertMaterial({ color: 0x7a4f28 })
     );
-    trunk.position.y = h / 2;
-    trunk.castShadow = true;
-    g.add(trunk);
+    trunk.position.y = h / 2; trunk.castShadow = true; g.add(trunk);
     var cmat = new THREE.MeshLambertMaterial({ color: cc });
     [[0,h+cr*.55,0,cr],[-cr*.5,h+cr*.2,cr*.3,cr*.75],[cr*.5,h+cr*.1,-cr*.25,cr*.8]]
     .forEach(function(p){
       var m = new THREE.Mesh(new THREE.SphereGeometry(p[3],10,8), cmat);
       m.position.set(p[0],p[1],p[2]); m.castShadow = true; g.add(m);
     });
-    g.position.set(x, 0, z);
-    scene.add(g);
+    g.position.set(x, 0, z); scene.add(g);
   }
   [[-8,-4,3.5,2.2,0x4a8c2d],[-14,2,4.2,2.6,0x3a7b1e],[-6,6,3.0,1.8,0x5a9c3a],
    [-18,-8,5.0,3.0,0x3a8025],[-10,10,3.8,2.4,0x4a8c2e],[-4,-10,3.2,2.0,0x528533],
@@ -169,48 +155,33 @@
   /* ── Lights ── */
   scene.add(new THREE.AmbientLight(0xfff4d0, 0.8));
   var sun = new THREE.DirectionalLight(0xffe8a0, 1.1);
-  sun.position.set(50, 70, -30);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.near = 1; sun.shadow.camera.far = 250;
-  sun.shadow.camera.left = sun.shadow.camera.bottom = -60;
-  sun.shadow.camera.right = sun.shadow.camera.top = 60;
+  sun.position.set(50, 70, -30); sun.castShadow = true;
+  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.camera.near=1; sun.shadow.camera.far=250;
+  sun.shadow.camera.left=sun.shadow.camera.bottom=-60;
+  sun.shadow.camera.right=sun.shadow.camera.top=60;
   scene.add(sun);
 
-  /* ── Resize ── */
-  window.addEventListener('resize', function(){
-    var w = window.innerWidth, h = window.innerHeight;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
-    composer.setSize(w, h);
-    bokehPass.uniforms.aspect.value = w / h;
-  });
-
-  /* ── Gyroscope / mouse (quaternion, no gimbal lock) ── */
-  var qT = new THREE.Quaternion(), qC = new THREE.Quaternion();
-  var _e = new THREE.Euler(), _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
-  var gyroOn = false, SLERP = 0.07;
-
-  function screenAngle() {
-    return (window.screen&&window.screen.orientation)?(window.screen.orientation.angle||0):(window.orientation||0);
-  }
-  function onOri(e) {
-    if (e.alpha===null) return; gyroOn = true;
-    _e.set(THREE.MathUtils.degToRad(e.beta), THREE.MathUtils.degToRad(e.alpha), -THREE.MathUtils.degToRad(e.gamma), 'YXZ');
+  /* ── Controls (quaternion) ── */
+  var qT=new THREE.Quaternion(), qC=new THREE.Quaternion();
+  var _e=new THREE.Euler(), _q1=new THREE.Quaternion(), _q2=new THREE.Quaternion();
+  var gyroOn=false, SLERP=0.07;
+  function screenAngle(){ return (window.screen&&window.screen.orientation)?(window.screen.orientation.angle||0):(window.orientation||0); }
+  function onOri(e){
+    if(e.alpha===null) return; gyroOn=true;
+    _e.set(THREE.MathUtils.degToRad(e.beta),THREE.MathUtils.degToRad(e.alpha),-THREE.MathUtils.degToRad(e.gamma),'YXZ');
     qT.setFromEuler(_e);
-    _q1.setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI/2); qT.multiply(_q1);
-    _q2.setFromAxisAngle(new THREE.Vector3(0,0,1), THREE.MathUtils.degToRad(screenAngle())); qT.multiply(_q2);
+    _q1.setFromAxisAngle(new THREE.Vector3(1,0,0),-Math.PI/2); qT.multiply(_q1);
+    _q2.setFromAxisAngle(new THREE.Vector3(0,0,1),THREE.MathUtils.degToRad(screenAngle())); qT.multiply(_q2);
   }
-  function startGyro() {
-    if (typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function') {
+  function startGyro(){
+    if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
       DeviceOrientationEvent.requestPermission().then(function(s){ if(s==='granted') window.addEventListener('deviceorientation',onOri,true); }).catch(function(){});
-    } else { window.addEventListener('deviceorientation', onOri, true); }
+    } else { window.addEventListener('deviceorientation',onOri,true); }
   }
   var permDone=false;
   document.addEventListener('touchstart',function(){ if(!permDone){ permDone=true; startGyro(); } },{once:true});
   startGyro();
-
   var dy=0,dp=0.08,lx=null,ly=null,dn=false;
   renderer.domElement.addEventListener('mousedown',function(e){ dn=true; lx=e.clientX; ly=e.clientY; });
   window.addEventListener('mouseup',function(){ dn=false; });
@@ -228,42 +199,32 @@
       _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e); }
     tx=t.clientX; ty=t.clientY;
   },{passive:true});
+  window.addEventListener('resize',function(){
+    camera.aspect=window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight);
+  });
 
   /* ── Render loop ── */
   var animId=null, tick=0;
   _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e);
-
-  function animate() {
-    animId = requestAnimationFrame(animate);
-    tick += 0.016;
-
-    /* Волны воды */
-    var wp = waterGeo.attributes.position;
-    for (var i=0; i<wp.count; i++) {
-      var wx=wp.getX(i), wz=wOrigZ[i];
-      wp.setZ(i, Math.sin(wx*.5+tick*1.8)*.04+Math.sin(wx*.9+wz*.4+tick*1.2)*.025);
+  function animate(){
+    animId=requestAnimationFrame(animate); tick+=0.016;
+    var wp=waterGeo.attributes.position;
+    for(var i=0;i<wp.count;i++){
+      var wx=wp.getX(i),wz=wOrigZ[i];
+      wp.setZ(i,Math.sin(wx*.5+tick*1.8)*.04+Math.sin(wx*.9+wz*.4+tick*1.2)*.025);
     }
     wp.needsUpdate=true; waterGeo.computeVertexNormals();
-
-    /* Купол следует за камерой */
-    var sky = scene.getObjectByName('skyDome') || skyPlaceholder;
-    sky.position.x = camera.position.x;
-    sky.position.z = camera.position.z;
-    horizon.position.x = camera.position.x;
-    horizon.position.z = camera.position.z;
-
-    qC.slerp(qT, SLERP);
-    camera.quaternion.copy(qC);
-
-    /* Рендер через composer — он включает BokehPass */
-    composer.render();
+    skyDome.position.x=camera.position.x; skyDome.position.z=camera.position.z;
+    horizon.position.x=camera.position.x; horizon.position.z=camera.position.z;
+    qC.slerp(qT,SLERP); camera.quaternion.copy(qC);
+    renderer.render(scene,camera);
   }
-
   document.addEventListener('visibilitychange',function(){
     if(document.hidden){ cancelAnimationFrame(animId); animId=null; }
     else if(!animId) animate();
   });
-
   animate();
 })();
 </script>
