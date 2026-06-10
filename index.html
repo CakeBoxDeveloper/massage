@@ -1,141 +1,102 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Paradise Garden</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { overflow:hidden; background:#1c2b0e; }
-</style>
-</head>
-<body>
-<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-<script>
-(function () {
 
-  /* ── Renderer ── */
-  var renderer = new THREE.WebGLRenderer({ antialias: true });
+<div style="width:100%;height:560px;position:relative;overflow:hidden;border-radius:var(--border-radius-lg);">
+<canvas id="gc" style="display:block;width:100%;height:100%;"></canvas>
+<div id="hint" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:13px;color:rgba(255,255,255,0.85);pointer-events:none;background:rgba(0,0,0,0.3);padding:4px 14px;border-radius:20px;transition:opacity 1.2s;">Тяните мышью для поворота</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script>
+(function(){
+  var canvas = document.getElementById('gc');
+  var W = canvas.parentElement.offsetWidth, H = 560;
+  canvas.width = W; canvas.height = H;
+
+  var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(W, H);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.autoClear = false;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.autoClear = false; /* критично — мы сами управляем очисткой */
-  document.body.appendChild(renderer.domElement);
 
-  /* ── Две сцены: небо отдельно от мира ── */
-  /* skyScene рендерится первой без очистки depth-буфера,       */
-  /* затем depth очищается и рендерится mainScene поверх.       */
-  /* Это гарантирует что небо всегда за всеми объектами.        */
   var skyScene  = new THREE.Scene();
   var mainScene = new THREE.Scene();
-  mainScene.fog = new THREE.FogExp2(0x8fa870, 0.012);
+  mainScene.fog = new THREE.FogExp2(0x9aaf80, 0.008);
 
-  /* Две камеры — одинаковые параметры, но skyCamera без позиции */
-  /* (небо не должно двигаться при перемещении игрока)           */
-  var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
-  camera.position.set(0, 1.7, 0);
+  var aspect = W / H;
+  var camera    = new THREE.PerspectiveCamera(75, aspect, 0.1, 500);
+  var skyCamera = new THREE.PerspectiveCamera(75, aspect, 1, 1000);
+  camera.position.set(0, 1.6, 0);
 
-  var skyCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-
-  /* ── Sky dome ── */
-  var skyGeo = new THREE.SphereGeometry(500, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  var skyGeo = new THREE.SphereGeometry(500, 64, 32);
   skyGeo.scale(-1, 1, 1);
+  var skyMat = new THREE.ShaderMaterial({
+    uniforms:{top:{value:new THREE.Color(0x2a6fbe)},bot:{value:new THREE.Color(0xb0cfe8)}},
+    vertexShader:`varying vec3 vP; void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`uniform vec3 top,bot; varying vec3 vP; void main(){float h=clamp(normalize(vP).y*2.,0.,1.);gl_FragColor=vec4(mix(bot,top,h),1.);}`
+  });
+  var skyMesh = new THREE.Mesh(skyGeo, skyMat);
+  skyScene.add(skyMesh);
 
-  /* Заглушка */
-  var skyMat = new THREE.MeshBasicMaterial({ color: 0x7ab0d4 });
-  var skyDome = new THREE.Mesh(skyGeo, skyMat);
-  skyScene.add(skyDome);
+  var patch = new THREE.Mesh(new THREE.CircleGeometry(499,64), new THREE.MeshBasicMaterial({color:0x7a8c55}));
+  patch.rotation.x = -Math.PI/2; patch.position.y = -30;
+  skyScene.add(patch);
 
-  /* Загрузка текстуры */
-  new THREE.TextureLoader().load(
-    'Lite2autumn_field_puresky.webp',
-    function (tex) {
-      tex.encoding  = THREE.sRGBEncoding;
-      tex.wrapS     = THREE.RepeatWrapping;
-      tex.offset.x  = 0.5;
-      skyDome.material = new THREE.MeshBasicMaterial({ map: tex });
-    }
-  );
+  var loader = new THREE.TextureLoader();
+  loader.crossOrigin = 'anonymous';
+  var BASE = 'https://cdn.jsdelivr.net/gh/CakeBoxDeveloper/massage@main/';
 
-  /* Горизонтальная заплатка в skyScene — закрывает нижний край купола */
-  skyScene.add(Object.assign(
-    new THREE.Mesh(
-      new THREE.CircleGeometry(498, 64),
-      new THREE.MeshBasicMaterial({ color: 0x8fa870 })
-    ),
-    { rotation: new THREE.Euler(-Math.PI/2, 0, 0), position: new THREE.Vector3(0, -1, 0) }
-  ));
+  loader.load(BASE+'Sky.webp', function(tex){
+    tex.encoding = THREE.sRGBEncoding;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.offset.set(0.5, -0.02);
+    skyMesh.material = new THREE.MeshBasicMaterial({map:tex});
+  });
 
-  /* ── Ground ── */
-  var ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(200, 200),
-    new THREE.MeshLambertMaterial({ color: 0x5a8c3f })
-  );
-  ground.rotation.x = -Math.PI / 2;
+  var REPEAT = 36; /* вдвое больше тайлов = вдвое мельче */
+
+  var groundMat = new THREE.MeshStandardMaterial({color:0x6a9a4a, roughness:0.85, metalness:0.0});
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(200,200,128,128), groundMat);
+  ground.rotation.x = -Math.PI/2;
   ground.receiveShadow = true;
   mainScene.add(ground);
 
-  /* ── Water ── */
-  var waterGeo = new THREE.PlaneGeometry(28, 18, 40, 40);
-  var wOrigZ = [];
-  var wp0 = waterGeo.attributes.position;
-  for (var i = 0; i < wp0.count; i++) wOrigZ.push(wp0.getY(i));
-  var water = new THREE.Mesh(
-    waterGeo,
-    new THREE.MeshLambertMaterial({ color: 0x3a7fbf, transparent: true, opacity: 0.78 })
-  );
-  water.rotation.x = -Math.PI / 2;
-  water.position.set(16, 0.06, -6);
-  water.receiveShadow = true;
-  mainScene.add(water);
-
-  /* ── Trees ── */
-  function makeTree(x, z, h, cr, cc) {
-    var g = new THREE.Group();
-    var trunk = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.18, 0.28, h, 8),
-      new THREE.MeshLambertMaterial({ color: 0x7a4f28 })
-    );
-    trunk.position.y = h / 2; trunk.castShadow = true; g.add(trunk);
-    var cmat = new THREE.MeshLambertMaterial({ color: cc });
-    [[0,h+cr*.55,0,cr],[-cr*.5,h+cr*.2,cr*.3,cr*.75],[cr*.5,h+cr*.1,-cr*.25,cr*.8]]
-    .forEach(function(p){
-      var m = new THREE.Mesh(new THREE.SphereGeometry(p[3],10,8), cmat);
-      m.position.set(p[0],p[1],p[2]); m.castShadow = true; g.add(m);
-    });
-    g.position.set(x, 0, z);
-    mainScene.add(g);
+  function applyTex(tex, r){
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(r, r);
+    return tex;
   }
-  [[-8,-4,3.5,2.2,0x4a8c2d],[-14,2,4.2,2.6,0x3a7b1e],[-6,6,3.0,1.8,0x5a9c3a],
-   [-18,-8,5.0,3.0,0x3a8025],[-10,10,3.8,2.4,0x4a8c2e],[-4,-10,3.2,2.0,0x528533],
-   [-20,4,4.5,2.8,0x3a7b1e],[-16,14,3.6,2.2,0x4a8c2d],[2,-12,3.0,1.9,0x5a9c3a],
-   [8,12,4.0,2.5,0x3a8025],[-24,-2,3.8,2.3,0x4a8c2e],[-12,-14,3.4,2.1,0x528533],
-   [6,-18,4.2,2.6,0x3a7b1e],[-30,8,5.2,3.2,0x3a8025],[-22,18,3.9,2.4,0x4a8c2d],
-   [32,-10,4.0,2.5,0x4a8c2e],[36,4,3.6,2.2,0x5a9c3a],[40,-16,5.0,3.0,0x3a7b1e],
-   [28,14,4.4,2.7,0x3a8025],[42,10,3.8,2.3,0x528533],[-2,18,3.2,2.0,0x4a8c2d],
-   [14,-22,4.6,2.9,0x4a8c2e],[-26,-18,4.1,2.5,0x3a7b1e],[20,22,3.5,2.1,0x5a9c3a]
-  ].forEach(function(d){ makeTree(d[0],d[1],d[2],d[3],d[4]); });
 
-  /* ── Lights ── */
-  mainScene.add(new THREE.AmbientLight(0xfff4d0, 0.8));
-  var sun = new THREE.DirectionalLight(0xffe8a0, 1.1);
-  sun.position.set(50, 70, -30); sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.near=1; sun.shadow.camera.far=250;
-  sun.shadow.camera.left=sun.shadow.camera.bottom=-60;
-  sun.shadow.camera.right=sun.shadow.camera.top=60;
+  loader.load(BASE+'Lite2forest_floor_albedo.webp', function(tex){
+    tex.encoding = THREE.sRGBEncoding;
+    groundMat.map = applyTex(tex, REPEAT);
+    groundMat.color.set(0xffffff);
+    groundMat.needsUpdate = true;
+  });
+  loader.load(BASE+'Lite2forest_floor_Normal-ogl.webp', function(tex){
+    groundMat.normalMap = applyTex(tex, REPEAT);
+    groundMat.normalScale.set(1.2, 1.2);
+    groundMat.needsUpdate = true;
+  });
+
+  mainScene.add(new THREE.AmbientLight(0xfff0d0, 0.6));
+  var sun = new THREE.DirectionalLight(0xffeebb, 1.4);
+  sun.position.set(60,80,-40); sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.camera.near=1; sun.shadow.camera.far=300;
+  sun.shadow.camera.left=sun.shadow.camera.bottom=-80;
+  sun.shadow.camera.right=sun.shadow.camera.top=80;
   mainScene.add(sun);
 
-  /* ── Controls (quaternion, no gimbal lock) ── */
   var qT=new THREE.Quaternion(), qC=new THREE.Quaternion();
   var _e=new THREE.Euler(), _q1=new THREE.Quaternion(), _q2=new THREE.Quaternion();
   var gyroOn=false, SLERP=0.07;
+  var dy=0, dp=0.05, dn=false, lx=null, ly=null;
+  _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e);
 
-  function screenAngle(){
-    return (window.screen&&window.screen.orientation)?(window.screen.orientation.angle||0):(window.orientation||0);
-  }
+  function screenAngle(){ return (window.screen&&window.screen.orientation)?(window.screen.orientation.angle||0):(window.orientation||0); }
   function onOri(e){
     if(e.alpha===null) return; gyroOn=true;
     _e.set(THREE.MathUtils.degToRad(e.beta),THREE.MathUtils.degToRad(e.alpha),-THREE.MathUtils.degToRad(e.gamma),'YXZ');
@@ -143,76 +104,41 @@
     _q1.setFromAxisAngle(new THREE.Vector3(1,0,0),-Math.PI/2); qT.multiply(_q1);
     _q2.setFromAxisAngle(new THREE.Vector3(0,0,1),THREE.MathUtils.degToRad(screenAngle())); qT.multiply(_q2);
   }
-  function startGyro(){
-    if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
-      DeviceOrientationEvent.requestPermission().then(function(s){ if(s==='granted') window.addEventListener('deviceorientation',onOri,true); }).catch(function(){});
-    } else { window.addEventListener('deviceorientation',onOri,true); }
-  }
-  var permDone=false;
-  document.addEventListener('touchstart',function(){ if(!permDone){ permDone=true; startGyro(); } },{once:true});
-  startGyro();
+  window.addEventListener('deviceorientation',onOri,true);
 
-  var dy=0,dp=0.08,lx=null,ly=null,dn=false;
-  renderer.domElement.addEventListener('mousedown',function(e){ dn=true; lx=e.clientX; ly=e.clientY; });
-  window.addEventListener('mouseup',function(){ dn=false; });
+  canvas.addEventListener('mousedown',function(e){dn=true;lx=e.clientX;ly=e.clientY;});
+  window.addEventListener('mouseup',function(){dn=false;});
   window.addEventListener('mousemove',function(e){
     if(!dn||gyroOn) return;
-    dy-=(e.clientX-lx)*.003; dp-=(e.clientY-ly)*.003;
-    dp=Math.max(-0.3,Math.min(1.3,dp)); lx=e.clientX; ly=e.clientY;
+    dy-=(e.clientX-lx)*0.003; dp-=(e.clientY-ly)*0.003;
+    dp=Math.max(-0.5,Math.min(1.4,dp)); lx=e.clientX; ly=e.clientY;
     _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e);
   });
   var tx=null,ty=null;
-  renderer.domElement.addEventListener('touchstart',function(e){ var t=e.touches[0]; tx=t.clientX; ty=t.clientY; },{passive:true});
-  renderer.domElement.addEventListener('touchmove',function(e){
+  canvas.addEventListener('touchstart',function(e){if(!gyroOn){var t=e.touches[0];tx=t.clientX;ty=t.clientY;}},{passive:true});
+  canvas.addEventListener('touchmove',function(e){
     if(gyroOn) return; var t=e.touches[0];
-    if(tx!==null){ dy-=(t.clientX-tx)*.004; dp-=(t.clientY-ty)*.004; dp=Math.max(-0.3,Math.min(1.3,dp));
-      _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e); }
+    if(tx!==null){dy-=(t.clientX-tx)*0.004;dp-=(t.clientY-ty)*0.004;dp=Math.max(-0.5,Math.min(1.4,dp));_e.set(dp,dy,0,'YXZ');qT.setFromEuler(_e);}
     tx=t.clientX; ty=t.clientY;
   },{passive:true});
 
-  window.addEventListener('resize',function(){
-    var w=window.innerWidth, h=window.innerHeight;
-    camera.aspect=skyCamera.aspect=w/h;
-    camera.updateProjectionMatrix();
-    skyCamera.updateProjectionMatrix();
-    renderer.setSize(w,h);
-  });
+  setTimeout(function(){var h=document.getElementById('hint');if(h)h.style.opacity='0';},3500);
 
-  /* ── Render loop ── */
-  var animId=null, tick=0;
-  _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e);
-
+  var animId=null;
   function animate(){
     animId=requestAnimationFrame(animate);
-    tick+=0.016;
-
-    /* Волны воды */
-    var wp=waterGeo.attributes.position;
-    for(var i=0;i<wp.count;i++){
-      var wx=wp.getX(i),wz=wOrigZ[i];
-      wp.setZ(i,Math.sin(wx*.5+tick*1.8)*.04+Math.sin(wx*.9+wz*.4+tick*1.2)*.025);
-    }
-    wp.needsUpdate=true; waterGeo.computeVertexNormals();
-
-    /* Синхронизируем вращение skyCamera с основной */
-    qC.slerp(qT, SLERP);
+    qC.slerp(qT,SLERP);
     camera.quaternion.copy(qC);
-    skyCamera.quaternion.copy(qC); /* только вращение, без позиции */
-
-    /* Рендер: сначала небо, потом очистить depth, потом мир */
+    skyCamera.quaternion.copy(qC);
     renderer.clear();
-    renderer.render(skyScene, skyCamera);
+    renderer.render(skyScene,skyCamera);
     renderer.clearDepth();
-    renderer.render(mainScene, camera);
+    renderer.render(mainScene,camera);
   }
-
   document.addEventListener('visibilitychange',function(){
-    if(document.hidden){ cancelAnimationFrame(animId); animId=null; }
+    if(document.hidden){cancelAnimationFrame(animId);animId=null;}
     else if(!animId) animate();
   });
-
   animate();
 })();
 </script>
-</body>
-</html>
