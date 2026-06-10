@@ -9,78 +9,57 @@
   html, body { width:100%; height:100%; overflow:hidden; background:#000; }
   #gc { position:fixed; inset:0; width:100%; height:100%; display:block; }
 
-  #overlay {
-    position:fixed; inset:0; pointer-events:none;
-    z-index:10;
-  }
+  #overlay { position:fixed; inset:0; pointer-events:none; z-index:10; }
 
   .card {
-    position:absolute;
-    width:200px;           /* базовый, масштабируется через scale */
-    border-radius:20px;
-    backdrop-filter: blur(22px) saturate(1.4);
-    -webkit-backdrop-filter: blur(22px) saturate(1.4);
-    background: rgba(255,255,255,0.06);
+    position: absolute;
+    width: 210px;
+    border-radius: 20px;
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    background: rgba(255,255,255,0.07);
     border: 1px solid rgba(255,255,255,0.45);
-    box-shadow: 0 4px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.25);
-    padding: 22px 20px 18px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.22);
+    padding: 20px 18px 16px;
     color: #fff;
     font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
-    pointer-events: auto;
     cursor: pointer;
-    transform-origin: center center;
-    transition: opacity 0.2s, transform 0.2s;
-    user-select: none;
-    -webkit-user-select: none;
-    /* центрируем по якорной точке */
-    transform: translate(-50%, -50%) scale(1);
+    /* NO transition — обновляем каждый кадр, transition даёт лаг */
+    user-select: none; -webkit-user-select: none;
+    will-change: transform, opacity;
   }
-
   .card h2 {
-    font-size: 17px;
-    font-weight: 700;
-    line-height: 1.25;
+    font-size: 16px; font-weight: 700; line-height: 1.3;
     margin-bottom: 8px;
-    text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
   }
-  .card .sep {
-    height: 1px;
-    background: rgba(255,255,255,0.22);
-    margin-bottom: 10px;
-  }
+  .card .sep { height:1px; background:rgba(255,255,255,0.22); margin-bottom:9px; }
   .card .desc {
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 12.5px; line-height: 1.5;
     color: rgba(255,255,255,0.88);
-    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
-    margin-bottom: 14px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    margin-bottom: 13px;
   }
   .card .pill {
     background: rgba(255,255,255,0.13);
-    border: 1px solid rgba(255,255,255,0.30);
-    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 11px;
     text-align: center;
-    padding: 10px 8px;
-    font-size: 13px;
-    font-weight: 600;
+    padding: 9px 6px;
+    font-size: 12.5px; font-weight: 600;
     color: rgba(255,255,255,0.95);
-    text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.35);
   }
   .card .soc-row {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    padding: 6px 0;
+    display:flex; justify-content:space-around; align-items:center; padding:4px 0;
   }
   .card .soc-row a {
-    display: flex; align-items: center; justify-content: center;
-    width: 36px; height: 36px;
-    pointer-events: auto;
+    display:flex; align-items:center; justify-content:center;
+    width:34px; height:34px; pointer-events:auto;
   }
   .card .soc-row img {
-    width: 28px; height: 28px;
-    filter: brightness(0) invert(1);
-    opacity: 0.9;
+    width:26px; height:26px;
+    filter: brightness(0) invert(1); opacity:0.92;
   }
 
   #hint {
@@ -100,12 +79,12 @@
 (function(){
 
 var CARDS = [
-  { name:'Классический массаж',   desc:'Восстанавливает кровообращение, снимает мышечное напряжение и улучшает общий тонус тела. Идеально после тяжёлой недели.',   duration:'60 или 90 мин', price:'600 / 850 грн'  },
-  { name:'Глубокотканный',        desc:'Интенсивное воздействие на глубокие слои мышц. Эффективен при хронических болях и мышечных зажимах после стресса.',        duration:'60 или 90 мин', price:'750 / 1050 грн' },
-  { name:'Аромамассаж',           desc:'Мягкие техники с натуральными эфирными маслами. Успокаивает нервную систему и наполняет тело ощущением лёгкости.',          duration:'75 или 90 мин', price:'700 / 900 грн'  },
-  { name:'Массаж спины и шеи',    desc:'Снимает головную боль, напряжение от сидячей работы и скованность в плечевом поясе. Результат с первого сеанса.',          duration:'30 или 45 мин', price:'400 / 550 грн'  },
-  { name:'Антицеллюлитный',       desc:'Лимфодренаж и улучшение микроциркуляции. Кожа становится упругей, контуры — чётче. Курс от 8 сеансов.',                    duration:'45 или 60 мин', price:'650 / 850 грн'  },
-  { name:'Спортивный массаж',     desc:'Восстановление после тренировок, профилактика травм, повышение гибкости и тонуса мышц. До и после нагрузок.',               duration:'60 мин',        price:'700 грн'        },
+  { name:'Классический массаж',  desc:'Восстанавливает кровообращение, снимает мышечное напряжение и улучшает общий тонус тела. Идеально после тяжёлой недели.',  duration:'60 или 90 мин', price:'600 / 850 грн'  },
+  { name:'Глубокотканный',       desc:'Интенсивное воздействие на глубокие слои мышц. Эффективен при хронических болях и мышечных зажимах после стресса.',       duration:'60 или 90 мин', price:'750 / 1050 грн' },
+  { name:'Аромамассаж',          desc:'Мягкие техники с натуральными эфирными маслами. Успокаивает нервную систему и наполняет тело ощущением лёгкости.',         duration:'75 или 90 мин', price:'700 / 900 грн'  },
+  { name:'Массаж спины и шеи',   desc:'Снимает головную боль, напряжение от сидячей работы и скованность в плечовом поясе. Результат с первого сеанса.',         duration:'30 или 45 мин', price:'400 / 550 грн'  },
+  { name:'Антицеллюлитный',      desc:'Лимфодренаж и улучшение микроциркуляции. Кожа становится упругей, контуры — чётче. Курс от 8 сеансов.',                   duration:'45 или 60 мин', price:'650 / 850 грн'  },
+  { name:'Спортивный массаж',    desc:'Восстановление после тренировок, профилактика травм, повышение гибкости и тонуса мышц. До и после нагрузок.',              duration:'60 мин',        price:'700 грн'        },
 ];
 
 var SOC = [
@@ -128,7 +107,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.autoClear = false;
 
-var skyScene = new THREE.Scene();
+var skyScene  = new THREE.Scene();
 var camera    = new THREE.PerspectiveCamera(75, W/H, 0.1, 500);
 var skyCamera = new THREE.PerspectiveCamera(75, W/H, 1, 1000);
 camera.position.set(0, 1.6, 0);
@@ -141,7 +120,7 @@ var skyGeo = new THREE.SphereGeometry(500, 64, 32);
 skyGeo.scale(-1, 1, 1);
 var skyMat = new THREE.ShaderMaterial({
   uniforms:{top:{value:new THREE.Color(0x2a6fbe)},bot:{value:new THREE.Color(0xb0cfe8)}},
-  vertexShader:'varying vec3 vP; void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:'uniform vec3 top,bot;varying vec3 vP;void main(){float h=clamp(normalize(vP).y*2.,0.,1.);gl_FragColor=vec4(mix(bot,top,h),1.);}'
 });
 var skyMesh = new THREE.Mesh(skyGeo, skyMat);
@@ -153,27 +132,25 @@ loader.load(
     tex.encoding = THREE.sRGBEncoding;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
-    skyMesh.material = new THREE.MeshBasicMaterial({ map: tex, side: THREE.FrontSide });
+    skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
   }
 );
 
 /* ── HTML Cards ── */
-var RADIUS = 5.5;
-var CARD_Y = 0.0; /* смещение от уровня камеры (camera.y = 1.6) */
-
-var overlay   = document.getElementById('overlay');
+var RADIUS   = 5.5;
+var CARD_Y   = 1.6; /* совпадает с camera.position.y — карточки на уровне глаз */
+var overlay  = document.getElementById('overlay');
 var cardExpanded = new Array(CARDS.length).fill(false);
-var cardEls   = [];
-var cardPos3D = []; /* THREE.Vector3 для каждой карточки */
-
-var tmpV = new THREE.Vector3();
+var cardEls  = [];
+var cardPos  = []; /* мировые позиции карточек */
 
 CARDS.forEach(function(data, i){
   var angle = (i / CARDS.length) * Math.PI * 2;
-  var x = Math.sin(angle) * RADIUS;
-  var z = -Math.cos(angle) * RADIUS;
-
-  cardPos3D.push(new THREE.Vector3(x, CARD_Y, z));
+  cardPos.push(new THREE.Vector3(
+    Math.sin(angle) * RADIUS,
+    CARD_Y,
+    -Math.cos(angle) * RADIUS
+  ));
 
   var el = document.createElement('div');
   el.className = 'card';
@@ -182,17 +159,16 @@ CARDS.forEach(function(data, i){
     '<div class="sep"></div>' +
     '<div class="desc">' + data.desc + '</div>' +
     '<div class="pill" data-pill>' + data.duration + '  ·  ' + data.price + '</div>';
-  overlay.appendChild(el);
 
-  /* клик */
-  (function(idx, cardEl, d){
-    cardEl.addEventListener('click', function(e){
+  overlay.appendChild(el);
+  cardEls.push(el);
+
+  (function(idx, el, d){
+    el.addEventListener('click', function(e){
       e.stopPropagation();
-      if(!cardExpanded[idx]){
-        /* открываем соцсети */
-        cardExpanded[idx] = true;
-        var pill = cardEl.querySelector('[data-pill]');
-        pill.innerHTML = '';
+      cardExpanded[idx] = !cardExpanded[idx];
+      var pill = el.querySelector('[data-pill]');
+      if(cardExpanded[idx]){
         var row = document.createElement('div');
         row.className = 'soc-row';
         SOC.forEach(function(s){
@@ -200,80 +176,85 @@ CARDS.forEach(function(data, i){
           a.href = s.href; a.target = '_blank';
           a.addEventListener('click', function(ev){ ev.stopPropagation(); });
           var img = document.createElement('img');
-          img.src = s.src; img.crossOrigin = 'anonymous';
+          img.src = s.src;
           a.appendChild(img);
           row.appendChild(a);
         });
+        pill.innerHTML = '';
         pill.appendChild(row);
       } else {
-        /* закрываем */
-        cardExpanded[idx] = false;
-        var pill = cardEl.querySelector('[data-pill]');
         pill.innerHTML = d.duration + '  ·  ' + d.price;
       }
     });
   })(i, el, data);
-
-  cardEls.push(el);
 });
 
-/* закрыть карточку при клике на фон */
+/* закрыть все карточки кликом на канвас */
 canvas.addEventListener('click', function(){
-  cardEls.forEach(function(el, i){
-    if(cardExpanded[i]){
-      cardExpanded[i] = false;
-      var pill = el.querySelector('[data-pill]');
-      pill.innerHTML = CARDS[i].duration + '  ·  ' + CARDS[i].price;
-    }
+  CARDS.forEach(function(d, i){
+    if(!cardExpanded[i]) return;
+    cardExpanded[i] = false;
+    cardEls[i].querySelector('[data-pill]').innerHTML = d.duration + '  ·  ' + d.price;
   });
 });
 
-/* ── Проекция 3D → экран ── */
-function projectCard(pos3d){
-  tmpV.copy(pos3d);
-  tmpV.project(camera);
-  return {
-    x: ( tmpV.x * 0.5 + 0.5) * W,
-    y: (-tmpV.y * 0.5 + 0.5) * H,
-    z:  tmpV.z  /* -1..1, <1 = перед камерой */
-  };
-}
+/* ── Проекция 3D → 2D ──
+   Важно: camera.updateMatrixWorld() должен быть вызван ПОСЛЕ
+   применения нового quaternion, ДО project().               */
+var _v = new THREE.Vector3();
 
 function updateCards(){
-  var camDir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-  cardEls.forEach(function(el, i){
-    var pos = cardPos3D[i];
-    var pr  = projectCard(pos);
+  /* camera.matrixWorldNeedsUpdate устанавливается при изменении quaternion,
+     updateMatrixWorld() вызывается здесь явно чтобы гарантировать свежую матрицу */
+  camera.updateMatrixWorld(true);
 
-    /* вектор к карточке от камеры */
-    var toCard = new THREE.Vector3(pos.x, pos.y, pos.z)
-      .sub(camera.position).normalize();
-    var dot = camDir.dot(toCard); /* 1=прямо впереди, -1=сзади */
-    var t   = (dot + 1) / 2;
+  var fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
 
-    /* за спиной — скрыть */
-    if(pr.z >= 1 || dot < -0.1){
-      el.style.opacity = '0';
-      el.style.pointerEvents = 'none';
-      return;
+  for(var i = 0; i < CARDS.length; i++){
+    var pos = cardPos[i];
+
+    /* вектор от камеры к карточке */
+    var toCard = _v.set(
+      pos.x - camera.position.x,
+      pos.y - camera.position.y,
+      pos.z - camera.position.z
+    ).normalize();
+
+    var dot = fwd.dot(toCard); /* 1 = прямо, -1 = сзади */
+
+    if(dot <= 0){
+      /* карточка сзади — полностью скрыть */
+      cardEls[i].style.visibility = 'hidden';
+      cardEls[i].style.pointerEvents = 'none';
+      continue;
     }
 
-    var sc = 0.72 + t * 0.28;         /* масштаб 0.72–1.0 */
-    var op = 0.30 + t * 0.70;         /* прозрачность 0.30–1.0 */
+    /* проекция в NDC */
+    var proj = pos.clone();
+    proj.project(camera);
 
-    el.style.opacity = op.toFixed(3);
-    el.style.pointerEvents = op > 0.5 ? 'auto' : 'none';
-    el.style.left = pr.x + 'px';
-    el.style.top  = pr.y + 'px';
-    el.style.transform = 'translate(-50%,-50%) scale(' + sc.toFixed(3) + ')';
-    el.style.zIndex = Math.round(t * 100);
-  });
+    /* NDC → пиксели */
+    var sx = ( proj.x * 0.5 + 0.5) * W;
+    var sy = (-proj.y * 0.5 + 0.5) * H;
+
+    var t  = (dot + 1) / 2;             /* 0.5..1 когда спереди */
+    var sc = 0.65 + t * 0.35;           /* масштаб */
+    var op = Math.max(0, (dot - 0.05) / 0.95); /* плавно гасим у края */
+
+    cardEls[i].style.visibility = 'visible';
+    cardEls[i].style.pointerEvents = op > 0.4 ? 'auto' : 'none';
+    cardEls[i].style.opacity = op.toFixed(3);
+    cardEls[i].style.zIndex  = Math.round(dot * 100);
+    cardEls[i].style.left    = sx + 'px';
+    cardEls[i].style.top     = sy + 'px';
+    cardEls[i].style.transform = 'translate(-50%,-50%) scale(' + sc.toFixed(4) + ')';
+  }
 }
 
 /* ── Resize ── */
 window.addEventListener('resize', function(){
   W = window.innerWidth; H = window.innerHeight;
-  camera.aspect = skyCamera.aspect = W/H;
+  camera.aspect = skyCamera.aspect = W / H;
   camera.updateProjectionMatrix();
   skyCamera.updateProjectionMatrix();
   renderer.setSize(W, H);
@@ -311,7 +292,7 @@ window.addEventListener('mousemove',function(e){
   dp=Math.max(-0.5,Math.min(1.4,dp)); lx=e.clientX; ly=e.clientY;
   _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e);
 });
-var tx=null,ty=null;
+var tx=null, ty=null;
 canvas.addEventListener('touchstart',function(e){if(!gyroOn){var t=e.touches[0];tx=t.clientX;ty=t.clientY;}},{passive:true});
 canvas.addEventListener('touchmove',function(e){
   if(gyroOn) return; var t=e.touches[0];
@@ -322,13 +303,19 @@ canvas.addEventListener('touchmove',function(e){
 setTimeout(function(){var h=document.getElementById('hint');if(h)h.style.opacity='0';},3500);
 
 /* ── Render loop ── */
-var animId=null;
+var animId = null;
 function animate(){
   animId = requestAnimationFrame(animate);
+
+  /* 1. обновляем quaternion камеры */
   qC.slerp(qT, SLERP);
   camera.quaternion.copy(qC);
   skyCamera.quaternion.copy(qC);
+
+  /* 2. сразу обновляем матрицы и позиции карточек */
   updateCards();
+
+  /* 3. рендерим небо */
   renderer.clear();
   renderer.render(skyScene, skyCamera);
 }
