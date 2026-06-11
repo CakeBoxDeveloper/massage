@@ -20,6 +20,8 @@
 <canvas id="gc"></canvas>
 <div id="hint">Тяните мышью для поворота</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 <script>
 (function(){
 
@@ -91,6 +93,8 @@ var CARD_H      = 3.2;
 var TW = 560, TH = 800;
 
 var cardExpanded = new Array(CARDS.length).fill(false);
+/* cardAnim[i] = float 0..1, анимация разворота пилюли */
+var cardAnim = new Array(CARDS.length).fill(0);
 
 /* ── Shimmer helpers ── */
 // Returns a point at arc-length fraction t around a rounded-rect perimeter
@@ -162,8 +166,9 @@ function drawWhiteIcon(ctx, img, x, y, size){
   ctx.drawImage(off, x, y);
 }
 
-function drawCard(cc, data, expanded, shimmerT){
+function drawCard(cc, data, anim, shimmerT){
   shimmerT = shimmerT || 0;
+  anim = anim === undefined ? 0 : anim;
   var ctx = cc.getContext('2d');
   ctx.clearRect(0,0,TW,TH);
 
@@ -237,43 +242,84 @@ function drawCard(cc, data, expanded, shimmerT){
 
   /* нижняя пилюля — кнопка «Записаться» */
   var pillY = TH-148, pillH = 110;
+  var pillX = 36, pillW = TW-72;
 
   /* фон пилюли */
-  roundRect(ctx,36,pillY,TW-72,pillH,28);
+  roundRect(ctx, pillX, pillY, pillW, pillH, 28);
   ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.2; ctx.stroke();
 
-  if(!expanded){
-    /* текст кнопки */
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  // easeOutBack для пружинки при появлении иконок
+  function easeOutBack(t) {
+    var c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  }
+
+  // Текст кнопки — исчезает при anim > 0
+  var textAlpha = Math.max(0, 1 - anim * 3);
+  if(textAlpha > 0){
+    ctx.save();
+    ctx.globalAlpha = textAlpha * 0.92;
+    ctx.fillStyle = '#ffffff';
     ctx.font = '26px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
     ctx.textAlign = 'center';
-    ctx.letterSpacing = '2px';
     ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 5;
-    ctx.fillText('ЗАПИСАТЬСЯ НА СЕАНС', TW/2, pillY+66);
+    ctx.fillText('ЗАПИСАТЬСЯ НА СЕАНС', TW/2, pillY + 66);
     ctx.shadowBlur = 0;
-  } else {
-    /* 5 иконок-ячеек */
-    var iconSize = 44, totalW = TW-72, step = totalW/5;
+    ctx.restore();
+  }
+
+  // Иконки — появляются с задержкой, вылетая из центра
+  if(anim > 0){
+    var iconSize = 44;
+    var totalW = pillW, step = totalW / 5;
+    // Каждая иконка имеет свою задержку от центра (индекс 2 — центральная)
+    var order = [2, 1, 3, 0, 4]; // порядок появления: центр → наружу
     SOC_ICONS.forEach(function(soc, idx){
-      var ix = 36 + step*idx + step/2 - iconSize/2;
-      var iy = pillY + (pillH-iconSize)/2;
-      /* разделитель между ячейками */
-      if(idx > 0){
-        ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+      // Задержка по порядку появления
+      var rank = order.indexOf(idx);
+      var delay = rank * 0.12; // 0, 0.12, 0.24, 0.36, 0.48
+      var localT = Math.max(0, Math.min(1, (anim - delay) / (1 - delay * 0.5)));
+      if(localT <= 0) return;
+
+      var spring = easeOutBack(localT);
+
+      // Финальная позиция иконки
+      var finalX = pillX + step * idx + step / 2 - iconSize / 2;
+      var finalY = pillY + (pillH - iconSize) / 2;
+      // Стартовая позиция — центр пилюли
+      var startX = pillX + pillW / 2 - iconSize / 2;
+      var ix = startX + (finalX - startX) * spring;
+      var iy = finalY;
+
+      // Разделитель между ячейками
+      if(idx > 0 && localT > 0.5){
+        var divAlpha = Math.min(1, (localT - 0.5) * 4) * 0.12;
+        ctx.save();
+        ctx.globalAlpha = divAlpha;
+        ctx.strokeStyle = 'rgba(255,255,255,1)'; ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(36 + step*idx, pillY+14);
-        ctx.lineTo(36 + step*idx, pillY+pillH-14);
+        ctx.moveTo(pillX + step * idx, pillY + 14);
+        ctx.lineTo(pillX + step * idx, pillY + pillH - 14);
         ctx.stroke();
+        ctx.restore();
       }
+
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, localT * 2) * 0.90;
+      // Масштабируем иконку вокруг её центра
+      var cx2 = ix + iconSize / 2, cy2 = iy + iconSize / 2;
+      var sc = 0.5 + spring * 0.5;
+      ctx.translate(cx2, cy2);
+      ctx.scale(sc, sc);
+      ctx.translate(-cx2, -cy2);
       if(socImages[idx].complete && socImages[idx].naturalWidth > 0){
-        ctx.globalAlpha = 0.90;
         drawWhiteIcon(ctx, socImages[idx], ix, iy, iconSize);
-        ctx.globalAlpha = 1;
       } else {
         ctx.fillStyle = 'rgba(255,255,255,0.45)';
-        ctx.beginPath(); ctx.arc(ix+iconSize/2, iy+iconSize/2, iconSize/2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ix + iconSize/2, iy + iconSize/2, iconSize/2, 0, Math.PI*2); ctx.fill();
       }
+      ctx.restore();
     });
   }
 }
@@ -298,7 +344,7 @@ CARDS.forEach(function(data, i){
 });
 
 function redrawCard(i, shimmerT){
-  drawCard(cardMeshes[i].cc, cardMeshes[i].data, cardExpanded[i], shimmerT || 0);
+  drawCard(cardMeshes[i].cc, cardMeshes[i].data, cardAnim[i], shimmerT || 0);
   cardMeshes[i].tex.needsUpdate = true;
 }
 socImages.forEach(function(img){
@@ -349,25 +395,26 @@ function handleClick(cx, cy, isTouch){
   var idx = cardMeshes.findIndex(function(c){return c.mesh===hits[0].object;});
   if(idx<0) return;
   var uv = hits[0].uv;
-  // Пилюля занимает нижние ~18% UV (pillY = TH-148, TH=800 => 148/800 ≈ 0.185)
+  // Пилюля занимает нижние ~18.5% UV (pillY = TH-148, TH=800 => 148/800 ≈ 0.185)
   var inPill = uv && uv.y < 0.185;
+  var isOpen = cardExpanded[idx]; // true когда анимация идёт в сторону 1
   if(inPill){
-    if(cardExpanded[idx]){
-      // Клик по одной из 5 иконок
-      var si = Math.floor(uv.x * 5);
-      si = Math.max(0, Math.min(4, si));
-      if(isTouch) skipNextTouch = true;
-      window.open(SOC_ICONS[si].href, '_blank');
+    if(isOpen){
+      // Клик по одной из 5 иконок — только если анимация завершена (~1)
+      if(cardAnim[idx] > 0.85){
+        var si = Math.floor(uv.x * 5);
+        si = Math.max(0, Math.min(4, si));
+        if(isTouch) skipNextTouch = true;
+        window.open(SOC_ICONS[si].href, '_blank');
+      }
     } else {
-      // Развернуть иконки
+      // Открыть
       cardExpanded[idx] = true;
-      redrawCard(idx);
     }
   } else {
-    // Клик по телу карточки — свернуть если раскрыта
-    if(cardExpanded[idx]){
+    // Клик по телу карточки — закрыть
+    if(isOpen){
       cardExpanded[idx] = false;
-      redrawCard(idx);
     }
   }
 }
@@ -427,6 +474,7 @@ setTimeout(function(){var h=document.getElementById('hint');if(h)h.style.opacity
 var animId=null;
 var shimmerClock = 0;
 var SHIMMER_SPEED = 0.025; // оборотов в секунду
+var PILL_SPEED    = 3.5;   // скорость анимации пилюли (1/сек)
 var lastTime = 0;
 function animate(now){
   animId=requestAnimationFrame(animate);
@@ -437,10 +485,16 @@ function animate(now){
   camera.quaternion.copy(qC);
   skyCamera.quaternion.copy(qC);
   updateDepth();
-  // Redraw cards with shimmer
+  updateButterflies(dt);
+  // Продвигаем анимацию пилюли и перерисовываем карточки
   cardMeshes.forEach(function(c, i){
+    var target = cardExpanded[i] ? 1 : 0;
+    var prev   = cardAnim[i];
+    // Плавное приближение к target
+    cardAnim[i] += (target - cardAnim[i]) * Math.min(1, dt * PILL_SPEED);
+    if(Math.abs(cardAnim[i] - target) < 0.001) cardAnim[i] = target;
     var t = (shimmerClock + i / CARDS.length) % 1;
-    drawCard(c.cc, c.data, cardExpanded[i], t);
+    drawCard(c.cc, c.data, cardAnim[i], t);
     c.tex.needsUpdate = true;
   });
   renderer.clear();
@@ -448,6 +502,204 @@ function animate(now){
   renderer.clearDepth();
   renderer.render(mainScene, camera);
 }
+/* ── Butterflies ── */
+var butterflies = [];
+var butterflyMixers = [];
+var BUTTERFLY_COUNT = 6;
+
+// Границы зоны полёта (вокруг карточек, на уровне глаз)
+var FLY_RANGE = { xz: 7, yMin: 1.0, yMax: 3.8 };
+
+function randFlyTarget() {
+  var angle = Math.random() * Math.PI * 2;
+  // Минимальная дистанция 3.5 — не ближе чем карточки (CARD_RADIUS = 5.5)
+  var dist  = 3.5 + Math.random() * 4.5;
+  return new THREE.Vector3(
+    Math.sin(angle) * dist,
+    FLY_RANGE.yMin + Math.random() * (FLY_RANGE.yMax - FLY_RANGE.yMin),
+    Math.cos(angle) * dist
+  );
+}
+
+var BUTTERFLY_BASE = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/butterfly/';
+
+// Кастомный менеджер: все относительные пути резолвим через BUTTERFLY_BASE
+var butterflyManager = new THREE.LoadingManager();
+butterflyManager.setURLModifier(function(url) {
+  if(url.startsWith('http') || url.startsWith('blob') || url.startsWith('data')) return url;
+  var clean = url.replace(/^\.\//, '').replace(/^\//, '');
+  return BUTTERFLY_BASE + clean;
+});
+
+/* ── Процедурные текстуры крыльев ── */
+// Палитра: тропические цвета
+var BUTTERFLY_PALETTES = [
+  { base:'#1a6fce', accent:'#7fd4ff', spot:'#ffffff' }, // голубая
+  { base:'#d4420a', accent:'#ffb347', spot:'#fff0a0' }, // оранжевая
+  { base:'#2a9a4a', accent:'#90ee90', spot:'#ffffff' }, // зелёная
+  { base:'#8b1a8b', accent:'#da70d6', spot:'#ffe0ff' }, // фиолетовая
+  { base:'#c8a000', accent:'#ffe066', spot:'#ffffff' }, // жёлтая
+  { base:'#1a8080', accent:'#40e0d0', spot:'#e0ffff' }, // бирюзовая
+];
+
+function makeButterflyTexture(palette) {
+  var sz = 256;
+  var cv = document.createElement('canvas');
+  cv.width = sz; cv.height = sz;
+  var ctx = cv.getContext('2d');
+
+  // Фон прозрачный
+  ctx.clearRect(0, 0, sz, sz);
+
+  // Верхнее крыло (левая половина текстуры — UV-пространство модели)
+  // Рисуем симметричную бабочку на всём холсте
+  function wing(cx, cy, rx, ry, rot) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    // Основа крыла
+    var grad = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+    grad.addColorStop(0,   palette.accent);
+    grad.addColorStop(0.5, palette.base);
+    grad.addColorStop(1,   'rgba(0,0,0,0.7)');
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // Пятна
+    ctx.fillStyle = palette.spot;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath(); ctx.arc(rx * 0.35, ry * 0.2, rx * 0.1, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(rx * 0.55, -ry * 0.1, rx * 0.07, 0, Math.PI*2); ctx.fill();
+    // Край крыла
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    // Прожилки
+    ctx.globalAlpha = 0.25;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    for(var i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(rx * Math.cos(i * 0.3), ry * Math.sin(i * 0.3 + 0.5));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  ctx.globalAlpha = 1;
+  var hw = sz / 2, hh = sz / 2;
+  // 4 крыла: 2 верхних (крупнее), 2 нижних (меньше)
+  wing(hw - sz*0.18, hh - sz*0.05, sz*0.28, sz*0.22, -0.4);  // верх-лево
+  wing(hw + sz*0.18, hh - sz*0.05, sz*0.28, sz*0.22,  0.4);  // верх-право
+  wing(hw - sz*0.14, hh + sz*0.12, sz*0.18, sz*0.15, -0.2);  // низ-лево
+  wing(hw + sz*0.14, hh + sz*0.12, sz*0.18, sz*0.15,  0.2);  // низ-право
+
+  // Тельце
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.ellipse(hw, hh, sz*0.025, sz*0.18, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  var tex = new THREE.CanvasTexture(cv);
+  tex.encoding = THREE.sRGBEncoding;
+  return tex;
+}
+
+var gltfLoader = new THREE.GLTFLoader(butterflyManager);
+gltfLoader.load(
+  BUTTERFLY_BASE + 'scene.gltf',
+  function(gltf) {
+    var BASE_SCALE = 0.36;
+
+    for (var b = 0; b < BUTTERFLY_COUNT; b++) {
+      var clone = THREE.SkeletonUtils.clone(gltf.scene);
+      var sc = BASE_SCALE * (0.8 + Math.random() * 0.5);
+      clone.scale.setScalar(sc);
+
+      // Применяем процедурную текстуру
+      var palette = BUTTERFLY_PALETTES[b % BUTTERFLY_PALETTES.length];
+      var bTex = makeButterflyTexture(palette);
+      clone.traverse(function(node) {
+        if(node.isMesh && node.material) {
+          node.material = node.material.clone();
+          node.material.map = bTex;
+          node.material.needsUpdate = true;
+        }
+      });
+
+      clone.position.copy(randFlyTarget());
+      mainScene.add(clone);
+
+      var mixer = null;
+      if(gltf.animations && gltf.animations.length > 0) {
+        mixer = new THREE.AnimationMixer(clone);
+        var action = mixer.clipAction(gltf.animations[0]);
+        // Скорость анимации крыльев ×2 от предыдущего
+        action.timeScale = 1.6 + Math.random() * 1.2;
+        action.play();
+        mixer.update(Math.random() * 2.0);
+        butterflyMixers.push(mixer);
+      }
+
+      butterflies.push({
+        obj:      clone,
+        mixer:    mixer,
+        target:   randFlyTarget(),
+        speed:    0.25 + Math.random() * 0.3,
+        wobble:   Math.random() * Math.PI * 2,
+        wobbleS:  0.6 + Math.random() * 0.8,
+        wobbleA:  0.004 + Math.random() * 0.006,
+        qCurrent: new THREE.Quaternion().copy(clone.quaternion),
+        qTarget:  new THREE.Quaternion(),
+      });
+    }
+  },
+  undefined,
+  function(err) { console.warn('Butterfly load error:', err); }
+);
+
+var _bUp   = new THREE.Vector3(0, 1, 0);
+var _bDir  = new THREE.Vector3();
+var _bMtx  = new THREE.Matrix4();
+
+function updateButterflies(dt) {
+  butterflies.forEach(function(bf) {
+    if(bf.mixer) bf.mixer.update(dt);
+
+    _bDir.subVectors(bf.target, bf.obj.position);
+    var dist = _bDir.length();
+
+    if(dist < 0.3) {
+      bf.target = randFlyTarget();
+      _bDir.subVectors(bf.target, bf.obj.position);
+      dist = _bDir.length();
+    }
+
+    var step = Math.min(bf.speed * dt, dist);
+    _bDir.normalize();
+    bf.obj.position.addScaledVector(_bDir, step);
+
+    // Вертикальное покачивание
+    bf.wobble += dt * bf.wobbleS;
+    bf.obj.position.y += Math.sin(bf.wobble) * bf.wobbleA;
+    bf.obj.position.y = Math.max(FLY_RANGE.yMin, Math.min(FLY_RANGE.yMax, bf.obj.position.y));
+
+    // Плавный поворот по направлению движения
+    if(dist > 0.1) {
+      _bMtx.lookAt(bf.obj.position, bf.target, _bUp);
+      bf.qTarget.setFromRotationMatrix(_bMtx);
+      bf.qCurrent.slerp(bf.qTarget, Math.min(1, dt * 3));
+      bf.obj.quaternion.copy(bf.qCurrent);
+    }
+  });
+}
+
 document.addEventListener('visibilitychange',function(){
   if(document.hidden){cancelAnimationFrame(animId);animId=null;lastTime=0;}
   else if(!animId) requestAnimationFrame(animate);
