@@ -469,7 +469,7 @@ setTimeout(function(){
    BUTTERFLIES
 ═════════════════════════════════════════ */
 var butterflies = [];
-var _bOrientFix = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -Math.PI/2, 0));
+var _bOrientFix = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0));
 var BUTTERFLY_COUNT = 12;
 var BASE_SCALE = 0.36;
 var FLY_RANGE_MIN = 3.5, FLY_RANGE_MAX = 8.0;
@@ -478,14 +478,34 @@ var wingTex = null;
 var gltfScene = null;
 var mixers = [];
 
-function spawnButterfly(gltf){
+// Цветовые вариации через hue-rotate фильтр
+var HUE_SHIFTS = [0, 30, 60, 120, 180, 220, 270, 320];
+var tintedWingTextures = []; // будут заполнены после загрузки wingTex
+
+function makeTintedTex(srcTex, hueShift) {
+  if(hueShift === 0) return srcTex;
+  var img = srcTex.image;
+  if(!img) return srcTex;
+  var cv = document.createElement('canvas');
+  cv.width = img.width; cv.height = img.height;
+  var ctx2 = cv.getContext('2d');
+  ctx2.filter = 'hue-rotate(' + hueShift + 'deg)';
+  ctx2.drawImage(img, 0, 0);
+  var t = new THREE.CanvasTexture(cv);
+  t.encoding    = THREE.sRGBEncoding;
+  t.flipY       = false;
+  t.wrapS       = THREE.RepeatWrapping;
+  t.wrapT       = THREE.RepeatWrapping;
+  t.needsUpdate = true;
+  return t;
+}
+
+function spawnButterfly(gltf, idx){
   var clone = THREE.SkeletonUtils.clone(gltf.scene);
   var speed = 0.15 + Math.random() * 0.35;
-  /* scale correlated with speed */
   var s = BASE_SCALE * (0.7 + speed * 0.9);
   clone.scale.setScalar(s);
 
-  /* random position */
   var angle = Math.random() * Math.PI * 2;
   var dist  = FLY_RANGE_MIN + Math.random() * (FLY_RANGE_MAX - FLY_RANGE_MIN);
   clone.position.set(
@@ -494,18 +514,21 @@ function spawnButterfly(gltf){
     Math.cos(angle) * dist
   );
 
-  /* apply wing texture */
-  if(wingTex){
+  // Выбираем тинтованную текстуру для этой бабочки
+  var texPool = tintedWingTextures.length ? tintedWingTextures : (wingTex ? [wingTex] : []);
+  var bTex = texPool.length ? texPool[idx % texPool.length] : null;
+
+  if(bTex){
     clone.traverse(function(node){
       if(node.isMesh || node.isSkinnedMesh){
         var m = node.material.clone();
-        m.map   = wingTex;
+        m.map   = bTex;
         m.color = new THREE.Color(0xffffff);
         if(m.isMeshStandardMaterial){
           m.roughness         = 1.0;
           m.metalness         = 0.0;
-          m.emissive          = new THREE.Color(0x444444); // небольшое самосвечение
-          m.emissiveMap       = wingTex;
+          m.emissive          = new THREE.Color(0x444444);
+          m.emissiveMap       = bTex;
           m.emissiveIntensity = 0.4;
         }
         m.transparent = false;
@@ -581,12 +604,16 @@ texLoader.crossOrigin = 'anonymous';
 texLoader.load(
   'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/butterfly/textures/M_BorboletaAzul_baseColor.png',
   function(tex){
-    tex.encoding  = THREE.sRGBEncoding;
-    tex.flipY     = false;         // GLTF UV origin = bottom-left, THREE default = top-left
-    tex.wrapS     = THREE.RepeatWrapping;
-    tex.wrapT     = THREE.RepeatWrapping;
+    tex.encoding    = THREE.sRGBEncoding;
+    tex.flipY       = false;
+    tex.wrapS       = THREE.RepeatWrapping;
+    tex.wrapT       = THREE.RepeatWrapping;
     tex.needsUpdate = true;
     wingTex = tex;
+    // Генерируем тинтованные версии
+    HUE_SHIFTS.forEach(function(shift) {
+      tintedWingTextures.push(makeTintedTex(tex, shift));
+    });
     loadGLTF();
   },
   undefined,
@@ -605,7 +632,7 @@ function loadGLTF(){
     function(gltf){
       gltfScene = gltf;
       for(var i = 0; i < BUTTERFLY_COUNT; i++){
-        spawnButterfly(gltf);
+        spawnButterfly(gltf, i);
       }
     },
     undefined,
@@ -682,8 +709,8 @@ function makeLightRayTexture(w, h) {
   // Горизонтальный fade (левый и правый края прозрачны — имитация клина)
   var hGrad = rctx.createLinearGradient(0, 0, w, 0);
   hGrad.addColorStop(0,   'rgba(255,240,200,0.00)');
-  hGrad.addColorStop(0.15,'rgba(255,240,200,1.00)');
-  hGrad.addColorStop(0.85,'rgba(255,240,200,1.00)');
+  hGrad.addColorStop(0.15,'rgba(255,240,200,0.55)');
+  hGrad.addColorStop(0.85,'rgba(255,240,200,0.55)');
   hGrad.addColorStop(1,   'rgba(255,240,200,0.00)');
   rctx.fillStyle = hGrad;
   rctx.fillRect(0, 0, w, h);
@@ -749,7 +776,7 @@ function createLightRays() {
 
     mesh.userData.floatSpeed  = 0.2 + Math.random() * 0.4;
     mesh.userData.floatPhase  = Math.random() * Math.PI * 2;
-    mesh.userData.baseOpacity = 0.5 + Math.random() * 0.5;
+    mesh.userData.baseOpacity = 0.12 + Math.random() * 0.18;
 
     rayGroup.add(mesh);
   }
