@@ -65,6 +65,7 @@ var loader = new THREE.TextureLoader();
 loader.crossOrigin = 'anonymous';
 
 /* ── Sky ── */
+/* ── Sky ── */
 var skyGeo = new THREE.SphereGeometry(500, 64, 32);
 skyGeo.scale(-1, 1, 1);
 var skyMat = new THREE.ShaderMaterial({
@@ -75,8 +76,7 @@ var skyMat = new THREE.ShaderMaterial({
 var skyMesh = new THREE.Mesh(skyGeo, skyMat);
 skyScene.add(skyMesh);
 
-var gardenTex = null;
-var depthTex  = null;
+var isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
 loader.load(
   'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/garden.webp',
@@ -84,51 +84,46 @@ loader.load(
     tex.encoding = THREE.sRGBEncoding;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
-    gardenTex = tex;
-    // Сначала применяем просто как BasicMaterial
-    skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
-    tryApplyDisplacement();
+    if(isMobile) {
+      // Телефон — просто BasicMaterial, никакого шейдера
+      skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    } else {
+      gardenTex = tex;
+      tryApplyDof();
+    }
   }
 );
 
-loader.load(
-  'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/deep.webp',
-  function(tex){
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.ClampToEdgeWrapping;
-    tex.minFilter = THREE.LinearFilter;
-    tex.generateMipmaps = false;
-    depthTex = tex;
-    console.log('deep.webp loaded:', tex.image.width, 'x', tex.image.height);
-    tryApplyDisplacement();
-  },
-  undefined,
-  function(err){ console.error('deep.webp FAILED:', err); }
-);
+// Десктоп: грузим карту глубины и применяем DoF шейдер
+var gardenTex = null;
+var depthTex  = null;
 
-// Parallax+DoF ShaderMaterial
-var dispMat = new THREE.ShaderMaterial({
+if(!isMobile) {
+  loader.load(
+    'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/deep.webp',
+    function(tex){
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.minFilter = THREE.LinearFilter;
+      tex.generateMipmaps = false;
+      depthTex = tex;
+      tryApplyDof();
+    }
+  );
+}
+
+var dofMat = new THREE.ShaderMaterial({
   uniforms: {
-    colorMap:   { value: null },
-    depthMap:   { value: null },
-    dispScale:  { value: 1.25 },
-    dofFocus:   { value: 0.20 },
-    dofStrength:{ value: 0.00105 },
-    camForward: { value: new THREE.Vector2(0, 0) },
+    colorMap:    { value: null },
+    depthMap:    { value: null },
+    dofFocus:    { value: 0.20    },
+    dofStrength: { value: 0.000735 },
   },
   vertexShader: `
-    uniform sampler2D depthMap;
-    uniform float dispScale;
     varying vec2 vUv;
-    varying float vDepth;
     void main() {
       vUv = uv;
-      float depth = textureLod(depthMap, uv, 0.0).r;
-      vDepth = depth;
-      // Displacement: ближние объекты (depth=1) выпирают к камере
-      float disp = (depth - 0.5) * dispScale;
-      vec3 displaced = position * (1.0 + disp / 500.0);
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
   `,
   fragmentShader: `
@@ -137,26 +132,18 @@ var dispMat = new THREE.ShaderMaterial({
     uniform float dofFocus;
     uniform float dofStrength;
     varying vec2 vUv;
-    varying float vDepth;
-
     void main() {
       float depth = texture2D(depthMap, vUv).r;
-
-      // Далёкие пиксели (depth < dofFocus) — размытые
-      // Ближние (depth > dofFocus) — резкие
       float blurAmt = max(0.0, (dofFocus - depth) / dofFocus) * dofStrength;
-
       if(blurAmt < 0.0001) {
-        // Резкая зона — прямое чтение
         gl_FragColor = texture2D(colorMap, vUv);
       } else {
-        // Размытие: 8 выборок по кругу (Poisson disk)
         vec4 col = vec4(0.0);
         float r = blurAmt;
-        col += texture2D(colorMap, vUv + vec2( r,    0.0 ));
-        col += texture2D(colorMap, vUv + vec2(-r,    0.0 ));
-        col += texture2D(colorMap, vUv + vec2( 0.0,  r   ));
-        col += texture2D(colorMap, vUv + vec2( 0.0, -r   ));
+        col += texture2D(colorMap, vUv + vec2( r,     0.0  ));
+        col += texture2D(colorMap, vUv + vec2(-r,     0.0  ));
+        col += texture2D(colorMap, vUv + vec2( 0.0,   r    ));
+        col += texture2D(colorMap, vUv + vec2( 0.0,  -r    ));
         col += texture2D(colorMap, vUv + vec2( r*0.7, r*0.7));
         col += texture2D(colorMap, vUv + vec2(-r*0.7, r*0.7));
         col += texture2D(colorMap, vUv + vec2( r*0.7,-r*0.7));
@@ -168,17 +155,12 @@ var dispMat = new THREE.ShaderMaterial({
   side: THREE.FrontSide,
 });
 
-function tryApplyDisplacement() {
+function tryApplyDof() {
   if(!gardenTex || !depthTex) return;
-  dispMat.uniforms.colorMap.value = gardenTex;
-  dispMat.uniforms.depthMap.value = depthTex;
-  dispMat.needsUpdate = true;
-  var hqGeo = new THREE.SphereGeometry(500, 256, 128);
-  hqGeo.scale(-1, 1, 1);
-  skyMesh.geometry.dispose();
-  skyMesh.geometry = hqGeo;
-  skyMesh.material = dispMat;
-  console.log('Displacement + DoF applied!');
+  dofMat.uniforms.colorMap.value = gardenTex;
+  dofMat.uniforms.depthMap.value = depthTex;
+  dofMat.needsUpdate = true;
+  skyMesh.material = dofMat;
 }
 
 /* ── Cards ── */
