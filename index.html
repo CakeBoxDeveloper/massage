@@ -19,12 +19,6 @@
 <body>
 <canvas id="gc"></canvas>
 <div id="hint">Тяните мышью для поворота</div>
-<!-- iOS gyro permission overlay -->
-<div id="gyro-prompt" style="display:none;position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);">
-  <button id="gyro-btn" style="padding:16px 32px;font-size:18px;border-radius:16px;border:none;background:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;">
-    🌐 Разрешить управление гироскопом
-  </button>
-</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
@@ -71,7 +65,6 @@ var loader = new THREE.TextureLoader();
 loader.crossOrigin = 'anonymous';
 
 /* ── Sky ── */
-/* ── Sky ── */
 var skyGeo = new THREE.SphereGeometry(500, 64, 32);
 skyGeo.scale(-1, 1, 1);
 var skyMat = new THREE.ShaderMaterial({
@@ -82,15 +75,111 @@ var skyMat = new THREE.ShaderMaterial({
 var skyMesh = new THREE.Mesh(skyGeo, skyMat);
 skyScene.add(skyMesh);
 
+var gardenTex = null;
+var depthTex  = null;
+
 loader.load(
   'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/garden.webp',
   function(tex){
     tex.encoding = THREE.sRGBEncoding;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
+    gardenTex = tex;
+    // Сначала применяем просто как BasicMaterial
     skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    tryApplyDisplacement();
   }
 );
+
+loader.load(
+  'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/deep.webp',
+  function(tex){
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.minFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    depthTex = tex;
+    console.log('deep.webp loaded:', tex.image.width, 'x', tex.image.height);
+    tryApplyDisplacement();
+  },
+  undefined,
+  function(err){ console.error('deep.webp FAILED:', err); }
+);
+
+// Parallax+DoF ShaderMaterial
+var dispMat = new THREE.ShaderMaterial({
+  uniforms: {
+    colorMap:   { value: null },
+    depthMap:   { value: null },
+    dispScale:  { value: 1.25 },
+    dofFocus:   { value: 0.20 },
+    dofStrength:{ value: 0.00105 },
+    camForward: { value: new THREE.Vector2(0, 0) },
+  },
+  vertexShader: `
+    uniform sampler2D depthMap;
+    uniform float dispScale;
+    varying vec2 vUv;
+    varying float vDepth;
+    void main() {
+      vUv = uv;
+      float depth = textureLod(depthMap, uv, 0.0).r;
+      vDepth = depth;
+      // Displacement: ближние объекты (depth=1) выпирают к камере
+      float disp = (depth - 0.5) * dispScale;
+      vec3 displaced = position * (1.0 + disp / 500.0);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D colorMap;
+    uniform sampler2D depthMap;
+    uniform float dofFocus;
+    uniform float dofStrength;
+    varying vec2 vUv;
+    varying float vDepth;
+
+    void main() {
+      float depth = texture2D(depthMap, vUv).r;
+
+      // Далёкие пиксели (depth < dofFocus) — размытые
+      // Ближние (depth > dofFocus) — резкие
+      float blurAmt = max(0.0, (dofFocus - depth) / dofFocus) * dofStrength;
+
+      if(blurAmt < 0.0001) {
+        // Резкая зона — прямое чтение
+        gl_FragColor = texture2D(colorMap, vUv);
+      } else {
+        // Размытие: 8 выборок по кругу (Poisson disk)
+        vec4 col = vec4(0.0);
+        float r = blurAmt;
+        col += texture2D(colorMap, vUv + vec2( r,    0.0 ));
+        col += texture2D(colorMap, vUv + vec2(-r,    0.0 ));
+        col += texture2D(colorMap, vUv + vec2( 0.0,  r   ));
+        col += texture2D(colorMap, vUv + vec2( 0.0, -r   ));
+        col += texture2D(colorMap, vUv + vec2( r*0.7, r*0.7));
+        col += texture2D(colorMap, vUv + vec2(-r*0.7, r*0.7));
+        col += texture2D(colorMap, vUv + vec2( r*0.7,-r*0.7));
+        col += texture2D(colorMap, vUv + vec2(-r*0.7,-r*0.7));
+        gl_FragColor = col / 8.0;
+      }
+    }
+  `,
+  side: THREE.FrontSide,
+});
+
+function tryApplyDisplacement() {
+  if(!gardenTex || !depthTex) return;
+  dispMat.uniforms.colorMap.value = gardenTex;
+  dispMat.uniforms.depthMap.value = depthTex;
+  dispMat.needsUpdate = true;
+  var hqGeo = new THREE.SphereGeometry(500, 256, 128);
+  hqGeo.scale(-1, 1, 1);
+  skyMesh.geometry.dispose();
+  skyMesh.geometry = hqGeo;
+  skyMesh.material = dispMat;
+  console.log('Displacement + DoF applied!');
+}
 
 /* ── Cards ── */
 var CARD_RADIUS = 5.5;
@@ -463,49 +552,12 @@ function onOri(e){
 }
 function startGyro(){
   if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
-    // iOS — нужен явный жест пользователя
-    DeviceOrientationEvent.requestPermission().then(function(s){
-      if(s==='granted'){
-        window.addEventListener('deviceorientation',onOri,true);
-        var p=document.getElementById('gyro-prompt'); if(p) p.style.display='none';
-      }
-    }).catch(function(){});
-  } else {
-    // Android и остальные — разрешение не нужно
-    window.addEventListener('deviceorientation',onOri,true);
-  }
+    DeviceOrientationEvent.requestPermission().then(function(s){if(s==='granted')window.addEventListener('deviceorientation',onOri,true);}).catch(function(){});
+  } else { window.addEventListener('deviceorientation',onOri,true); }
 }
-
 var permDone=false;
-
-// iOS: показываем кнопку при первом тапе
-document.addEventListener('touchstart',function(){
-  if(permDone) return;
-  permDone=true;
-  if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
-    // Пробуем сразу из этого жеста
-    DeviceOrientationEvent.requestPermission().then(function(s){
-      if(s==='granted'){
-        window.addEventListener('deviceorientation',onOri,true);
-      } else {
-        // Отказали — показываем кнопку
-        var p=document.getElementById('gyro-prompt'); if(p) p.style.display='flex';
-      }
-    }).catch(function(){
-      var p=document.getElementById('gyro-prompt'); if(p) p.style.display='flex';
-    });
-  } else {
-    startGyro();
-  }
-},{once:true});
-
-// Кнопка явного запроса разрешения
-var gyroBtn = document.getElementById('gyro-btn');
-if(gyroBtn){
-  gyroBtn.addEventListener('click', function(){
-    startGyro();
-  });
-}
+document.addEventListener('touchstart',function(){if(!permDone){permDone=true;startGyro();}},{once:true});
+startGyro();
 
 canvas.addEventListener('mousedown',function(e){dn=true;lx=e.clientX;ly=e.clientY;});
 window.addEventListener('mouseup',function(){dn=false;});
