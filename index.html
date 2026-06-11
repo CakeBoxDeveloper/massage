@@ -46,7 +46,7 @@ var SOC_ICONS = [
 var canvas = document.getElementById('gc');
 var W = window.innerWidth, H = window.innerHeight;
 
-var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(W, H);
 renderer.outputEncoding = THREE.sRGBEncoding;
@@ -75,15 +75,111 @@ var skyMat = new THREE.ShaderMaterial({
 var skyMesh = new THREE.Mesh(skyGeo, skyMat);
 skyScene.add(skyMesh);
 
+var gardenTex = null;
+var depthTex  = null;
+
 loader.load(
   'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/garden.webp',
   function(tex){
     tex.encoding = THREE.sRGBEncoding;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
+    gardenTex = tex;
+    // Сначала применяем просто как BasicMaterial
     skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    tryApplyDisplacement();
   }
 );
+
+loader.load(
+  'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/deep.webp',
+  function(tex){
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.minFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    depthTex = tex;
+    console.log('deep.webp loaded:', tex.image.width, 'x', tex.image.height);
+    tryApplyDisplacement();
+  },
+  undefined,
+  function(err){ console.error('deep.webp FAILED:', err); }
+);
+
+// Parallax+DoF ShaderMaterial
+var dispMat = new THREE.ShaderMaterial({
+  uniforms: {
+    colorMap:   { value: null },
+    depthMap:   { value: null },
+    dispScale:  { value: 1.25 },
+    dofFocus:   { value: 0.20 },
+    dofStrength:{ value: 0.00105 },
+    camForward: { value: new THREE.Vector2(0, 0) },
+  },
+  vertexShader: `
+    uniform sampler2D depthMap;
+    uniform float dispScale;
+    varying vec2 vUv;
+    varying float vDepth;
+    void main() {
+      vUv = uv;
+      float depth = textureLod(depthMap, uv, 0.0).r;
+      vDepth = depth;
+      // Displacement: ближние объекты (depth=1) выпирают к камере
+      float disp = (depth - 0.5) * dispScale;
+      vec3 displaced = position * (1.0 + disp / 500.0);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D colorMap;
+    uniform sampler2D depthMap;
+    uniform float dofFocus;
+    uniform float dofStrength;
+    varying vec2 vUv;
+    varying float vDepth;
+
+    void main() {
+      float depth = texture2D(depthMap, vUv).r;
+
+      // Далёкие пиксели (depth < dofFocus) — размытые
+      // Ближние (depth > dofFocus) — резкие
+      float blurAmt = max(0.0, (dofFocus - depth) / dofFocus) * dofStrength;
+
+      if(blurAmt < 0.0001) {
+        // Резкая зона — прямое чтение
+        gl_FragColor = texture2D(colorMap, vUv);
+      } else {
+        // Размытие: 8 выборок по кругу (Poisson disk)
+        vec4 col = vec4(0.0);
+        float r = blurAmt;
+        col += texture2D(colorMap, vUv + vec2( r,    0.0 ));
+        col += texture2D(colorMap, vUv + vec2(-r,    0.0 ));
+        col += texture2D(colorMap, vUv + vec2( 0.0,  r   ));
+        col += texture2D(colorMap, vUv + vec2( 0.0, -r   ));
+        col += texture2D(colorMap, vUv + vec2( r*0.7, r*0.7));
+        col += texture2D(colorMap, vUv + vec2(-r*0.7, r*0.7));
+        col += texture2D(colorMap, vUv + vec2( r*0.7,-r*0.7));
+        col += texture2D(colorMap, vUv + vec2(-r*0.7,-r*0.7));
+        gl_FragColor = col / 8.0;
+      }
+    }
+  `,
+  side: THREE.FrontSide,
+});
+
+function tryApplyDisplacement() {
+  if(!gardenTex || !depthTex) return;
+  dispMat.uniforms.colorMap.value = gardenTex;
+  dispMat.uniforms.depthMap.value = depthTex;
+  dispMat.needsUpdate = true;
+  var hqGeo = new THREE.SphereGeometry(500, 256, 128);
+  hqGeo.scale(-1, 1, 1);
+  skyMesh.geometry.dispose();
+  skyMesh.geometry = hqGeo;
+  skyMesh.material = dispMat;
+  console.log('Displacement + DoF applied!');
+}
 
 /* ── Cards ── */
 var CARD_RADIUS = 5.5;
@@ -243,12 +339,17 @@ function drawCard(cc, data, anim, shimmerT){
   roundRect(ctx,3,3,TW-6,TH-6,57); ctx.stroke();
   ctx.restore();
 
-  /* заголовок */
+  /* заголовок — одна строка, автофит размера */
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 46px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
   ctx.textAlign = 'left';
   ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 10;
-  wrapText(ctx, data.name, 44, 86, TW-88, 56);
+  // Подбираем размер шрифта чтобы влезало в одну строку
+  var titleFontSize = 46;
+  do {
+    ctx.font = 'bold ' + titleFontSize + 'px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+    titleFontSize -= 2;
+  } while(ctx.measureText(data.name).width > TW - 88 && titleFontSize > 24);
+  ctx.fillText(data.name, 44, 86);
   ctx.shadowBlur = 0;
 
   /* разделитель */
@@ -270,11 +371,23 @@ function drawCard(cc, data, anim, shimmerT){
   ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.2; ctx.stroke();
 
-  /* duration · price above pill */
-  ctx.fillStyle = 'rgba(255,255,255,0.65)';
-  ctx.font = '22px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(data.duration + '  ·  ' + data.price, TW/2, pillY - 14);
+  /* duration · price — растянуто по ширине, автофит */
+  var metaMaxW = (TW - 104) / 2; // максимум на каждую половину
+  var metaFontSize = 48;
+  ctx.font = metaFontSize + 'px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+  while(metaFontSize > 20 && (
+    ctx.measureText(data.duration).width > metaMaxW ||
+    ctx.measureText(data.price).width > metaMaxW
+  )) {
+    metaFontSize -= 2;
+    ctx.font = metaFontSize + 'px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+  }
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,0.80)';
+  ctx.textAlign = 'left';
+  ctx.fillText(data.duration, 52, pillY - 14);
+  ctx.textAlign = 'right';
+  ctx.fillText(data.price, TW - 52, pillY - 14);
 
   if(anim < 0.01){
     /* collapsed state — show label */
@@ -357,6 +470,7 @@ var raycaster = new THREE.Raycaster();
 var pointer   = new THREE.Vector2();
 var pdx=0, pdy=0;
 var skipNextTouch = false;
+var lastExpandTime = 0; // блокируем тач сразу после разворачивания пилюли
 
 canvas.addEventListener('mousedown', function(e){ pdx=e.clientX; pdy=e.clientY; });
 canvas.addEventListener('mouseup', function(e){
@@ -371,6 +485,8 @@ canvas.addEventListener('touchend', function(e){
   if(e.changedTouches.length!==1) return;
   var t=e.changedTouches[0];
   if(Math.abs(t.clientX-pdx)>8||Math.abs(t.clientY-pdy)>8) return;
+  // Блокируем если только что развернули пилюлю
+  if(Date.now() - lastExpandTime < 350) return;
   handleClick(t.clientX, t.clientY, true);
 },{passive:true});
 
@@ -403,6 +519,7 @@ function handleClick(cx, cy, isTouch){
       window.open(SOC_ICONS[Math.max(0,Math.min(4,si))].href, '_blank');
     } else {
       cardExpanded[idx] = true;
+      lastExpandTime = Date.now();
     }
   } else if(cardExpanded[idx]){
     cardExpanded[idx] = false;
@@ -469,7 +586,7 @@ setTimeout(function(){
    BUTTERFLIES
 ═════════════════════════════════════════ */
 var butterflies = [];
-var _bOrientFix = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0));
+var _bOrientFix = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -Math.PI / 2, 0));
 var BUTTERFLY_COUNT = 12;
 var BASE_SCALE = 0.36;
 var FLY_RANGE_MIN = 3.5, FLY_RANGE_MAX = 8.0;
@@ -591,8 +708,16 @@ function updateButterflies(dt){
     /* orient toward movement direction */
     if(distToTarget > 0.05){
       var moveDir = new THREE.Vector3(dx, 0, dz).normalize();
-      var lookQ   = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1,0,0), moveDir);
-      lookQ.multiply(_bOrientFix);
+      // lookAt направляет -Z к цели, затем корректируем offset под ось модели
+      // Пробуем все 4 варианта: 0, 90, 180, 270 по Y — определено эмпирически
+      var _mat4 = new THREE.Matrix4().lookAt(
+        b.mesh.position,
+        new THREE.Vector3(b.mesh.position.x + dx, b.mesh.position.y, b.mesh.position.z + dz),
+        new THREE.Vector3(0, 1, 0)
+      );
+      var lookQ = new THREE.Quaternion().setFromRotationMatrix(_mat4);
+      // GLTF модель: нос по +X → нужно повернуть -90° по Y после lookAt
+      lookQ.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -Math.PI/2, 0)));
       b.mesh.quaternion.slerp(lookQ, Math.min(1, dt * 4));
     }
   });
@@ -706,18 +831,20 @@ function makeLightRayTexture(w, h) {
   var rc = document.createElement('canvas');
   rc.width = w; rc.height = h;
   var rctx = rc.getContext('2d');
-  // Горизонтальный fade (левый и правый края прозрачны — имитация клина)
+  // Горизонтальный fade — форма клина (прозрачно по краям)
   var hGrad = rctx.createLinearGradient(0, 0, w, 0);
-  hGrad.addColorStop(0,   'rgba(255,240,200,0.00)');
-  hGrad.addColorStop(0.15,'rgba(255,240,200,0.55)');
-  hGrad.addColorStop(0.85,'rgba(255,240,200,0.55)');
-  hGrad.addColorStop(1,   'rgba(255,240,200,0.00)');
+  hGrad.addColorStop(0,    'rgba(255,240,200,0.00)');
+  hGrad.addColorStop(0.12, 'rgba(255,240,200,0.90)');
+  hGrad.addColorStop(0.88, 'rgba(255,240,200,0.90)');
+  hGrad.addColorStop(1,    'rgba(255,240,200,0.00)');
   rctx.fillStyle = hGrad;
   rctx.fillRect(0, 0, w, h);
-  // Вертикальный fade — яркий сверху, прозрачный снизу
+  // Вертикальный fade: прозрачно сверху (точка схода) → ярко в середине → прозрачно снизу
   var vGrad = rctx.createLinearGradient(0, 0, 0, h);
-  vGrad.addColorStop(0,   'rgba(0,0,0,0.00)'); // прозрачный blend
-  vGrad.addColorStop(1,   'rgba(0,0,0,1.00)');
+  vGrad.addColorStop(0,    'rgba(0,0,0,1.00)'); // прозрачно у источника — маскируем точку схода
+  vGrad.addColorStop(0.40, 'rgba(0,0,0,0.00)'); // луч начинается только с 40%
+  vGrad.addColorStop(0.78, 'rgba(0,0,0,0.00)');
+  vGrad.addColorStop(1,    'rgba(0,0,0,1.00)'); // прозрачно у основания
   rctx.globalCompositeOperation = 'destination-out';
   rctx.fillStyle = vGrad;
   rctx.fillRect(0, 0, w, h);
@@ -736,7 +863,7 @@ function createLightRays() {
     var spreadAngle = (ri / rayCount) * Math.PI * 2;
     var coneSpread  = 0.25 + Math.random() * 0.35; // угол отклонения от вертикали
     var rayLength   = 6 + Math.random() * 5;
-    var rayWidth    = 0.15 + Math.random() * 0.5;
+    var rayWidth    = 0.03 + Math.random() * 0.09;
 
     // Направление луча: из SOURCE вниз под углом
     var dirX = Math.sin(spreadAngle) * coneSpread;
@@ -776,7 +903,7 @@ function createLightRays() {
 
     mesh.userData.floatSpeed  = 0.2 + Math.random() * 0.4;
     mesh.userData.floatPhase  = Math.random() * Math.PI * 2;
-    mesh.userData.baseOpacity = 0.12 + Math.random() * 0.18;
+    mesh.userData.baseOpacity = 0.18 + Math.random() * 0.14;
 
     rayGroup.add(mesh);
   }
@@ -787,9 +914,11 @@ var lightRays = createLightRays();
 
 function updateLightRays(t) {
   lightRays.children.forEach(function(ray) {
-    // Анимация: плавное изменение прозрачности = эффект укорачивания/удлинения луча
-    var pulse = Math.sin(t * ray.userData.floatSpeed + ray.userData.floatPhase);
-    ray.material.opacity = ray.userData.baseOpacity * (0.4 + 0.6 * (pulse * 0.5 + 0.5));
+    // Нелинейная асинхронная пульсация — сумма двух синусов с иррациональным соотношением частот
+    var s1 = Math.sin(t * ray.userData.floatSpeed + ray.userData.floatPhase);
+    var s2 = Math.sin(t * ray.userData.floatSpeed * 0.37 + ray.userData.floatPhase * 1.7);
+    var pulse = (s1 * 0.7 + s2 * 0.3) * 0.5 + 0.5; // 0..1, непериодически
+    ray.material.opacity = ray.userData.baseOpacity * (0.2 + 0.8 * pulse);
   });
 }
 
