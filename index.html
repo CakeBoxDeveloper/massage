@@ -675,6 +675,13 @@ var _bUp   = new THREE.Vector3(0, 1, 0);
 var _bDir  = new THREE.Vector3();
 var _bMtx  = new THREE.Matrix4();
 
+// Корректирующий поворот модели относительно направления движения.
+// lookAt направляет -Z к цели. Если нос модели смотрит по +Z — нужно 180° по Y.
+// Подбирается под конкретный экспорт модели: 0, 90, 180, 270 по Y.
+var _bOrientFix = new THREE.Quaternion().setFromEuler(
+  new THREE.Euler(0, -Math.PI / 2, 0) // нос по +X → -90° по Y
+);
+
 function updateButterflies(dt) {
   butterflies.forEach(function(bf) {
     if(bf.mixer) bf.mixer.update(dt);
@@ -697,10 +704,11 @@ function updateButterflies(dt) {
     bf.obj.position.y += Math.sin(bf.wobble) * bf.wobbleA;
     bf.obj.position.y = Math.max(FLY_RANGE.yMin, Math.min(FLY_RANGE.yMax, bf.obj.position.y));
 
-    // Плавный поворот по направлению движения
+    // Плавный поворот по направлению движения + корректирующий offset
     if(dist > 0.1) {
       _bMtx.lookAt(bf.obj.position, bf.target, _bUp);
       bf.qTarget.setFromRotationMatrix(_bMtx);
+      bf.qTarget.multiply(_bOrientFix); // применяем коррекцию после lookAt
       bf.qCurrent.slerp(bf.qTarget, Math.min(1, dt * 3));
       bf.obj.quaternion.copy(bf.qCurrent);
     }
