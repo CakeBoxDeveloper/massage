@@ -92,6 +92,46 @@ var TW = 560, TH = 800;
 
 var cardExpanded = new Array(CARDS.length).fill(false);
 
+/* ── Shimmer helpers ── */
+// Returns a point at arc-length fraction t around a rounded-rect perimeter
+// rect: {x,y,w,h,r}  t: 0..1
+function shimmerPoint(rect, t) {
+  var x = rect.x, y = rect.y, w = rect.w, h = rect.h, r = rect.r;
+  // Segment lengths
+  var straight_h = w - 2*r;
+  var straight_v = h - 2*r;
+  var arc_len    = Math.PI * 0.5 * r;
+  var total = 2*(straight_h + straight_v) + 4*arc_len;
+  var d = t * total;
+
+  // Walk: top-left corner (going right along top edge, clockwise)
+  var segments = [
+    { len: arc_len,    type:'arc', cx: x+r,   cy: y+r,   a0: Math.PI,     da: -Math.PI/2 },
+    { len: straight_h, type:'line', dx:1, dy:0, sx: x+r,     sy: y         },
+    { len: arc_len,    type:'arc', cx: x+w-r, cy: y+r,   a0: -Math.PI/2, da: -Math.PI/2 },
+    { len: straight_v, type:'line', dx:0, dy:1, sx: x+w,     sy: y+r       },
+    { len: arc_len,    type:'arc', cx: x+w-r, cy: y+h-r, a0: 0,           da: -Math.PI/2 },
+    { len: straight_h, type:'line', dx:-1,dy:0, sx: x+w-r,   sy: y+h       },
+    { len: arc_len,    type:'arc', cx: x+r,   cy: y+h-r, a0: Math.PI/2,  da: -Math.PI/2 },
+    { len: straight_v, type:'line', dx:0, dy:-1,sx: x,        sy: y+h-r    },
+  ];
+
+  for (var i = 0; i < segments.length; i++) {
+    var seg = segments[i];
+    if (d <= seg.len) {
+      var frac = d / seg.len;
+      if (seg.type === 'arc') {
+        var angle = seg.a0 + frac * seg.da;
+        return { px: seg.cx + Math.cos(angle)*r, py: seg.cy + Math.sin(angle)*r };
+      } else {
+        return { px: seg.sx + frac*seg.len*seg.dx, py: seg.sy + frac*seg.len*seg.dy };
+      }
+    }
+    d -= seg.len;
+  }
+  return { px: x, py: y };
+}
+
 var socImages = SOC_ICONS.map(function(s){
   var img = new Image(); img.crossOrigin = 'anonymous'; img.src = s.src; return img;
 });
@@ -122,7 +162,8 @@ function drawWhiteIcon(ctx, img, x, y, size){
   ctx.drawImage(off, x, y);
 }
 
-function drawCard(cc, data, expanded){
+function drawCard(cc, data, expanded, shimmerT){
+  shimmerT = shimmerT || 0;
   var ctx = cc.getContext('2d');
   ctx.clearRect(0,0,TW,TH);
 
@@ -145,9 +186,29 @@ function drawCard(cc, data, expanded){
   roundRect(ctx,0,0,TW,TH,60);
   ctx.fillStyle = shine; ctx.fill();
 
-  /* рамка */
-  ctx.strokeStyle = 'rgba(255,255,255,0.32)'; ctx.lineWidth = 1.5;
-  roundRect(ctx,1,1,TW-2,TH-2,59); ctx.stroke();
+  /* рамка + шиммер */
+  // Базовая рамка
+  ctx.strokeStyle = 'rgba(255,255,255,0.20)'; ctx.lineWidth = 3;
+  roundRect(ctx,2,2,TW-4,TH-4,58); ctx.stroke();
+
+  // Шиммер-полоска бежит по контуру
+  var shimRect = {x:2, y:2, w:TW-4, h:TH-4, r:58};
+  var gLen = 0.18; // ширина блика как доля периметра
+  var t0 = shimmerT % 1;
+  // Точки начала и конца блика
+  var pt1 = shimmerPoint(shimRect, (t0 - gLen/2 + 1) % 1);
+  var pt2 = shimmerPoint(shimRect, (t0 + gLen/2) % 1);
+  // Линейный градиент вдоль направления движения
+  var grd = ctx.createLinearGradient(pt1.px, pt1.py, pt2.px, pt2.py);
+  grd.addColorStop(0,   'rgba(255,255,255,0.00)');
+  grd.addColorStop(0.3, 'rgba(255,255,255,0.35)');
+  grd.addColorStop(0.5, 'rgba(255,255,255,0.80)');
+  grd.addColorStop(0.7, 'rgba(255,255,255,0.35)');
+  grd.addColorStop(1,   'rgba(255,255,255,0.00)');
+  ctx.save();
+  ctx.strokeStyle = grd; ctx.lineWidth = 5;
+  roundRect(ctx,2,2,TW-4,TH-4,58); ctx.stroke();
+  ctx.restore();
 
   /* заголовок */
   ctx.fillStyle = '#ffffff';
@@ -168,7 +229,13 @@ function drawCard(cc, data, expanded){
   wrapText(ctx, data.desc, 44, 180, TW-88, 40);
   ctx.shadowBlur = 0;
 
-  /* нижняя пилюля */
+  /* инфо: длительность · цена */
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = '24px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(data.duration + '  ·  ' + data.price, TW/2, TH-172);
+
+  /* нижняя пилюля — кнопка «Записаться» */
   var pillY = TH-148, pillH = 110;
 
   /* фон пилюли */
@@ -177,23 +244,34 @@ function drawCard(cc, data, expanded){
   ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.2; ctx.stroke();
 
   if(!expanded){
+    /* текст кнопки */
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.font = '30px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+    ctx.font = '26px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
     ctx.textAlign = 'center';
+    ctx.letterSpacing = '2px';
     ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 5;
-    ctx.fillText(data.duration + '  ·  ' + data.price, TW/2, pillY+66);
+    ctx.fillText('ЗАПИСАТЬСЯ НА СЕАНС', TW/2, pillY+66);
     ctx.shadowBlur = 0;
   } else {
-    var iconSize = 40, totalW = TW-72, step = totalW/5;
+    /* 5 иконок-ячеек */
+    var iconSize = 44, totalW = TW-72, step = totalW/5;
     SOC_ICONS.forEach(function(soc, idx){
       var ix = 36 + step*idx + step/2 - iconSize/2;
       var iy = pillY + (pillH-iconSize)/2;
+      /* разделитель между ячейками */
+      if(idx > 0){
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(36 + step*idx, pillY+14);
+        ctx.lineTo(36 + step*idx, pillY+pillH-14);
+        ctx.stroke();
+      }
       if(socImages[idx].complete && socImages[idx].naturalWidth > 0){
-        ctx.globalAlpha = 0.92;
+        ctx.globalAlpha = 0.90;
         drawWhiteIcon(ctx, socImages[idx], ix, iy, iconSize);
         ctx.globalAlpha = 1;
       } else {
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillStyle = 'rgba(255,255,255,0.45)';
         ctx.beginPath(); ctx.arc(ix+iconSize/2, iy+iconSize/2, iconSize/2, 0, Math.PI*2); ctx.fill();
       }
     });
@@ -219,12 +297,12 @@ CARDS.forEach(function(data, i){
   cardMeshes.push({mesh:mesh, angle:angle, tex:tex, cc:cc, data:data});
 });
 
-function redrawCard(i){
-  drawCard(cardMeshes[i].cc, cardMeshes[i].data, cardExpanded[i]);
+function redrawCard(i, shimmerT){
+  drawCard(cardMeshes[i].cc, cardMeshes[i].data, cardExpanded[i], shimmerT || 0);
   cardMeshes[i].tex.needsUpdate = true;
 }
 socImages.forEach(function(img){
-  img.onload = function(){ cardMeshes.forEach(function(_,i){ redrawCard(i); }); };
+  img.onload = function(){ cardMeshes.forEach(function(_,i){ redrawCard(i, 0); }); };
 });
 
 /* ── Глубина / прозрачность ── */
@@ -271,16 +349,26 @@ function handleClick(cx, cy, isTouch){
   var idx = cardMeshes.findIndex(function(c){return c.mesh===hits[0].object;});
   if(idx<0) return;
   var uv = hits[0].uv;
-  if(uv && uv.y < 0.20){
+  // Пилюля занимает нижние ~18% UV (pillY = TH-148, TH=800 => 148/800 ≈ 0.185)
+  var inPill = uv && uv.y < 0.185;
+  if(inPill){
     if(cardExpanded[idx]){
-      var si = Math.floor(uv.x*5);
+      // Клик по одной из 5 иконок
+      var si = Math.floor(uv.x * 5);
+      si = Math.max(0, Math.min(4, si));
       if(isTouch) skipNextTouch = true;
-      window.open(SOC_ICONS[Math.max(0,Math.min(4,si))].href, '_blank');
+      window.open(SOC_ICONS[si].href, '_blank');
     } else {
-      cardExpanded[idx] = true; redrawCard(idx);
+      // Развернуть иконки
+      cardExpanded[idx] = true;
+      redrawCard(idx);
     }
-  } else if(cardExpanded[idx]){
-    cardExpanded[idx] = false; redrawCard(idx);
+  } else {
+    // Клик по телу карточки — свернуть если раскрыта
+    if(cardExpanded[idx]){
+      cardExpanded[idx] = false;
+      redrawCard(idx);
+    }
   }
 }
 
@@ -337,22 +425,34 @@ setTimeout(function(){var h=document.getElementById('hint');if(h)h.style.opacity
 
 /* ── Render loop ── */
 var animId=null;
-function animate(){
+var shimmerClock = 0;
+var SHIMMER_SPEED = 0.025; // оборотов в секунду
+var lastTime = 0;
+function animate(now){
   animId=requestAnimationFrame(animate);
+  var dt = lastTime ? Math.min((now - lastTime) / 1000, 0.1) : 0;
+  lastTime = now;
+  shimmerClock += dt * SHIMMER_SPEED;
   qC.slerp(qT, SLERP);
   camera.quaternion.copy(qC);
   skyCamera.quaternion.copy(qC);
   updateDepth();
+  // Redraw cards with shimmer
+  cardMeshes.forEach(function(c, i){
+    var t = (shimmerClock + i / CARDS.length) % 1;
+    drawCard(c.cc, c.data, cardExpanded[i], t);
+    c.tex.needsUpdate = true;
+  });
   renderer.clear();
   renderer.render(skyScene, skyCamera);
   renderer.clearDepth();
   renderer.render(mainScene, camera);
 }
 document.addEventListener('visibilitychange',function(){
-  if(document.hidden){cancelAnimationFrame(animId);animId=null;}
-  else if(!animId) animate();
+  if(document.hidden){cancelAnimationFrame(animId);animId=null;lastTime=0;}
+  else if(!animId) requestAnimationFrame(animate);
 });
-animate();
+requestAnimationFrame(animate);
 
 })();
 </script>
