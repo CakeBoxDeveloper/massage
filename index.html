@@ -218,36 +218,30 @@ function drawCard(cc, data, anim, shimmerT){
   roundRect(ctx,0,0,TW,TH,60);
   ctx.fillStyle = shine; ctx.fill();
 
-  /* ── рамка: base border + shimmer glow ── */
+  /* ── рамка: base border + shimmer без glow ── */
+  var borderRect = { x:3, y:3, w:TW-6, h:TH-6, r:57 };
+
   /* base border */
   ctx.strokeStyle = 'rgba(255,255,255,0.25)';
   ctx.lineWidth = 6;
   roundRect(ctx,3,3,TW-6,TH-6,57); ctx.stroke();
 
-  /* shimmer glow — draw 3 passes with increasing shadowBlur */
-  var borderRect = { x:3, y:3, w:TW-6, h:TH-6, r:57 };
-  var sp = shimmerPoint(borderRect, shimmerT);
-  var glowBlurs   = [8, 16, 24];
-  var glowAlphas  = [0.9, 0.6, 0.3];
-  for(var gi = 0; gi < 3; gi++){
-    ctx.save();
-    ctx.shadowColor = 'rgba(255,255,255,' + glowAlphas[gi] + ')';
-    ctx.shadowBlur  = glowBlurs[gi];
-    ctx.strokeStyle = 'rgba(255,255,255,' + glowAlphas[gi] + ')';
-    ctx.lineWidth   = 10;
-    /* draw a short arc segment around the shimmer point */
-    var spanT = 0.06;
-    var steps = 16;
-    ctx.beginPath();
-    for(var si = 0; si <= steps; si++){
-      var st  = shimmerT - spanT/2 + (si/steps)*spanT;
-      var pt  = shimmerPoint(borderRect, ((st % 1) + 1) % 1);
-      if(si === 0) ctx.moveTo(pt.x, pt.y);
-      else         ctx.lineTo(pt.x, pt.y);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
+  /* shimmer — скользящий блик по контуру, без glow */
+  var gLen = 0.18;
+  var t0   = shimmerT % 1;
+  var pt1  = shimmerPoint(borderRect, ((t0 - gLen/2) + 1) % 1);
+  var pt2  = shimmerPoint(borderRect, (t0 + gLen/2)  % 1);
+  var grd  = ctx.createLinearGradient(pt1.x, pt1.y, pt2.x, pt2.y);
+  grd.addColorStop(0,   'rgba(255,255,255,0.00)');
+  grd.addColorStop(0.3, 'rgba(255,255,255,0.35)');
+  grd.addColorStop(0.5, 'rgba(255,255,255,0.80)');
+  grd.addColorStop(0.7, 'rgba(255,255,255,0.35)');
+  grd.addColorStop(1,   'rgba(255,255,255,0.00)');
+  ctx.save();
+  ctx.strokeStyle = grd;
+  ctx.lineWidth   = 10;
+  roundRect(ctx,3,3,TW-6,TH-6,57); ctx.stroke();
+  ctx.restore();
 
   /* заголовок */
   ctx.fillStyle = '#ffffff';
@@ -505,16 +499,17 @@ function spawnButterfly(gltf){
     clone.traverse(function(node){
       if(node.isMesh || node.isSkinnedMesh){
         var m = node.material.clone();
-        m.map = wingTex;
+        m.map   = wingTex;
         m.color = new THREE.Color(0xffffff);
         if(m.isMeshStandardMaterial){
-          m.roughness = 1.0; m.metalness = 0.0;
-          m.emissive = new THREE.Color(0xffffff);
-          m.emissiveMap = wingTex;
-          m.emissiveIntensity = 0.55;
+          m.roughness         = 1.0;
+          m.metalness         = 0.0;
+          m.emissive          = new THREE.Color(0x444444); // небольшое самосвечение
+          m.emissiveMap       = wingTex;
+          m.emissiveIntensity = 0.4;
         }
         m.transparent = false;
-        m.side = THREE.DoubleSide;
+        m.side        = THREE.DoubleSide;
         m.needsUpdate = true;
         node.material = m;
       }
@@ -586,12 +581,16 @@ texLoader.crossOrigin = 'anonymous';
 texLoader.load(
   'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/butterfly/textures/M_BorboletaAzul_baseColor.png',
   function(tex){
-    tex.encoding = THREE.sRGBEncoding;
+    tex.encoding  = THREE.sRGBEncoding;
+    tex.flipY     = false;         // GLTF UV origin = bottom-left, THREE default = top-left
+    tex.wrapS     = THREE.RepeatWrapping;
+    tex.wrapT     = THREE.RepeatWrapping;
+    tex.needsUpdate = true;
     wingTex = tex;
     loadGLTF();
   },
   undefined,
-  function(){ loadGLTF(); } /* load GLTF even if texture fails */
+  function(err){ console.warn('Wing tex error:', err); loadGLTF(); }
 );
 
 function loadGLTF(){
@@ -632,9 +631,27 @@ for(var i = 0; i < PARTICLE_COUNT; i++){
 }
 var pGeo = new THREE.BufferGeometry();
 pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+
+// Круглая текстура для частиц (градиент: белый центр → прозрачный край)
+var pCanvas = document.createElement('canvas'); pCanvas.width = 32; pCanvas.height = 32;
+var pCtx = pCanvas.getContext('2d');
+var pGrad = pCtx.createRadialGradient(16,16,0, 16,16,16);
+pGrad.addColorStop(0,   'rgba(255,250,220,1.0)');
+pGrad.addColorStop(0.4, 'rgba(255,250,220,0.6)');
+pGrad.addColorStop(1,   'rgba(255,250,220,0.0)');
+pCtx.fillStyle = pGrad;
+pCtx.fillRect(0,0,32,32);
+var pTex = new THREE.CanvasTexture(pCanvas);
+
 var pMat = new THREE.PointsMaterial({
-  color: 0xffffee, size: 0.04, transparent: true, opacity: 0.55,
-  sizeAttenuation: true, depthWrite: false
+  map: pTex,
+  color: 0xffffee,
+  size: 0.08,
+  transparent: true,
+  opacity: 0.6,
+  sizeAttenuation: true,
+  depthWrite: false,
+  alphaTest: 0.01
 });
 var particles = new THREE.Points(pGeo, pMat);
 mainScene.add(particles);
@@ -655,47 +672,84 @@ function updateParticles(dt){
 }
 
 /* ════════════════════════════════════════
-   LIGHT RAYS (GOD RAYS)
+   LIGHT RAYS (GOD RAYS) — конус из одной точки
 ═════════════════════════════════════════ */
-function createLightRays(){
+function makeLightRayTexture(w, h) {
+  // w = ширина текстуры (для горизонтального fade), h = высота
+  var rc = document.createElement('canvas');
+  rc.width = w; rc.height = h;
+  var rctx = rc.getContext('2d');
+  // Горизонтальный fade (левый и правый края прозрачны — имитация клина)
+  var hGrad = rctx.createLinearGradient(0, 0, w, 0);
+  hGrad.addColorStop(0,   'rgba(255,240,200,0.00)');
+  hGrad.addColorStop(0.15,'rgba(255,240,200,1.00)');
+  hGrad.addColorStop(0.85,'rgba(255,240,200,1.00)');
+  hGrad.addColorStop(1,   'rgba(255,240,200,0.00)');
+  rctx.fillStyle = hGrad;
+  rctx.fillRect(0, 0, w, h);
+  // Вертикальный fade — яркий сверху, прозрачный снизу
+  var vGrad = rctx.createLinearGradient(0, 0, 0, h);
+  vGrad.addColorStop(0,   'rgba(0,0,0,0.00)'); // прозрачный blend
+  vGrad.addColorStop(1,   'rgba(0,0,0,1.00)');
+  rctx.globalCompositeOperation = 'destination-out';
+  rctx.fillStyle = vGrad;
+  rctx.fillRect(0, 0, w, h);
+  var tex = new THREE.CanvasTexture(rc);
+  return tex;
+}
+
+function createLightRays() {
   var rayGroup = new THREE.Group();
-  var rayCount = 7;
-  for(var ri = 0; ri < rayCount; ri++){
-    var angle = (ri / rayCount) * Math.PI * 2 + Math.random() * 0.5;
-    var dist  = 2 + Math.random() * 5;
-    var width = 0.3 + Math.random() * 0.8;
-    var height = 8 + Math.random() * 4;
+  // Точка источника — вверху сцены (стеклянный потолок оранжереи)
+  var SOURCE_Y = 7.5;
+  var rayCount = 8;
 
-    var geo = new THREE.PlaneGeometry(width, height);
+  for (var ri = 0; ri < rayCount; ri++) {
+    // Лучи расходятся конусом из одной точки
+    var spreadAngle = (ri / rayCount) * Math.PI * 2;
+    var coneSpread  = 0.25 + Math.random() * 0.35; // угол отклонения от вертикали
+    var rayLength   = 6 + Math.random() * 5;
+    var rayWidth    = 0.15 + Math.random() * 0.5;
 
-    var rc = document.createElement('canvas'); rc.width=4; rc.height=128;
-    var rctx = rc.getContext('2d');
-    var grad = rctx.createLinearGradient(0,0,0,128);
-    grad.addColorStop(0,   'rgba(255,240,200,0.18)');
-    grad.addColorStop(0.4, 'rgba(255,240,200,0.08)');
-    grad.addColorStop(1,   'rgba(255,240,200,0.00)');
-    rctx.fillStyle = grad; rctx.fillRect(0,0,4,128);
-    var rTex = new THREE.CanvasTexture(rc);
+    // Направление луча: из SOURCE вниз под углом
+    var dirX = Math.sin(spreadAngle) * coneSpread;
+    var dirZ = Math.cos(spreadAngle) * coneSpread;
+    var dirY = -1; // вниз
+    var dir  = new THREE.Vector3(dirX, dirY, dirZ).normalize();
 
+    var geo = new THREE.PlaneGeometry(rayWidth, rayLength, 1, 1);
+    // Сдвигаем геометрию так чтобы верхний край был в точке source
+    geo.translate(0, -rayLength / 2, 0);
+
+    var tex = makeLightRayTexture(32, 128);
     var mat = new THREE.MeshBasicMaterial({
-      map: rTex, transparent: true, opacity: 1,
-      side: THREE.DoubleSide, depthWrite: false,
+      map: tex,
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: false,
       blending: THREE.AdditiveBlending
     });
     var mesh = new THREE.Mesh(geo, mat);
 
+    // Позиционируем у источника
     mesh.position.set(
-      Math.sin(angle) * dist,
-      2 + Math.random() * 1,
-      Math.cos(angle) * dist
+      dirX * 0.5,
+      SOURCE_Y,
+      dirZ * 0.5
     );
-    mesh.rotation.x = -0.35 + (Math.random()-0.5)*0.2;
-    mesh.rotation.y = angle + Math.PI/2;
-    mesh.rotation.z = (Math.random()-0.5)*0.3;
 
-    mesh.userData.rotSpeed   = (Math.random()-0.5) * 0.0003;
-    mesh.userData.floatSpeed = 0.3 + Math.random() * 0.5;
-    mesh.userData.floatPhase = Math.random() * Math.PI * 2;
+    // Поворачиваем чтобы плоскость смотрела вдоль направления луча
+    var up = new THREE.Vector3(0, 1, 0);
+    var quat = new THREE.Quaternion().setFromUnitVectors(up, dir.clone().negate());
+    mesh.quaternion.copy(quat);
+    // Небольшой случайный поворот вокруг оси луча
+    var axisQ = new THREE.Quaternion().setFromAxisAngle(dir, Math.random() * Math.PI);
+    mesh.quaternion.premultiply(axisQ);
+
+    mesh.userData.floatSpeed  = 0.2 + Math.random() * 0.4;
+    mesh.userData.floatPhase  = Math.random() * Math.PI * 2;
+    mesh.userData.baseOpacity = 0.5 + Math.random() * 0.5;
 
     rayGroup.add(mesh);
   }
@@ -704,10 +758,11 @@ function createLightRays(){
 }
 var lightRays = createLightRays();
 
-function updateLightRays(t){
-  lightRays.children.forEach(function(ray){
-    ray.rotation.y += ray.userData.rotSpeed;
-    ray.material.opacity = 0.6 + Math.sin(t * ray.userData.floatSpeed + ray.userData.floatPhase) * 0.4;
+function updateLightRays(t) {
+  lightRays.children.forEach(function(ray) {
+    // Анимация: плавное изменение прозрачности = эффект укорачивания/удлинения луча
+    var pulse = Math.sin(t * ray.userData.floatSpeed + ray.userData.floatPhase);
+    ray.material.opacity = ray.userData.baseOpacity * (0.4 + 0.6 * (pulse * 0.5 + 0.5));
   });
 }
 
