@@ -548,8 +548,9 @@ function makeButterflyTexture(palette) {
   cv.width = sz; cv.height = sz;
   var ctx = cv.getContext('2d');
 
-  // Фон прозрачный
-  ctx.clearRect(0, 0, sz, sz);
+  // Фон — заливаем тёмным чтобы не было прозрачности
+  ctx.fillStyle = palette.base;
+  ctx.fillRect(0, 0, sz, sz);
 
   // Верхнее крыло (левая половина текстуры — UV-пространство модели)
   // Рисуем симметричную бабочку на всём холсте
@@ -622,14 +623,20 @@ gltfLoader.load(
       var sc = BASE_SCALE * (0.8 + Math.random() * 0.5);
       clone.scale.setScalar(sc);
 
-      // Применяем процедурную текстуру
+      // Применяем процедурный цвет — заменяем материал на MeshBasicMaterial
       var palette = BUTTERFLY_PALETTES[b % BUTTERFLY_PALETTES.length];
       var bTex = makeButterflyTexture(palette);
       clone.traverse(function(node) {
-        if(node.isMesh && node.material) {
-          node.material = node.material.clone();
-          node.material.map = bTex;
-          node.material.needsUpdate = true;
+        if(node.isMesh) {
+          var newMat = new THREE.MeshBasicMaterial({
+            map:         bTex,
+            side:        THREE.DoubleSide,
+            transparent: false,
+          });
+          // Включаем скиннинг если меш скелетный
+          if(node.isSkinnedMesh) newMat.skinning = true;
+          newMat.needsUpdate = true;
+          node.material = newMat;
         }
       });
 
