@@ -1,195 +1,645 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Room</title>
+<title>Час для себе</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body { width:100%; height:100%; overflow:hidden; background:#000; }
   #gc { display:block; }
-  #loader {
-    position:fixed; top:0; left:0; width:100%; height:100%;
-    z-index:999; background:#000;
-    display:flex; align-items:center; justify-content:center;
-    transition: opacity 0.6s;
+  #hint {
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    font-size:14px; color:rgba(255,255,255,0.85); pointer-events:none;
+    background:rgba(0,0,0,0.3); padding:5px 16px; border-radius:20px;
+    transition:opacity 1.2s; font-family:sans-serif;
   }
-  #loader-video { width:20vw; }
-  @media (max-width: 768px) { #loader-video { width:70vw; } }
+
+  /* ── iPhone welcome overlay ── */
+  #iphone-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    background: rgba(0,0,0,0.45);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  }
+  #iphone-overlay .overlay-title {
+    font-size: 26px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    max-width: 320px;
+    margin-bottom: 40px;
+  }
+  #iphone-overlay .overlay-btn {
+    display: inline-block;
+    padding: 16px 52px;
+    border-radius: 50px;
+    border: none;
+    background: rgba(255,255,255,0.92);
+    color: #1a1a1a;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+  #iphone-overlay .overlay-btn:active {
+    transform: scale(0.96);
+    opacity: 0.85;
+  }
+
+  /* ── Loading blur screen ── */
+  #scene-preloader {
+    position: fixed; inset: 0; z-index: 8000;
+    pointer-events: none;
+    transition: opacity 1s ease;
+  }
+  #scene-preloader img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scale(1.08);
+    display: block;
+    filter: blur(28px) brightness(0.55) saturate(1.2);
+    transition: filter 1s ease;
+  }
+  #scene-preloader.hidden {
+    opacity: 0;
+  }
+  #scene-preloader.hidden img {
+    filter: blur(0px) brightness(1) saturate(1);
+  }
 </style>
 </head>
 <body>
-<canvas id="gc"></canvas>
-<div id="loader">
-  <video id="loader-video" autoplay muted loop playsinline
-    src="https://raw.githubusercontent.com/CakeBoxDeveloper/3d/main/Lite2ruk.webm">
-  </video>
+<!-- iPhone welcome overlay -->
+<div id="iphone-overlay">
+  <div class="overlay-title">Озирнись навколо і знайди час для себе</div>
+  <button class="overlay-btn" id="overlay-ok">Ок</button>
 </div>
+
+<!-- Loading blur preloader -->
+<div id="scene-preloader">
+  <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/3d/main/blur.jpg" alt="" draggable="false" />
+</div>
+
+<canvas id="gc"></canvas>
+<div id="hint">Тягніть мишею для повороту</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
+<script>
+/* ── iPhone welcome overlay ── */
+(function(){
+  var ua = navigator.userAgent || '';
+  var isIphone = /iPhone/i.test(ua);
+  if(!isIphone) return; // тільки для iPhone
+
+  var overlay = document.getElementById('iphone-overlay');
+  overlay.style.display = 'flex';
+
+  document.getElementById('overlay-ok').addEventListener('click', function(){
+    // Запитуємо дозвіл на гіроскоп (iOS 13+)
+    if(typeof DeviceOrientationEvent !== 'undefined' &&
+       typeof DeviceOrientationEvent.requestPermission === 'function'){
+      DeviceOrientationEvent.requestPermission()
+        .then(function(state){
+          if(state === 'granted'){
+            window.addEventListener('deviceorientation', window._iphoneOriHandler || function(){}, true);
+          }
+        })
+        .catch(function(){});
+    }
+    // Закриваємо оверлей
+    overlay.style.transition = 'opacity 0.5s';
+    overlay.style.opacity = '0';
+    setTimeout(function(){ overlay.style.display = 'none'; }, 520);
+  });
+})();
+</script>
 <script>
 (function(){
 
+/* ── Preloader: hide blur screen once scene is ready ── */
+function hidePreloader(){
+  var el = document.getElementById('scene-preloader');
+  if(!el || el._hidden) return;
+  el._hidden = true;
+  el.classList.add('hidden');
+  setTimeout(function(){ el.style.display = 'none'; }, 1050);
+}
+/* Safety fallback — ховаємо через 8с якщо щось пішло не так */
+setTimeout(hidePreloader, 8000);
+
+var CARDS = [
+  { name:'Класичний масаж',      desc:'Відновлює кровообіг, знімає м\'язову напругу та покращує загальний тонус тіла. Ідеально після важкого тижня.',          duration:'60 або 90 хв', price:'600 / 850 грн'  },
+  { name:'Глибокотканний',       desc:'Інтенсивний вплив на глибокі шари м\'язів. Ефективний при хронічних болях і м\'язових затисках після стресу.',           duration:'60 або 90 хв', price:'750 / 1050 грн' },
+  { name:'Аромамасаж',           desc:'М\'які техніки з натуральними ефірними оліями. Заспокоює нервову систему та наповнює тіло відчуттям легкості.',          duration:'75 або 90 хв', price:'700 / 900 грн'  },
+  { name:'Масаж спини та шиї',   desc:'Знімає головний біль, напругу від сидячої роботи і скутість у плечовому поясі. Результат із першого сеансу.',            duration:'30 або 45 хв', price:'400 / 550 грн'  },
+  { name:'Антицелюлітний',       desc:'Лімфодренаж і покращення мікроциркуляції. Шкіра стає пружнішою, контури — чіткішими. Курс від 8 сеансів.',              duration:'45 або 60 хв', price:'650 / 850 грн'  },
+  { name:'Спортивний масаж',     desc:'Відновлення після тренувань, профілактика травм, підвищення гнучкості та тонусу м\'язів. До і після навантажень.',        duration:'60 хв',        price:'700 грн'        },
+];
+
+var SOC_ICONS = [
+  { href:'https://threads.net/',           src:'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/hreads.svg'   },
+  { href:'https://t.me/username',          src:'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/telegram.svg' },
+  { href:'https://instagram.com/username', src:'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/insta.svg'    },
+  { href:'https://wa.me/380000000000',     src:'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/wa.svg'       },
+  { href:'tel:+380000000000',              src:'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/1ababeedeb1d13277ee3945bd47dfd3bb482dc85/call.svg'     },
+];
+
+/* ── Renderer ── */
 var canvas = document.getElementById('gc');
 var W = window.innerWidth, H = window.innerHeight;
 
-var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(W, H);
 renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.autoClear = false;
 
-var scene  = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(75, W/H, 0.1, 1000);
-camera.position.set(0, 0, 0);
+var skyScene  = new THREE.Scene();
+var mainScene = new THREE.Scene();
 
-/* ── Освещение ── */
-var dirLight = new THREE.DirectionalLight(0xffe4a0, 1.4);
-dirLight.position.set(0, 1, 0);
-scene.add(dirLight);
-var ambient = new THREE.AmbientLight(0xffe4a0, 1);
-scene.add(ambient);
+var camera    = new THREE.PerspectiveCamera(75, W/H, 0.1, 500);
+var skyCamera = new THREE.PerspectiveCamera(75, W/H, 1, 1000);
+camera.position.set(0, 1.6, 0);
 
-/* ── Post-processing: blur по краям + chromatic aberration ── */
-var dpr = Math.min(window.devicePixelRatio, 2);
-var rt = new THREE.WebGLRenderTarget(W * dpr, H * dpr, {
-  minFilter: THREE.LinearFilter,
-  magFilter: THREE.LinearFilter,
-  format: THREE.RGBAFormat,
+var loader = new THREE.TextureLoader();
+loader.crossOrigin = 'anonymous';
+
+/* ── Sky ── */
+/* ── Sky ── */
+var skyGeo = new THREE.SphereGeometry(500, 64, 32);
+skyGeo.scale(-1, 1, 1);
+var skyMat = new THREE.ShaderMaterial({
+  uniforms:{top:{value:new THREE.Color(0x2a6fbe)},bot:{value:new THREE.Color(0xb0cfe8)}},
+  vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:'uniform vec3 top,bot;varying vec3 vP;void main(){float h=clamp(normalize(vP).y*2.,0.,1.);gl_FragColor=vec4(mix(bot,top,h),1.);}'
 });
-var postScene  = new THREE.Scene();
-var postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-var postMat = new THREE.ShaderMaterial({
-  uniforms: {
-    tDiffuse: { value: rt.texture },
-    uRes:     { value: new THREE.Vector2(W * dpr, H * dpr) },
-    uCA:      { value: 0.009 },
-    uVigBlur: { value: 0.84  },
-  },
-  vertexShader: `
-    varying vec2 vUv;
-    void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
-  `,
-  fragmentShader: `
-    uniform sampler2D tDiffuse;
-    uniform vec2 uRes;
-    uniform float uCA;
-    uniform float uVigBlur;
-    varying vec2 vUv;
+var skyMesh = new THREE.Mesh(skyGeo, skyMat);
+skyScene.add(skyMesh);
 
-    vec4 blurSample(sampler2D tex, vec2 uv, float radius) {
-      vec4 col = vec4(0.0);
-      float s = radius / 3.0;
-      for(float x = -3.0; x <= 3.0; x += 1.0)
-        for(float y = -3.0; y <= 3.0; y += 1.0) {
-          vec2 suv = clamp(uv + vec2(x,y)*s/uRes, 0.001, 0.999);
-          col += texture2D(tex, suv);
-        }
-      return col / 49.0;
-    }
+var isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-    // Bloom: большое размытие только ярких пикселей
-    vec3 bloomSample(sampler2D tex, vec2 uv) {
-      vec3 col = vec3(0.0);
-      float total = 0.0;
-      float r = 8.0;
-      for(float x = -4.0; x <= 4.0; x += 1.0)
-        for(float y = -4.0; y <= 4.0; y += 1.0) {
-          vec2 suv = clamp(uv + vec2(x,y)*r/uRes, 0.001, 0.999);
-          vec3 s = texture2D(tex, suv).rgb;
-          float lum = dot(s, vec3(0.299, 0.587, 0.114));
-          // Берём только яркие пиксели (threshold 0.7)
-          col += s * max(0.0, lum - 0.7) * 3.0;
-          total += 1.0;
-        }
-      return col / total;
-    }
-
-    void main() {
-      vec2 fc   = vUv - 0.5;
-      float dist = length(fc) * 1.414;
-      float ca   = uCA * dist * dist;
-      vec2 dir   = normalize(fc + 0.0001) * ca;
-      float r = texture2D(tDiffuse, vUv + dir).r;
-      float g = texture2D(tDiffuse, vUv      ).g;
-      float b = texture2D(tDiffuse, vUv - dir).b;
-      vec4 sharp   = vec4(r, g, b, 1.0);
-      float blurR  = uVigBlur * dist * dist * dist * 12.0;
-      vec4 blurred = blurSample(tDiffuse, vUv, blurR);
-      float blend  = smoothstep(0.25, 0.8, dist);
-      vec4 col = mix(sharp, blurred, blend);
-
-      // Добавляем bloom поверх
-      vec3 bloom = bloomSample(tDiffuse, vUv);
-      col.rgb += bloom * 0.4;
-
-      gl_FragColor = col;
-    }
-  `,
-  depthWrite: false,
-});
-postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2), postMat));
-
-/* ── Сфера ── */
-var geo = new THREE.SphereGeometry(500, 64, 32);
-geo.scale(-1, 1, 1);
-var sphere = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color:0x111111}));
-sphere.position.set(-200, 0, 0);
-scene.add(sphere);
-
-new THREE.TextureLoader().load(
-  'https://raw.githubusercontent.com/CakeBoxDeveloper/3d/main/room.webp',
+loader.load(
+  'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/garden.webp',
   function(tex){
     tex.encoding = THREE.sRGBEncoding;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
-    sphere.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    if(isMobile) {
+      // Телефон — просто BasicMaterial, никакого шейдера
+      skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+      hidePreloader(); // на мобільному чекаємо тільки цю текстуру
+    } else {
+      gardenTex = tex;
+      tryApplyDof();
+    }
   }
 );
 
-/* ── Стол ── */
-var gltfLoader = new THREE.GLTFLoader();
-gltfLoader.load(
-  'https://raw.githubusercontent.com/CakeBoxDeveloper/3d/main/Table.glb',
-  function(gltf){
-    var model = gltf.scene;
-    var box   = new THREE.Box3().setFromObject(model);
-    var size  = box.getSize(new THREE.Vector3());
-    var scale = 0.8 / Math.max(size.x, size.y, size.z);
-    model.scale.setScalar(scale * 5);
-    box.setFromObject(model);
-    model.position.set(-0.6, -box.min.y - 1.2, -0.5);
-    model.rotation.y = 0;
-    scene.add(model);
+// Десктоп: грузим карту глубины и применяем DoF шейдер
+var gardenTex = null;
+var depthTex  = null;
 
-    // Убираем только пересвет emissive — оставляем слабое свечение
-    model.traverse(function(node){
-      if(node.isMesh && node.material){
-        var mats = Array.isArray(node.material) ? node.material : [node.material];
-        mats.forEach(function(m){
-          if(m.emissiveIntensity > 0.3) m.emissiveIntensity = 0.3;
-          m.needsUpdate = true;
-        });
-      }
-    });
-
-    if(gltf.animations && gltf.animations.length){
-      scene._mixer = new THREE.AnimationMixer(model);
-      gltf.animations.forEach(function(c){ scene._mixer.clipAction(c).play(); });
+if(!isMobile) {
+  loader.load(
+    'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/deep.webp',
+    function(tex){
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.minFilter = THREE.LinearFilter;
+      tex.generateMipmaps = false;
+      depthTex = tex;
+      tryApplyDof();
     }
+  );
+}
 
-    // Скрываем лоадер
-    var el = document.getElementById('loader');
-    if(el){ el.style.opacity='0'; setTimeout(function(){ el.style.display='none'; }, 650); }
+var dofMat = new THREE.ShaderMaterial({
+  uniforms: {
+    colorMap:    { value: null },
+    depthMap:    { value: null },
+    dofFocus:    { value: 0.20    },
+    dofStrength: { value: 0.000735 },
   },
-  undefined,
-  function(err){ console.warn(err); }
-);
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D colorMap;
+    uniform sampler2D depthMap;
+    uniform float dofFocus;
+    uniform float dofStrength;
+    varying vec2 vUv;
+    void main() {
+      float depth = texture2D(depthMap, vUv).r;
+      float blurAmt = max(0.0, (dofFocus - depth) / dofFocus) * dofStrength;
+      if(blurAmt < 0.0001) {
+        gl_FragColor = texture2D(colorMap, vUv);
+      } else {
+        vec4 col = vec4(0.0);
+        float r = blurAmt;
+        col += texture2D(colorMap, vUv + vec2( r,     0.0  ));
+        col += texture2D(colorMap, vUv + vec2(-r,     0.0  ));
+        col += texture2D(colorMap, vUv + vec2( 0.0,   r    ));
+        col += texture2D(colorMap, vUv + vec2( 0.0,  -r    ));
+        col += texture2D(colorMap, vUv + vec2( r*0.7, r*0.7));
+        col += texture2D(colorMap, vUv + vec2(-r*0.7, r*0.7));
+        col += texture2D(colorMap, vUv + vec2( r*0.7,-r*0.7));
+        col += texture2D(colorMap, vUv + vec2(-r*0.7,-r*0.7));
+        gl_FragColor = col / 8.0;
+      }
+    }
+  `,
+  side: THREE.FrontSide,
+});
 
-/* ── Управление ── */
+function tryApplyDof() {
+  if(!gardenTex || !depthTex) return;
+  dofMat.uniforms.colorMap.value = gardenTex;
+  dofMat.uniforms.depthMap.value = depthTex;
+  dofMat.needsUpdate = true;
+  skyMesh.material = dofMat;
+  hidePreloader(); // обидві текстури готові — ховаємо прелоадер
+}
+
+/* ── Cards ── */
+var CARD_RADIUS = 5.5;
+var CARD_Y      = 1.6;
+var CARD_W      = 2.53;   /* was 2.2, +15% */
+var CARD_H      = 3.68;   /* was 3.2, +15% */
+var TW = 560, TH = 800;
+
+var SHIMMER_SPEED = 0.05;
+var PILL_SPEED    = 3.5;
+
+var cardExpanded = new Array(CARDS.length).fill(false);
+var cardAnim     = new Array(CARDS.length).fill(0);
+
+var socImages = SOC_ICONS.map(function(s){
+  var img = new Image(); img.crossOrigin = 'anonymous'; img.src = s.src; return img;
+});
+
+/* ── easeOutBack ── */
+function easeOutBack(t){
+  var c1 = 1.70158, c3 = c1 + 1;
+  return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2);
+}
+
+/* ── roundRect helper ── */
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+/* ── shimmerPoint: returns {x,y} at fraction t around a rounded-rect perimeter ── */
+function shimmerPoint(rect, t){
+  /* rect = {x,y,w,h,r}  — rounded rectangle params */
+  var x = rect.x, y = rect.y, w = rect.w, h = rect.h, r = rect.r;
+  /* straight segments + arc segments lengths */
+  var sTop    = w - 2*r;
+  var sRight  = h - 2*r;
+  var sBot    = w - 2*r;
+  var sLeft   = h - 2*r;
+  var arcLen  = (Math.PI/2) * r;
+  var total   = sTop + arcLen + sRight + arcLen + sBot + arcLen + sLeft + arcLen;
+  var dist    = ((t % 1) + 1) % 1 * total;
+
+  /* walk the perimeter */
+  /* top-left corner arc */
+  var seg = arcLen;
+  if(dist < seg){
+    var a = Math.PI + (dist/seg)*(Math.PI/2);
+    return { x: x+r + r*Math.cos(a), y: y+r + r*Math.sin(a) };
+  }
+  dist -= seg;
+  /* top edge */
+  seg = sTop;
+  if(dist < seg){ return { x: x+r+dist, y: y }; }
+  dist -= seg;
+  /* top-right corner */
+  seg = arcLen;
+  if(dist < seg){
+    var a = -Math.PI/2 + (dist/seg)*(Math.PI/2);
+    return { x: x+w-r + r*Math.cos(a), y: y+r + r*Math.sin(a) };
+  }
+  dist -= seg;
+  /* right edge */
+  seg = sRight;
+  if(dist < seg){ return { x: x+w, y: y+r+dist }; }
+  dist -= seg;
+  /* bottom-right corner */
+  seg = arcLen;
+  if(dist < seg){
+    var a = 0 + (dist/seg)*(Math.PI/2);
+    return { x: x+w-r + r*Math.cos(a), y: y+h-r + r*Math.sin(a) };
+  }
+  dist -= seg;
+  /* bottom edge */
+  seg = sBot;
+  if(dist < seg){ return { x: x+w-r-dist, y: y+h }; }
+  dist -= seg;
+  /* bottom-left corner */
+  seg = arcLen;
+  if(dist < seg){
+    var a = Math.PI/2 + (dist/seg)*(Math.PI/2);
+    return { x: x+r + r*Math.cos(a), y: y+h-r + r*Math.sin(a) };
+  }
+  dist -= seg;
+  /* left edge */
+  return { x: x, y: y+h-r-dist };
+}
+
+function wrapText(ctx,text,x,y,maxW,lineH){
+  var words=text.split(' '), line='';
+  for(var i=0;i<words.length;i++){
+    var test=line+words[i]+' ';
+    if(ctx.measureText(test).width>maxW&&i>0){ ctx.fillText(line.trim(),x,y); line=words[i]+' '; y+=lineH; }
+    else line=test;
+  }
+  ctx.fillText(line.trim(),x,y);
+}
+
+function drawWhiteIcon(ctx, img, x, y, size){
+  var off = document.createElement('canvas'); off.width=size; off.height=size;
+  var oc  = off.getContext('2d');
+  oc.fillStyle = '#ffffff'; oc.fillRect(0,0,size,size);
+  oc.globalCompositeOperation = 'destination-in';
+  oc.drawImage(img, 0, 0, size, size);
+  ctx.drawImage(off, x, y);
+}
+
+/* ── drawCard — now accepts anim (0..1) and shimmerT ── */
+function drawCard(cc, data, anim, shimmerT){
+  var ctx = cc.getContext('2d');
+  ctx.clearRect(0,0,TW,TH);
+
+  /* ── фон: тёмное затемнение + лёгкий градиент ── */
+  roundRect(ctx,0,0,TW,TH,60);
+  ctx.fillStyle = 'rgba(0,0,0,0.42)';
+  ctx.fill();
+
+  /* чуть тёплый оттенок снизу */
+  var vgn = ctx.createLinearGradient(0,0,0,TH);
+  vgn.addColorStop(0, 'rgba(30,20,10,0.00)');
+  vgn.addColorStop(1, 'rgba(10,5,0,0.25)');
+  roundRect(ctx,0,0,TW,TH,60);
+  ctx.fillStyle = vgn; ctx.fill();
+
+  /* блик сверху */
+  var shine = ctx.createLinearGradient(0,0,0,TH*0.28);
+  shine.addColorStop(0, 'rgba(255,255,255,0.10)');
+  shine.addColorStop(1, 'rgba(255,255,255,0.00)');
+  roundRect(ctx,0,0,TW,TH,60);
+  ctx.fillStyle = shine; ctx.fill();
+
+  /* ── рамка: base border + shimmer без glow ── */
+  var borderRect = { x:3, y:3, w:TW-6, h:TH-6, r:57 };
+
+  /* base border */
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 6;
+  roundRect(ctx,3,3,TW-6,TH-6,57); ctx.stroke();
+
+  /* shimmer — скользящий блик по контуру, без glow */
+  var gLen = 0.18;
+  var t0   = shimmerT % 1;
+  var pt1  = shimmerPoint(borderRect, ((t0 - gLen/2) + 1) % 1);
+  var pt2  = shimmerPoint(borderRect, (t0 + gLen/2)  % 1);
+  var grd  = ctx.createLinearGradient(pt1.x, pt1.y, pt2.x, pt2.y);
+  grd.addColorStop(0,   'rgba(255,255,255,0.00)');
+  grd.addColorStop(0.3, 'rgba(255,255,255,0.35)');
+  grd.addColorStop(0.5, 'rgba(255,255,255,0.80)');
+  grd.addColorStop(0.7, 'rgba(255,255,255,0.35)');
+  grd.addColorStop(1,   'rgba(255,255,255,0.00)');
+  ctx.save();
+  ctx.strokeStyle = grd;
+  ctx.lineWidth   = 10;
+  roundRect(ctx,3,3,TW-6,TH-6,57); ctx.stroke();
+  ctx.restore();
+
+  /* заголовок — одна строка, автофит размера */
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 10;
+  // Подбираем размер шрифта чтобы влезало в одну строку
+  var titleFontSize = 46;
+  do {
+    ctx.font = 'bold ' + titleFontSize + 'px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+    titleFontSize -= 2;
+  } while(ctx.measureText(data.name).width > TW - 88 && titleFontSize > 24);
+  ctx.fillText(data.name, 44, 86);
+  ctx.shadowBlur = 0;
+
+  /* разделитель */
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(44,130); ctx.lineTo(TW-44,130); ctx.stroke();
+
+  /* описание */
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = '28px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6;
+  wrapText(ctx, data.desc, 44, 180, TW-88, 40);
+  ctx.shadowBlur = 0;
+
+  /* ── нижняя пилюля ── */
+  var pillY = TH-148, pillH = 110;
+
+  /* фон пилюли */
+  roundRect(ctx,36,pillY,TW-72,pillH,28);
+  ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.2; ctx.stroke();
+
+  /* duration · price — растянуто по ширине, автофит */
+  var metaMaxW = (TW - 104) / 2; // максимум на каждую половину
+  var metaFontSize = 48;
+  ctx.font = metaFontSize + 'px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+  while(metaFontSize > 20 && (
+    ctx.measureText(data.duration).width > metaMaxW ||
+    ctx.measureText(data.price).width > metaMaxW
+  )) {
+    metaFontSize -= 2;
+    ctx.font = metaFontSize + 'px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+  }
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,0.80)';
+  ctx.textAlign = 'left';
+  ctx.fillText(data.duration, 52, pillY - 14);
+  ctx.textAlign = 'right';
+  ctx.fillText(data.price, TW - 52, pillY - 14);
+
+  if(anim < 0.01){
+    /* collapsed state — show label */
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.font = '30px -apple-system,BlinkMacSystemFont,Helvetica,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 5;
+    ctx.fillText('ЗАПИСАТИСЬ НА СЕАНС', TW/2, pillY+66);
+    ctx.shadowBlur = 0;
+  } else {
+    /* expanded state — icons spring from center */
+    var iconSize = 40;
+    var totalW   = TW - 72;
+    var step     = totalW / 5;
+    var centerIdx = 2; /* middle icon index */
+    SOC_ICONS.forEach(function(soc, idx){
+      /* stagger by distance from center */
+      var dist     = Math.abs(idx - centerIdx);
+      var delay    = dist * 0.08;
+      var localT   = Math.max(0, Math.min(1, (anim - delay) / (1 - delay)));
+      var easedT   = easeOutBack(localT);
+      var finalX   = 36 + step*idx + step/2 - iconSize/2;
+      var centerX  = TW/2 - iconSize/2;
+      var ix = centerX + (finalX - centerX) * easedT;
+      var iy = pillY + (pillH - iconSize)/2;
+      ctx.globalAlpha = Math.min(1, localT * 2);
+      if(socImages[idx].complete && socImages[idx].naturalWidth > 0){
+        drawWhiteIcon(ctx, socImages[idx], ix, iy, iconSize);
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath(); ctx.arc(ix+iconSize/2, iy+iconSize/2, iconSize/2, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    });
+  }
+}
+
+var cardMeshes = [];
+CARDS.forEach(function(data, i){
+  var angle = (i / CARDS.length) * Math.PI * 2;
+  var x = Math.sin(angle) * CARD_RADIUS;
+  var z = -Math.cos(angle) * CARD_RADIUS;
+  var cc = document.createElement('canvas');
+  cc.width = TW; cc.height = TH;
+  drawCard(cc, data, 0, 0);
+  var tex = new THREE.CanvasTexture(cc);
+  tex.encoding = THREE.sRGBEncoding;
+  var geo = new THREE.PlaneGeometry(CARD_W, CARD_H);
+  var mat = new THREE.MeshBasicMaterial({map:tex, transparent:true, side:THREE.DoubleSide, depthWrite:false});
+  var mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, CARD_Y, z);
+  mesh.lookAt(0, CARD_Y, 0);
+  mainScene.add(mesh);
+  cardMeshes.push({mesh:mesh, angle:angle, tex:tex, cc:cc, data:data});
+});
+
+socImages.forEach(function(img){
+  img.onload = function(){
+    cardMeshes.forEach(function(c, i){
+      drawCard(c.cc, c.data, cardAnim[i], 0);
+      c.tex.needsUpdate = true;
+    });
+  };
+});
+
+/* ── Глубина / прозрачность ── */
+function updateDepth(){
+  var dir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+  cardMeshes.forEach(function(c){
+    var cd  = new THREE.Vector3(Math.sin(c.angle), 0, -Math.cos(c.angle));
+    var dot = Math.max(-1, Math.min(1, dir.dot(cd)));
+    var t   = (dot+1)/2;
+    c.mesh.material.opacity = 0.35 + t*0.65;
+    c.mesh.scale.setScalar(0.80 + t*0.20);
+  });
+}
+
+/* ── Raycaster ── */
+var raycaster = new THREE.Raycaster();
+var pointer   = new THREE.Vector2();
+var pdx=0, pdy=0;
+var skipNextTouch = false;
+var lastExpandTime = 0; // блокируем тач сразу после разворачивания пилюли
+
+canvas.addEventListener('mousedown', function(e){ pdx=e.clientX; pdy=e.clientY; });
+canvas.addEventListener('mouseup', function(e){
+  if(Math.abs(e.clientX-pdx)>8||Math.abs(e.clientY-pdy)>8) return;
+  handleClick(e.clientX, e.clientY, false);
+});
+canvas.addEventListener('touchstart', function(e){
+  if(e.touches.length===1){ pdx=e.touches[0].clientX; pdy=e.touches[0].clientY; }
+},{passive:true});
+canvas.addEventListener('touchend', function(e){
+  if(skipNextTouch){ skipNextTouch=false; return; }
+  if(e.changedTouches.length!==1) return;
+  var t=e.changedTouches[0];
+  if(Math.abs(t.clientX-pdx)>8||Math.abs(t.clientY-pdy)>8) return;
+  // Блокируем если только что развернули пилюлю
+  if(Date.now() - lastExpandTime < 350) return;
+  handleClick(t.clientX, t.clientY, true);
+},{passive:true});
+
+/* collapse on body click when expanded */
+document.addEventListener('click', function(e){
+  if(e.target === canvas) return; /* handled separately */
+  cardExpanded.forEach(function(exp, i){
+    if(exp){ cardExpanded[i] = false; }
+  });
+});
+
+function handleClick(cx, cy, isTouch){
+  var rect = canvas.getBoundingClientRect();
+  pointer.x =  ((cx-rect.left)/rect.width )*2-1;
+  pointer.y = -((cy-rect.top) /rect.height)*2+1;
+  raycaster.setFromCamera(pointer, camera);
+  var hits = raycaster.intersectObjects(cardMeshes.map(function(c){return c.mesh;}));
+  if(!hits.length){
+    /* click on empty — collapse all */
+    cardExpanded.forEach(function(exp, i){ if(exp) cardExpanded[i] = false; });
+    return;
+  }
+  var idx = cardMeshes.findIndex(function(c){return c.mesh===hits[0].object;});
+  if(idx<0) return;
+  var uv = hits[0].uv;
+  if(uv && uv.y < 0.20){
+    if(cardExpanded[idx]){
+      var si = Math.floor(uv.x*5);
+      if(isTouch) skipNextTouch = true;
+      window.open(SOC_ICONS[Math.max(0,Math.min(4,si))].href, '_blank');
+    } else {
+      cardExpanded[idx] = true;
+      lastExpandTime = Date.now();
+    }
+  } else if(cardExpanded[idx]){
+    cardExpanded[idx] = false;
+  }
+}
+
+/* ── Resize ── */
+window.addEventListener('resize', function(){
+  W=window.innerWidth; H=window.innerHeight;
+  camera.aspect = skyCamera.aspect = W/H;
+  camera.updateProjectionMatrix();
+  skyCamera.updateProjectionMatrix();
+  renderer.setSize(W,H);
+});
+
+/* ── Controls ── */
 var qT=new THREE.Quaternion(), qC=new THREE.Quaternion();
 var _e=new THREE.Euler(), _q1=new THREE.Quaternion(), _q2=new THREE.Quaternion();
-var gyroOn=false, SLERP=0.08;
-var dy=Math.PI/2, dp=0.05, dn=false, lx=null, ly=null;
+var gyroOn=false, SLERP=0.07;
+var dy=0, dp=0.05, dn=false, lx=null, ly=null;
 _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e);
 
 function screenAngle(){ return (window.screen&&window.screen.orientation)?(window.screen.orientation.angle||0):(window.orientation||0); }
@@ -205,9 +655,23 @@ function startGyro(){
     DeviceOrientationEvent.requestPermission().then(function(s){if(s==='granted')window.addEventListener('deviceorientation',onOri,true);}).catch(function(){});
   } else { window.addEventListener('deviceorientation',onOri,true); }
 }
+// Зберігаємо обробник, щоб iPhone-оверлей міг підключити його після дозволу
+window._iphoneOriHandler = onOri;
+
 var permDone=false;
-document.addEventListener('touchstart',function(){if(!permDone){permDone=true;startGyro();}},{once:true});
-startGyro();
+var ua = navigator.userAgent || '';
+var isIphone = /iPhone/i.test(ua);
+// На iPhone дозвіл на гіроскоп дає оверлей — тут лише підключаємо без запиту дозволу
+// На Android / ПК стартуємо одразу або по першому дотику
+if(!isIphone){
+  document.addEventListener('touchstart',function(){if(!permDone){permDone=true;startGyro();}},{once:true});
+  startGyro();
+} else {
+  // На iPhone слухаємо deviceorientation без requestPermission (дозвіл уже отримано через overlay)
+  // Фактично onOri вже зареєстровано через window._iphoneOriHandler у overlay-скрипті
+  // Також запускаємо "fallback" — якщо подія вже дозволена (перезавантаження сторінки)
+  window.addEventListener('deviceorientation', onOri, true);
+}
 
 canvas.addEventListener('mousedown',function(e){dn=true;lx=e.clientX;ly=e.clientY;});
 window.addEventListener('mouseup',function(){dn=false;});
@@ -217,7 +681,7 @@ window.addEventListener('mousemove',function(e){
   dp=Math.max(-0.5,Math.min(1.4,dp)); lx=e.clientX; ly=e.clientY;
   _e.set(dp,dy,0,'YXZ'); qT.setFromEuler(_e);
 });
-var tx=null,ty=null;
+var tx=null, ty=null;
 canvas.addEventListener('touchstart',function(e){if(!gyroOn){var t=e.touches[0];tx=t.clientX;ty=t.clientY;}},{passive:true});
 canvas.addEventListener('touchmove',function(e){
   if(gyroOn) return; var t=e.touches[0];
@@ -225,28 +689,396 @@ canvas.addEventListener('touchmove',function(e){
   tx=t.clientX; ty=t.clientY;
 },{passive:true});
 
-window.addEventListener('resize',function(){
-  W=window.innerWidth; H=window.innerHeight;
-  camera.aspect=W/H; camera.updateProjectionMatrix();
-  renderer.setSize(W,H);
-  rt.setSize(W*dpr, H*dpr);
-  postMat.uniforms.uRes.value.set(W*dpr, H*dpr);
-});
+setTimeout(function(){
+  var h=document.getElementById('hint');
+  if(h) h.style.opacity='0';
+  /* hide hint on touch devices */
+  if('ontouchstart' in window){ if(h) h.style.display='none'; }
+}, 3500);
 
-/* ── Render loop ── */
-var lastTime=0;
-function animate(now){
-  requestAnimationFrame(animate);
-  var dt=lastTime?Math.min((now-lastTime)/1000,0.1):0; lastTime=now;
-  if(scene._mixer) scene._mixer.update(dt);
-  qC.slerp(qT,SLERP);
-  camera.quaternion.copy(qC);
-  renderer.setRenderTarget(rt);
-  renderer.render(scene,camera);
-  renderer.setRenderTarget(null);
-  renderer.render(postScene,postCamera);
+/* ════════════════════════════════════════
+   BUTTERFLIES
+═════════════════════════════════════════ */
+var butterflies = [];
+var _bOrientFix = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -Math.PI / 2, 0));
+var BUTTERFLY_COUNT = 12;
+var BASE_SCALE = 0.36;
+var FLY_RANGE_MIN = 3.5, FLY_RANGE_MAX = 8.0;
+var FLY_Y_MIN = 1.0, FLY_Y_MAX = 3.8;
+var wingTex = null;
+var gltfScene = null;
+var mixers = [];
+
+// Цветовые вариации через hue-rotate фильтр
+var HUE_SHIFTS = [0, 30, 60, 120, 180, 220, 270, 320];
+var tintedWingTextures = []; // будут заполнены после загрузки wingTex
+
+function makeTintedTex(srcTex, hueShift) {
+  if(hueShift === 0) return srcTex;
+  var img = srcTex.image;
+  if(!img) return srcTex;
+  var cv = document.createElement('canvas');
+  cv.width = img.width; cv.height = img.height;
+  var ctx2 = cv.getContext('2d');
+  ctx2.filter = 'hue-rotate(' + hueShift + 'deg)';
+  ctx2.drawImage(img, 0, 0);
+  var t = new THREE.CanvasTexture(cv);
+  t.encoding    = THREE.sRGBEncoding;
+  t.flipY       = false;
+  t.wrapS       = THREE.RepeatWrapping;
+  t.wrapT       = THREE.RepeatWrapping;
+  t.needsUpdate = true;
+  return t;
 }
-animate(0);
+
+function spawnButterfly(gltf, idx){
+  var clone = THREE.SkeletonUtils.clone(gltf.scene);
+  var speed = 0.15 + Math.random() * 0.35;
+  var s = BASE_SCALE * (0.7 + speed * 0.9);
+  clone.scale.setScalar(s);
+
+  var angle = Math.random() * Math.PI * 2;
+  var dist  = FLY_RANGE_MIN + Math.random() * (FLY_RANGE_MAX - FLY_RANGE_MIN);
+  clone.position.set(
+    Math.sin(angle) * dist,
+    FLY_Y_MIN + Math.random() * (FLY_Y_MAX - FLY_Y_MIN),
+    Math.cos(angle) * dist
+  );
+
+  // Выбираем тинтованную текстуру для этой бабочки
+  var texPool = tintedWingTextures.length ? tintedWingTextures : (wingTex ? [wingTex] : []);
+  var bTex = texPool.length ? texPool[idx % texPool.length] : null;
+
+  if(bTex){
+    clone.traverse(function(node){
+      if(node.isMesh || node.isSkinnedMesh){
+        var m = node.material.clone();
+        m.map   = bTex;
+        m.color = new THREE.Color(0xffffff);
+        if(m.isMeshStandardMaterial){
+          m.roughness         = 1.0;
+          m.metalness         = 0.0;
+          m.emissive          = new THREE.Color(0x444444);
+          m.emissiveMap       = bTex;
+          m.emissiveIntensity = 0.4;
+        }
+        m.transparent = false;
+        m.side        = THREE.DoubleSide;
+        m.needsUpdate = true;
+        node.material = m;
+      }
+    });
+  }
+
+  mainScene.add(clone);
+
+  /* animation mixer */
+  var mixer = new THREE.AnimationMixer(clone);
+  var timeScale = 1.2 + speed * (2.8 - 1.2) / 0.50;
+  if(gltf.animations && gltf.animations.length > 0){
+    var action = mixer.clipAction(gltf.animations[0]);
+    action.timeScale = timeScale;
+    action.play();
+  }
+  mixers.push(mixer);
+
+  /* flight data */
+  var targetAngle = Math.random() * Math.PI * 2;
+  var targetDist  = FLY_RANGE_MIN + Math.random() * (FLY_RANGE_MAX - FLY_RANGE_MIN);
+  butterflies.push({
+    mesh: clone,
+    mixer: mixer,
+    speed: speed,
+    targetAngle: targetAngle,
+    targetDist: targetDist,
+    targetY: FLY_Y_MIN + Math.random() * (FLY_Y_MAX - FLY_Y_MIN),
+    flapOffset: Math.random() * Math.PI * 2
+  });
+}
+
+function updateButterflies(dt){
+  butterflies.forEach(function(b){
+    b.mixer.update(dt);
+    var tx = Math.sin(b.targetAngle) * b.targetDist;
+    var tz = Math.cos(b.targetAngle) * b.targetDist;
+    var dx = tx - b.mesh.position.x;
+    var dy2= b.targetY - b.mesh.position.y;
+    var dz = tz - b.mesh.position.z;
+    var distToTarget = Math.sqrt(dx*dx + dz*dz);
+
+    /* move toward target */
+    var step = b.speed * dt;
+    if(distToTarget < 0.3){
+      /* pick new target */
+      b.targetAngle = Math.random() * Math.PI * 2;
+      b.targetDist  = FLY_RANGE_MIN + Math.random() * (FLY_RANGE_MAX - FLY_RANGE_MIN);
+      b.targetY     = FLY_Y_MIN + Math.random() * (FLY_Y_MAX - FLY_Y_MIN);
+    } else {
+      b.mesh.position.x += (dx / distToTarget) * step;
+      b.mesh.position.z += (dz / distToTarget) * step;
+    }
+    b.mesh.position.y += dy2 * Math.min(1, dt * 1.5);
+
+    /* orient toward movement direction */
+    if(distToTarget > 0.05){
+      var moveDir = new THREE.Vector3(dx, 0, dz).normalize();
+      // lookAt направляет -Z к цели, затем корректируем offset под ось модели
+      // Пробуем все 4 варианта: 0, 90, 180, 270 по Y — определено эмпирически
+      var _mat4 = new THREE.Matrix4().lookAt(
+        b.mesh.position,
+        new THREE.Vector3(b.mesh.position.x + dx, b.mesh.position.y, b.mesh.position.z + dz),
+        new THREE.Vector3(0, 1, 0)
+      );
+      var lookQ = new THREE.Quaternion().setFromRotationMatrix(_mat4);
+      // GLTF модель: нос по +X → нужно повернуть -90° по Y после lookAt
+      lookQ.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -Math.PI/2, 0)));
+      b.mesh.quaternion.slerp(lookQ, Math.min(1, dt * 4));
+    }
+  });
+}
+
+/* Load wing texture first, then GLTF */
+var texLoader = new THREE.TextureLoader();
+texLoader.crossOrigin = 'anonymous';
+texLoader.load(
+  'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/butterfly/textures/M_BorboletaAzul_baseColor.png',
+  function(tex){
+    tex.encoding    = THREE.sRGBEncoding;
+    tex.flipY       = false;
+    tex.wrapS       = THREE.RepeatWrapping;
+    tex.wrapT       = THREE.RepeatWrapping;
+    tex.needsUpdate = true;
+    wingTex = tex;
+    // Генерируем тинтованные версии
+    HUE_SHIFTS.forEach(function(shift) {
+      tintedWingTextures.push(makeTintedTex(tex, shift));
+    });
+    loadGLTF();
+  },
+  undefined,
+  function(err){ console.warn('Wing tex error:', err); loadGLTF(); }
+);
+
+function loadGLTF(){
+  var manager = new THREE.LoadingManager();
+  manager.setURLModifier(function(url){
+    if(url.match(/^https?:\/\//)) return url;
+    return 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/butterfly/' + url.replace(/^\.?\/?/, '');
+  });
+  var gltfLoader = new THREE.GLTFLoader(manager);
+  gltfLoader.load(
+    'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/butterfly/scene.gltf',
+    function(gltf){
+      gltfScene = gltf;
+      for(var i = 0; i < BUTTERFLY_COUNT; i++){
+        spawnButterfly(gltf, i);
+      }
+    },
+    undefined,
+    function(err){ console.warn('Butterfly GLTF load error:', err); }
+  );
+}
+
+/* ════════════════════════════════════════
+   FLOATING DUST PARTICLES
+═════════════════════════════════════════ */
+var PARTICLE_COUNT = 200;
+var pPositions = new Float32Array(PARTICLE_COUNT * 3);
+var pVelocities = [];
+for(var i = 0; i < PARTICLE_COUNT; i++){
+  pPositions[i*3]   = (Math.random()-0.5) * 16;
+  pPositions[i*3+1] = Math.random() * 5;
+  pPositions[i*3+2] = (Math.random()-0.5) * 16;
+  pVelocities.push({
+    x: (Math.random()-0.5)*0.02,
+    y: (Math.random()-0.5)*0.01 + 0.005,
+    z: (Math.random()-0.5)*0.02
+  });
+}
+var pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+
+// Круглая текстура для частиц (градиент: белый центр → прозрачный край)
+var pCanvas = document.createElement('canvas'); pCanvas.width = 32; pCanvas.height = 32;
+var pCtx = pCanvas.getContext('2d');
+var pGrad = pCtx.createRadialGradient(16,16,0, 16,16,16);
+pGrad.addColorStop(0,   'rgba(255,250,220,1.0)');
+pGrad.addColorStop(0.4, 'rgba(255,250,220,0.6)');
+pGrad.addColorStop(1,   'rgba(255,250,220,0.0)');
+pCtx.fillStyle = pGrad;
+pCtx.fillRect(0,0,32,32);
+var pTex = new THREE.CanvasTexture(pCanvas);
+
+var pMat = new THREE.PointsMaterial({
+  map: pTex,
+  color: 0xffffee,
+  size: 0.08,
+  transparent: true,
+  opacity: 0.6,
+  sizeAttenuation: true,
+  depthWrite: false,
+  alphaTest: 0.01
+});
+var particles = new THREE.Points(pGeo, pMat);
+mainScene.add(particles);
+
+function updateParticles(dt){
+  var pos = pGeo.attributes.position.array;
+  for(var pi = 0; pi < PARTICLE_COUNT; pi++){
+    pos[pi*3]   += pVelocities[pi].x;
+    pos[pi*3+1] += pVelocities[pi].y;
+    pos[pi*3+2] += pVelocities[pi].z;
+    if(pos[pi*3+1] > 5)  pos[pi*3+1] = 0;
+    if(pos[pi*3]   > 8)  pos[pi*3]   = -8;
+    if(pos[pi*3]   <-8)  pos[pi*3]   =  8;
+    if(pos[pi*3+2] > 8)  pos[pi*3+2] = -8;
+    if(pos[pi*3+2] <-8)  pos[pi*3+2] =  8;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+}
+
+/* ════════════════════════════════════════
+   LIGHT RAYS (GOD RAYS) — конус из одной точки
+═════════════════════════════════════════ */
+function makeLightRayTexture(w, h) {
+  // w = ширина текстуры (для горизонтального fade), h = высота
+  var rc = document.createElement('canvas');
+  rc.width = w; rc.height = h;
+  var rctx = rc.getContext('2d');
+  // Горизонтальный fade — форма клина (прозрачно по краям)
+  var hGrad = rctx.createLinearGradient(0, 0, w, 0);
+  hGrad.addColorStop(0,    'rgba(255,240,200,0.00)');
+  hGrad.addColorStop(0.12, 'rgba(255,240,200,0.90)');
+  hGrad.addColorStop(0.88, 'rgba(255,240,200,0.90)');
+  hGrad.addColorStop(1,    'rgba(255,240,200,0.00)');
+  rctx.fillStyle = hGrad;
+  rctx.fillRect(0, 0, w, h);
+  // Вертикальный fade: прозрачно сверху (точка схода) → ярко в середине → прозрачно снизу
+  var vGrad = rctx.createLinearGradient(0, 0, 0, h);
+  vGrad.addColorStop(0,    'rgba(0,0,0,1.00)'); // прозрачно у источника — маскируем точку схода
+  vGrad.addColorStop(0.40, 'rgba(0,0,0,0.00)'); // луч начинается только с 40%
+  vGrad.addColorStop(0.78, 'rgba(0,0,0,0.00)');
+  vGrad.addColorStop(1,    'rgba(0,0,0,1.00)'); // прозрачно у основания
+  rctx.globalCompositeOperation = 'destination-out';
+  rctx.fillStyle = vGrad;
+  rctx.fillRect(0, 0, w, h);
+  var tex = new THREE.CanvasTexture(rc);
+  return tex;
+}
+
+function createLightRays() {
+  var rayGroup = new THREE.Group();
+  // Точка источника — вверху сцены (стеклянный потолок оранжереи)
+  var SOURCE_Y = 7.5;
+  var rayCount = 8;
+
+  for (var ri = 0; ri < rayCount; ri++) {
+    // Лучи расходятся конусом из одной точки
+    var spreadAngle = (ri / rayCount) * Math.PI * 2;
+    var coneSpread  = 0.25 + Math.random() * 0.35; // угол отклонения от вертикали
+    var rayLength   = 6 + Math.random() * 5;
+    var rayWidth    = 0.03 + Math.random() * 0.09;
+
+    // Направление луча: из SOURCE вниз под углом
+    var dirX = Math.sin(spreadAngle) * coneSpread;
+    var dirZ = Math.cos(spreadAngle) * coneSpread;
+    var dirY = -1; // вниз
+    var dir  = new THREE.Vector3(dirX, dirY, dirZ).normalize();
+
+    var geo = new THREE.PlaneGeometry(rayWidth, rayLength, 1, 1);
+    // Сдвигаем геометрию так чтобы верхний край был в точке source
+    geo.translate(0, -rayLength / 2, 0);
+
+    var tex = makeLightRayTexture(32, 128);
+    var mat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    var mesh = new THREE.Mesh(geo, mat);
+
+    // Позиционируем у источника
+    mesh.position.set(
+      dirX * 0.5,
+      SOURCE_Y,
+      dirZ * 0.5
+    );
+
+    // Поворачиваем чтобы плоскость смотрела вдоль направления луча
+    var up = new THREE.Vector3(0, 1, 0);
+    var quat = new THREE.Quaternion().setFromUnitVectors(up, dir.clone().negate());
+    mesh.quaternion.copy(quat);
+    // Небольшой случайный поворот вокруг оси луча
+    var axisQ = new THREE.Quaternion().setFromAxisAngle(dir, Math.random() * Math.PI);
+    mesh.quaternion.premultiply(axisQ);
+
+    mesh.userData.floatSpeed  = 0.2 + Math.random() * 0.4;
+    mesh.userData.floatPhase  = Math.random() * Math.PI * 2;
+    mesh.userData.baseOpacity = 0.18 + Math.random() * 0.14;
+
+    rayGroup.add(mesh);
+  }
+  mainScene.add(rayGroup);
+  return rayGroup;
+}
+var lightRays = createLightRays();
+
+function updateLightRays(t) {
+  lightRays.children.forEach(function(ray) {
+    // Нелинейная асинхронная пульсация — сумма двух синусов с иррациональным соотношением частот
+    var s1 = Math.sin(t * ray.userData.floatSpeed + ray.userData.floatPhase);
+    var s2 = Math.sin(t * ray.userData.floatSpeed * 0.37 + ray.userData.floatPhase * 1.7);
+    var pulse = (s1 * 0.7 + s2 * 0.3) * 0.5 + 0.5; // 0..1, непериодически
+    ray.material.opacity = ray.userData.baseOpacity * (0.2 + 0.8 * pulse);
+  });
+}
+
+/* ════════════════════════════════════════
+   RENDER LOOP
+═════════════════════════════════════════ */
+var animId    = null;
+var shimmerClock = 0;
+var lastTime  = 0;
+
+function animate(now){
+  animId = requestAnimationFrame(animate);
+  var dt = lastTime ? Math.min((now - lastTime)/1000, 0.1) : 0;
+  lastTime = now;
+
+  shimmerClock += dt * SHIMMER_SPEED;
+
+  qC.slerp(qT, SLERP);
+  camera.quaternion.copy(qC);
+  skyCamera.quaternion.copy(qC);
+
+  updateDepth();
+  updateButterflies(dt);
+  updateParticles(dt);
+  updateLightRays(now * 0.001);
+
+  cardMeshes.forEach(function(c, i){
+    var target   = cardExpanded[i] ? 1 : 0;
+    cardAnim[i] += (target - cardAnim[i]) * Math.min(1, dt * PILL_SPEED);
+    if(Math.abs(cardAnim[i] - target) < 0.001) cardAnim[i] = target;
+    var shimT = (shimmerClock + i / CARDS.length) % 1;
+    drawCard(c.cc, c.data, cardAnim[i], shimT);
+    c.tex.needsUpdate = true;
+  });
+
+  renderer.clear();
+  renderer.render(skyScene, skyCamera);
+  renderer.clearDepth();
+  renderer.render(mainScene, camera);
+}
+
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){ cancelAnimationFrame(animId); animId=null; }
+  else if(!animId) animate(performance.now());
+});
+animate(performance.now());
 
 })();
 </script>
