@@ -230,18 +230,17 @@ var loader = new THREE.TextureLoader();
 loader.crossOrigin = 'anonymous';
 
 /* ── Sky ── */
-/* ── Sky ── */
 var skyGeo = new THREE.SphereGeometry(500, 64, 32);
 skyGeo.scale(-1, 1, 1);
-var skyMat = new THREE.ShaderMaterial({
-  uniforms:{top:{value:new THREE.Color(0x2a6fbe)},bot:{value:new THREE.Color(0xb0cfe8)}},
-  vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:'uniform vec3 top,bot;varying vec3 vP;void main(){float h=clamp(normalize(vP).y*2.,0.,1.);gl_FragColor=vec4(mix(bot,top,h),1.);}'
-});
-var skyMesh = new THREE.Mesh(skyGeo, skyMat);
+// Сразу ставим пустой материал — заменится на webp как только загрузится
+var skyMesh = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({color:0x000000}));
 skyScene.add(skyMesh);
 
 var isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+// Грузим статику и видео параллельно
+var staticTexReady = false;
+var staticMat = null;
 
 loader.load(
   'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/garden.webp',
@@ -249,10 +248,12 @@ loader.load(
     tex.encoding = THREE.LinearEncoding;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
-    var staticMat = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    staticMat = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    staticTexReady = true;
+    // Показываем webp сразу
     skyMesh.material = staticMat;
 
-    // Вторая сфера поверх — будет плавно появляться с видео
+    // Вторая сфера поверх — плавно появится с видео
     var vidSphereGeo = new THREE.SphereGeometry(499, 64, 32);
     vidSphereGeo.scale(-1, 1, 1);
     var vidMat = new THREE.MeshBasicMaterial({
@@ -264,7 +265,6 @@ loader.load(
     var vidSphere = new THREE.Mesh(vidSphereGeo, vidMat);
     skyScene.add(vidSphere);
 
-    // Грузим видео
     var vid = document.createElement('video');
     vid.src = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Anim.mp4';
     vid.muted = true;
@@ -272,9 +272,13 @@ loader.load(
     vid.playsInline = true;
     vid.crossOrigin = 'anonymous';
 
-    // Ждём первый реальный кадр
-    vid.addEventListener('timeupdate', function onFirstFrame(){
-      vid.removeEventListener('timeupdate', onFirstFrame);
+    // Ждём несколько кадров чтобы буфер заполнился
+    var frameCount = 0;
+    vid.addEventListener('timeupdate', function onFrames(){
+      frameCount++;
+      if(frameCount < 3) return; // ждём минимум 3 кадра
+      vid.removeEventListener('timeupdate', onFrames);
+
       var vidTex = new THREE.VideoTexture(vid);
       vidTex.encoding = THREE.LinearEncoding;
       vidTex.wrapS = THREE.RepeatWrapping;
@@ -282,16 +286,16 @@ loader.load(
       vidMat.map = vidTex;
       vidMat.needsUpdate = true;
 
-      // Fade-in видео сферы
+      // Fade-in видео поверх статики
       var start = null;
-      var FADE_MS = 800;
+      var FADE_MS = 1200;
       function fadeIn(ts){
         if(!start) start = ts;
         var p = Math.min((ts - start) / FADE_MS, 1);
         vidMat.opacity = p;
-        if(p < 1) requestAnimationFrame(fadeIn);
-        else {
-          // Статичная текстура больше не нужна
+        if(p < 1){
+          requestAnimationFrame(fadeIn);
+        } else {
           skyMesh.material = vidMat;
           skyScene.remove(vidSphere);
           vidMat.transparent = false;
@@ -299,13 +303,12 @@ loader.load(
         }
       }
       requestAnimationFrame(fadeIn);
-    }, {once: true});
+    });
 
     vid.load();
     vid.play().catch(function(){
-      // Автоплей заблокирован — пробуем по первому касанию
-      document.addEventListener('touchstart', function(){vid.play();}, {once:true});
-      document.addEventListener('click',      function(){vid.play();}, {once:true});
+      document.addEventListener('touchstart', function(){ vid.play(); }, {once:true});
+      document.addEventListener('click',      function(){ vid.play(); }, {once:true});
     });
   }
 );
@@ -614,8 +617,8 @@ canvas.addEventListener('touchend', function(e){
   if(e.changedTouches.length!==1) return;
   var t=e.changedTouches[0];
   if(Math.abs(t.clientX-pdx)>8||Math.abs(t.clientY-pdy)>8) return;
-  // Блокируем если только что развернули пилюлю
-  if(Date.now() - lastExpandTime < 350) return;
+  // Блокируем пока анимация разворота не завершена (PILL_SPEED=3.5 → ~400мс)
+  if(Date.now() - lastExpandTime < 600) return;
   handleClick(t.clientX, t.clientY, true);
 },{passive:true});
 
@@ -642,14 +645,16 @@ function handleClick(cx, cy, isTouch){
   if(idx<0) return;
   var uv = hits[0].uv;
   if(uv && uv.y < 0.20){
-    if(cardExpanded[idx]){
+    if(cardExpanded[idx] && Date.now() - lastExpandTime > 600){
+      // Карточка развёрнута и анимация завершена — открываем соцсеть
       var si = Math.floor(uv.x*5);
       if(isTouch) skipNextTouch = true;
       window.open(SOC_ICONS[Math.max(0,Math.min(4,si))].href, '_blank');
-    } else {
+    } else if(!cardExpanded[idx]){
       cardExpanded[idx] = true;
       lastExpandTime = Date.now();
     }
+    // если развёрнута но анимация ещё идёт — игнорируем тап
   } else if(cardExpanded[idx]){
     cardExpanded[idx] = false;
   }
@@ -783,11 +788,11 @@ function spawnButterfly(gltf, idx){
   if(bTex){
     clone.traverse(function(node){
       if(node.isMesh || node.isSkinnedMesh){
-        // MeshBasicMaterial — не зависит от освещения
         var m = new THREE.MeshBasicMaterial({
           map:         bTex,
           color:       new THREE.Color(0xffffff),
-          transparent: false,
+          transparent: true,
+          opacity:     1.0,
           side:        THREE.DoubleSide,
           skinning:    node.isSkinnedMesh,
         });
@@ -849,18 +854,25 @@ function updateButterflies(dt){
     /* orient toward movement direction */
     if(distToTarget > 0.05){
       var moveDir = new THREE.Vector3(dx, 0, dz).normalize();
-      // lookAt направляет -Z к цели, затем корректируем offset под ось модели
-      // Пробуем все 4 варианта: 0, 90, 180, 270 по Y — определено эмпирически
       var _mat4 = new THREE.Matrix4().lookAt(
         b.mesh.position,
         new THREE.Vector3(b.mesh.position.x + dx, b.mesh.position.y, b.mesh.position.z + dz),
         new THREE.Vector3(0, 1, 0)
       );
       var lookQ = new THREE.Quaternion().setFromRotationMatrix(_mat4);
-      // GLTF модель: нос по +X → нужно повернуть -90° по Y после lookAt
       lookQ.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -Math.PI/2, 0)));
       b.mesh.quaternion.slerp(lookQ, Math.min(1, dt * 4));
     }
+
+    /* opacity по расстоянию: ближние — непрозрачные, дальние — полупрозрачные */
+    var camDist = b.mesh.position.distanceTo(camera.position);
+    // 1.0 до 4 ед., плавно до 0.35 на 9+ ед.
+    var opacityVal = 1.0 - Math.max(0, Math.min(0.65, (camDist - 4.0) / 5.0 * 0.65));
+    b.mesh.traverse(function(node){
+      if((node.isMesh || node.isSkinnedMesh) && node.material){
+        node.material.opacity = opacityVal;
+      }
+    });
   });
 }
 
