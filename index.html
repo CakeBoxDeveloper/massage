@@ -165,10 +165,91 @@ var W = window.innerWidth, H = window.innerHeight;
 var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(W, H);
-renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.outputEncoding = THREE.LinearEncoding;
+renderer.toneMapping = THREE.NoToneMapping;
 renderer.autoClear = false;
+
+/* ── Post-processing: виньетка-блюр + хроматическая аберрация + motion blur ── */
+var dpr = Math.min(window.devicePixelRatio, 2);
+var rt = new THREE.WebGLRenderTarget(W * dpr, H * dpr, {
+  minFilter: THREE.LinearFilter,
+  magFilter: THREE.LinearFilter,
+  format: THREE.RGBAFormat,
+});
+var postScene2  = new THREE.Scene();
+var postCam2    = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+var postMat3d = new THREE.ShaderMaterial({
+  uniforms: {
+    tDiffuse: { value: rt.texture },
+    uRes:     { value: new THREE.Vector2(W * dpr, H * dpr) },
+    uCA:      { value: 0.0045 }, // аберрация вдвое слабее чем в room
+    uVigBlur: { value: 0.84  },
+    uMotion:  { value: new THREE.Vector2(0, 0) },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 uRes;
+    uniform float uCA;
+    uniform float uVigBlur;
+    uniform vec2 uMotion;
+    varying vec2 vUv;
+
+    vec4 blurSample(sampler2D tex, vec2 uv, float radius) {
+      vec2 toCenter = (vec2(0.5) - uv) * radius;
+      vec4 c = vec4(0.0);
+      c += texture2D(tex, clamp(uv,                   0.001, 0.999));
+      c += texture2D(tex, clamp(uv + toCenter * 0.17, 0.001, 0.999));
+      c += texture2D(tex, clamp(uv + toCenter * 0.33, 0.001, 0.999));
+      c += texture2D(tex, clamp(uv + toCenter * 0.50, 0.001, 0.999));
+      c += texture2D(tex, clamp(uv + toCenter * 0.67, 0.001, 0.999));
+      c += texture2D(tex, clamp(uv + toCenter * 0.83, 0.001, 0.999));
+      c += texture2D(tex, clamp(uv + toCenter * 1.00, 0.001, 0.999));
+      return c / 7.0;
+    }
+
+    void main() {
+      vec2 fc    = vUv - 0.5;
+      float dist = length(fc) * 1.414;
+
+      // Хроматическая аберрация
+      float ca   = uCA * dist * dist;
+      vec2 caDir = normalize(fc + 0.0001) * ca;
+      float rCh  = texture2D(tDiffuse, vUv + caDir).r;
+      float gCh  = texture2D(tDiffuse, vUv        ).g;
+      float bCh  = texture2D(tDiffuse, vUv - caDir).b;
+      vec4 sharp = vec4(rCh, gCh, bCh, 1.0);
+
+      // Motion blur
+      vec2 mStep   = uMotion / 8.0;
+      float motLen = length(uMotion);
+      float motW   = smoothstep(0.0002, 0.012, motLen);
+      vec4 mCol    = sharp;
+      mCol += texture2D(tDiffuse, clamp(vUv + mStep * 1.0, 0.001, 0.999));
+      mCol += texture2D(tDiffuse, clamp(vUv + mStep * 2.0, 0.001, 0.999));
+      mCol += texture2D(tDiffuse, clamp(vUv + mStep * 3.0, 0.001, 0.999));
+      mCol += texture2D(tDiffuse, clamp(vUv + mStep * 4.0, 0.001, 0.999));
+      mCol += texture2D(tDiffuse, clamp(vUv + mStep * 5.0, 0.001, 0.999));
+      mCol += texture2D(tDiffuse, clamp(vUv + mStep * 6.0, 0.001, 0.999));
+      mCol += texture2D(tDiffuse, clamp(vUv + mStep * 7.0, 0.001, 0.999));
+      sharp = mix(sharp, mCol / 8.0, motW);
+
+      // Виньетка-блюр по краям
+      float sideBlur = abs(fc.x) * 2.0;
+      float blurR    = uVigBlur * (dist*dist*dist*0.09 + sideBlur*sideBlur*sideBlur*0.11);
+      vec4 blurred   = blurSample(tDiffuse, vUv, blurR);
+      float blend    = smoothstep(0.6, 0.95, dist);
+      vec4 col       = mix(sharp, blurred, blend);
+
+      gl_FragColor = col;
+    }
+  `,
+  depthWrite: false,
+});
+postScene2.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat3d));
 
 var skyScene  = new THREE.Scene();
 var mainScene = new THREE.Scene();
@@ -197,89 +278,13 @@ var isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 loader.load(
   'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/garden.webp',
   function(tex){
-    tex.encoding = THREE.sRGBEncoding;
+    tex.encoding = THREE.LinearEncoding;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
-    if(isMobile) {
-      // Телефон — просто BasicMaterial, никакого шейдера
-      skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
-      hidePreloader(); // на мобільному чекаємо тільки цю текстуру
-    } else {
-      gardenTex = tex;
-      tryApplyDof();
-    }
+    skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    hidePreloader();
   }
 );
-
-// Десктоп: грузим карту глубины и применяем DoF шейдер
-var gardenTex = null;
-var depthTex  = null;
-
-if(!isMobile) {
-  loader.load(
-    'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/deep.webp',
-    function(tex){
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.ClampToEdgeWrapping;
-      tex.minFilter = THREE.LinearFilter;
-      tex.generateMipmaps = false;
-      depthTex = tex;
-      tryApplyDof();
-    }
-  );
-}
-
-var dofMat = new THREE.ShaderMaterial({
-  uniforms: {
-    colorMap:    { value: null },
-    depthMap:    { value: null },
-    dofFocus:    { value: 0.20    },
-    dofStrength: { value: 0.000735 },
-  },
-  vertexShader: `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  fragmentShader: `
-    uniform sampler2D colorMap;
-    uniform sampler2D depthMap;
-    uniform float dofFocus;
-    uniform float dofStrength;
-    varying vec2 vUv;
-    void main() {
-      float depth = texture2D(depthMap, vUv).r;
-      float blurAmt = max(0.0, (dofFocus - depth) / dofFocus) * dofStrength;
-      if(blurAmt < 0.0001) {
-        gl_FragColor = texture2D(colorMap, vUv);
-      } else {
-        vec4 col = vec4(0.0);
-        float r = blurAmt;
-        col += texture2D(colorMap, vUv + vec2( r,     0.0  ));
-        col += texture2D(colorMap, vUv + vec2(-r,     0.0  ));
-        col += texture2D(colorMap, vUv + vec2( 0.0,   r    ));
-        col += texture2D(colorMap, vUv + vec2( 0.0,  -r    ));
-        col += texture2D(colorMap, vUv + vec2( r*0.7, r*0.7));
-        col += texture2D(colorMap, vUv + vec2(-r*0.7, r*0.7));
-        col += texture2D(colorMap, vUv + vec2( r*0.7,-r*0.7));
-        col += texture2D(colorMap, vUv + vec2(-r*0.7,-r*0.7));
-        gl_FragColor = col / 8.0;
-      }
-    }
-  `,
-  side: THREE.FrontSide,
-});
-
-function tryApplyDof() {
-  if(!gardenTex || !depthTex) return;
-  dofMat.uniforms.colorMap.value = gardenTex;
-  dofMat.uniforms.depthMap.value = depthTex;
-  dofMat.needsUpdate = true;
-  skyMesh.material = dofMat;
-  hidePreloader(); // обидві текстури готові — ховаємо прелоадер
-}
 
 /* ── Cards ── */
 var CARD_RADIUS = 5.5;
@@ -633,6 +638,9 @@ window.addEventListener('resize', function(){
   camera.updateProjectionMatrix();
   skyCamera.updateProjectionMatrix();
   renderer.setSize(W,H);
+  rt.setSize(W * dpr, H * dpr);
+  postMat3d.uniforms.uRes.value.set(W * dpr, H * dpr);
+  qC.copy(qT); // сброс при смене ориентации
 });
 
 /* ── Controls ── */
@@ -948,8 +956,8 @@ function makeLightRayTexture(w, h) {
   // Горизонтальный fade — форма клина (прозрачно по краям)
   var hGrad = rctx.createLinearGradient(0, 0, w, 0);
   hGrad.addColorStop(0,    'rgba(255,240,200,0.00)');
-  hGrad.addColorStop(0.12, 'rgba(255,240,200,0.90)');
-  hGrad.addColorStop(0.88, 'rgba(255,240,200,0.90)');
+  hGrad.addColorStop(0.12, 'rgba(255,240,200,0.40)');
+  hGrad.addColorStop(0.88, 'rgba(255,240,200,0.40)');
   hGrad.addColorStop(1,    'rgba(255,240,200,0.00)');
   rctx.fillStyle = hGrad;
   rctx.fillRect(0, 0, w, h);
@@ -1042,6 +1050,9 @@ function updateLightRays(t) {
 var animId    = null;
 var shimmerClock = 0;
 var lastTime  = 0;
+var qPrev3d   = new THREE.Quaternion();
+var _qDelta3d = new THREE.Quaternion();
+var _axis3d   = new THREE.Vector3();
 
 function animate(now){
   animId = requestAnimationFrame(animate);
@@ -1050,9 +1061,23 @@ function animate(now){
 
   shimmerClock += dt * SHIMMER_SPEED;
 
+  qPrev3d.copy(qC);
   qC.slerp(qT, SLERP);
   camera.quaternion.copy(qC);
   skyCamera.quaternion.copy(qC);
+
+  // Motion blur — вычисляем дельту кватерниона
+  _qDelta3d.copy(qPrev3d).invert().premultiply(qC);
+  var angle3d = 2 * Math.acos(Math.min(1, Math.abs(_qDelta3d.w)));
+  var mX = 0, mY = 0;
+  if(angle3d > 0.00001){
+    _axis3d.set(_qDelta3d.x, _qDelta3d.y, _qDelta3d.z).normalize();
+    var str = Math.min(angle3d * 1.5, 0.015); // вдвое слабее чем в room
+    var boost = gyroOn ? 1.6 : 1.0;
+    mX = -_axis3d.y * angle3d * str * 15.0 * boost;
+    mY =  _axis3d.x * angle3d * str * 15.0 * boost;
+  }
+  postMat3d.uniforms.uMotion.value.set(mX, mY);
 
   updateDepth();
   updateButterflies(dt);
@@ -1068,10 +1093,17 @@ function animate(now){
     c.tex.needsUpdate = true;
   });
 
+  // Рендер в RT
+  renderer.setRenderTarget(rt);
   renderer.clear();
   renderer.render(skyScene, skyCamera);
   renderer.clearDepth();
   renderer.render(mainScene, camera);
+
+  // Post-pass на экран
+  renderer.setRenderTarget(null);
+  renderer.clear();
+  renderer.render(postScene2, postCam2);
 }
 
 document.addEventListener('visibilitychange',function(){
