@@ -150,8 +150,8 @@ var postMat3d = new THREE.ShaderMaterial({
   uniforms: {
     tDiffuse: { value: rt.texture },
     uRes:     { value: new THREE.Vector2(W * dpr, H * dpr) },
-    uCA:      { value: 0.0022 }, // аберрация вдвое слабее
-    uVigBlur: { value: 0.42  },
+    uCA:      { value: 0.0011 },
+    uVigBlur: { value: 0.21  },
     uMotion:  { value: new THREE.Vector2(0, 0) },
   },
   vertexShader: `
@@ -738,7 +738,7 @@ setTimeout(function(){
 ═════════════════════════════════════════ */
 var butterflies = [];
 var _bOrientFix = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -Math.PI / 2, 0));
-var BUTTERFLY_COUNT = 12;
+var BUTTERFLY_COUNT = isMobile ? 6 : 12;
 var BASE_SCALE = 0.36;
 var FLY_RANGE_MIN = 3.5, FLY_RANGE_MAX = 8.0;
 var FLY_Y_MIN = 1.0, FLY_Y_MAX = 3.8;
@@ -1185,8 +1185,16 @@ function animate(now){
     cardAnim[i] += (target - cardAnim[i]) * Math.min(1, dt * PILL_SPEED);
     if(Math.abs(cardAnim[i] - target) < 0.001) cardAnim[i] = target;
     var shimT = (shimmerClock + i / CARDS.length) % 1;
-    drawCard(c.cc, c.data, cardAnim[i], shimT);
-    c.tex.needsUpdate = true;
+
+    // Перерисовываем только если карточка анимируется или шиммер двигается
+    var isAnimating = Math.abs(cardAnim[i] - target) > 0.001;
+    var shimChanged = Math.abs(shimT - (c._lastShimT || 0)) > 0.004;
+    if(isAnimating || shimChanged || c._forceRedraw){
+      drawCard(c.cc, c.data, cardAnim[i], shimT);
+      c.tex.needsUpdate = true;
+      c._lastShimT = shimT;
+      c._forceRedraw = false;
+    }
   });
 
   // Рендер в RT
