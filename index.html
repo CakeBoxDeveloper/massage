@@ -249,26 +249,64 @@ loader.load(
     tex.encoding = THREE.LinearEncoding;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
-    var mat = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
-    skyMesh.material = mat;
+    var staticMat = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    skyMesh.material = staticMat;
 
-    // Фоном грузим анимированный фон
+    // Вторая сфера поверх — будет плавно появляться с видео
+    var vidSphereGeo = new THREE.SphereGeometry(499, 64, 32);
+    vidSphereGeo.scale(-1, 1, 1);
+    var vidMat = new THREE.MeshBasicMaterial({
+      side: THREE.FrontSide,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
+    var vidSphere = new THREE.Mesh(vidSphereGeo, vidMat);
+    skyScene.add(vidSphere);
+
+    // Грузим видео
     var vid = document.createElement('video');
     vid.src = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Anim.mp4';
     vid.muted = true;
     vid.loop  = true;
     vid.playsInline = true;
     vid.crossOrigin = 'anonymous';
-    vid.addEventListener('canplaythrough', function(){
-      vid.play();
+
+    // Ждём первый реальный кадр
+    vid.addEventListener('timeupdate', function onFirstFrame(){
+      vid.removeEventListener('timeupdate', onFirstFrame);
       var vidTex = new THREE.VideoTexture(vid);
       vidTex.encoding = THREE.LinearEncoding;
       vidTex.wrapS = THREE.RepeatWrapping;
       vidTex.wrapT = THREE.ClampToEdgeWrapping;
-      mat.map = vidTex;
-      mat.needsUpdate = true;
+      vidMat.map = vidTex;
+      vidMat.needsUpdate = true;
+
+      // Fade-in видео сферы
+      var start = null;
+      var FADE_MS = 800;
+      function fadeIn(ts){
+        if(!start) start = ts;
+        var p = Math.min((ts - start) / FADE_MS, 1);
+        vidMat.opacity = p;
+        if(p < 1) requestAnimationFrame(fadeIn);
+        else {
+          // Статичная текстура больше не нужна
+          skyMesh.material = vidMat;
+          skyScene.remove(vidSphere);
+          vidMat.transparent = false;
+          vidMat.opacity = 1;
+        }
+      }
+      requestAnimationFrame(fadeIn);
     }, {once: true});
+
     vid.load();
+    vid.play().catch(function(){
+      // Автоплей заблокирован — пробуем по первому касанию
+      document.addEventListener('touchstart', function(){vid.play();}, {once:true});
+      document.addEventListener('click',      function(){vid.play();}, {once:true});
+    });
   }
 );
 
