@@ -59,26 +59,7 @@
     opacity: 0.85;
   }
 
-  /* ── Loading blur screen ── */
-  #scene-preloader {
-    position: fixed; inset: 0; z-index: 8000;
-    pointer-events: none;
-    transition: opacity 1s ease;
-  }
-  #scene-preloader img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    transform: scale(1.08);
-    display: block;
-    filter: blur(28px) brightness(0.55) saturate(1.2);
-    transition: filter 1s ease;
-  }
-  #scene-preloader.hidden {
-    opacity: 0;
-  }
-  #scene-preloader.hidden img {
-    filter: blur(0px) brightness(1) saturate(1);
-  }
+
 </style>
 </head>
 <body>
@@ -88,10 +69,6 @@
   <button class="overlay-btn" id="overlay-ok">Ок</button>
 </div>
 
-<!-- Loading blur preloader -->
-<div id="scene-preloader">
-  <img src="https://raw.githubusercontent.com/CakeBoxDeveloper/3d/main/blur.jpg" alt="" draggable="false" />
-</div>
 
 <canvas id="gc"></canvas>
 <div id="hint">Тягніть мишею для повороту</div>
@@ -130,16 +107,7 @@
 <script>
 (function(){
 
-/* ── Preloader: hide blur screen once scene is ready ── */
-function hidePreloader(){
-  var el = document.getElementById('scene-preloader');
-  if(!el || el._hidden) return;
-  el._hidden = true;
-  el.classList.add('hidden');
-  setTimeout(function(){ el.style.display = 'none'; }, 1050);
-}
-/* Safety fallback — ховаємо через 8с якщо щось пішло не так */
-setTimeout(hidePreloader, 8000);
+/* Safety fallback */
 
 var CARDS = [
   { name:'Класичний масаж',      desc:'Відновлює кровообіг, знімає м\'язову напругу та покращує загальний тонус тіла. Ідеально після важкого тижня.',          duration:'60 або 90 хв', price:'600 / 850 грн'  },
@@ -282,7 +250,6 @@ loader.load(
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
     skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
-    hidePreloader();
   }
 );
 
@@ -539,7 +506,7 @@ CARDS.forEach(function(data, i){
   cc.width = TW; cc.height = TH;
   drawCard(cc, data, 0, 0);
   var tex = new THREE.CanvasTexture(cc);
-  tex.encoding = THREE.sRGBEncoding;
+  tex.encoding = THREE.LinearEncoding;
   var geo = new THREE.PlaneGeometry(CARD_W, CARD_H);
   var mat = new THREE.MeshBasicMaterial({map:tex, transparent:true, side:THREE.DoubleSide, depthWrite:false});
   var mesh = new THREE.Mesh(geo, mat);
@@ -722,16 +689,15 @@ var HUE_SHIFTS = [0, 30, 60, 120, 180, 220, 270, 320];
 var tintedWingTextures = []; // будут заполнены после загрузки wingTex
 
 function makeTintedTex(srcTex, hueShift) {
-  if(hueShift === 0) return srcTex;
   var img = srcTex.image;
   if(!img) return srcTex;
   var cv = document.createElement('canvas');
   cv.width = img.width; cv.height = img.height;
   var ctx2 = cv.getContext('2d');
-  ctx2.filter = 'hue-rotate(' + hueShift + 'deg)';
+  ctx2.filter = 'hue-rotate(' + hueShift + 'deg) saturate(0.25)';
   ctx2.drawImage(img, 0, 0);
   var t = new THREE.CanvasTexture(cv);
-  t.encoding    = THREE.sRGBEncoding;
+  t.encoding    = THREE.LinearEncoding;
   t.flipY       = false;
   t.wrapS       = THREE.RepeatWrapping;
   t.wrapT       = THREE.RepeatWrapping;
@@ -760,18 +726,14 @@ function spawnButterfly(gltf, idx){
   if(bTex){
     clone.traverse(function(node){
       if(node.isMesh || node.isSkinnedMesh){
-        var m = node.material.clone();
-        m.map   = bTex;
-        m.color = new THREE.Color(0xffffff);
-        if(m.isMeshStandardMaterial){
-          m.roughness         = 1.0;
-          m.metalness         = 0.0;
-          m.emissive          = new THREE.Color(0x444444);
-          m.emissiveMap       = bTex;
-          m.emissiveIntensity = 0.4;
-        }
-        m.transparent = false;
-        m.side        = THREE.DoubleSide;
+        // MeshBasicMaterial — не зависит от освещения
+        var m = new THREE.MeshBasicMaterial({
+          map:         bTex,
+          color:       new THREE.Color(0xffffff),
+          transparent: false,
+          side:        THREE.DoubleSide,
+          skinning:    node.isSkinnedMesh,
+        });
         m.needsUpdate = true;
         node.material = m;
       }
@@ -851,7 +813,7 @@ texLoader.crossOrigin = 'anonymous';
 texLoader.load(
   'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/butterfly/textures/M_BorboletaAzul_baseColor.png',
   function(tex){
-    tex.encoding    = THREE.sRGBEncoding;
+    tex.encoding    = THREE.LinearEncoding;
     tex.flipY       = false;
     tex.wrapS       = THREE.RepeatWrapping;
     tex.wrapT       = THREE.RepeatWrapping;
