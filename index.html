@@ -182,8 +182,8 @@ var postMat3d = new THREE.ShaderMaterial({
   uniforms: {
     tDiffuse: { value: rt.texture },
     uRes:     { value: new THREE.Vector2(W * dpr, H * dpr) },
-    uCA:      { value: 0.0045 }, // аберрация вдвое слабее чем в room
-    uVigBlur: { value: 0.84  },
+    uCA:      { value: 0.0022 }, // аберрация вдвое слабее
+    uVigBlur: { value: 0.42  },
     uMotion:  { value: new THREE.Vector2(0, 0) },
   },
   vertexShader: `
@@ -949,24 +949,50 @@ function updateParticles(dt){
    LIGHT RAYS (GOD RAYS) — конус из одной точки
 ═════════════════════════════════════════ */
 function makeLightRayTexture(w, h) {
-  // w = ширина текстуры (для горизонтального fade), h = высота
   var rc = document.createElement('canvas');
   rc.width = w; rc.height = h;
   var rctx = rc.getContext('2d');
-  // Горизонтальный fade — форма клина (прозрачно по краям)
+  // Горизонтальный fade — форма клина
   var hGrad = rctx.createLinearGradient(0, 0, w, 0);
   hGrad.addColorStop(0,    'rgba(255,240,200,0.00)');
-  hGrad.addColorStop(0.12, 'rgba(255,240,200,0.40)');
-  hGrad.addColorStop(0.88, 'rgba(255,240,200,0.40)');
+  hGrad.addColorStop(0.12, 'rgba(255,240,200,0.20)'); // вдвое прозрачнее (было 0.40)
+  hGrad.addColorStop(0.88, 'rgba(255,240,200,0.20)');
   hGrad.addColorStop(1,    'rgba(255,240,200,0.00)');
   rctx.fillStyle = hGrad;
   rctx.fillRect(0, 0, w, h);
-  // Вертикальный fade: прозрачно сверху (точка схода) → ярко в середине → прозрачно снизу
+  // Вертикальный fade: невидимая зона сверху увеличена до 60%
   var vGrad = rctx.createLinearGradient(0, 0, 0, h);
-  vGrad.addColorStop(0,    'rgba(0,0,0,1.00)'); // прозрачно у источника — маскируем точку схода
-  vGrad.addColorStop(0.40, 'rgba(0,0,0,0.00)'); // луч начинается только с 40%
-  vGrad.addColorStop(0.78, 'rgba(0,0,0,0.00)');
-  vGrad.addColorStop(1,    'rgba(0,0,0,1.00)'); // прозрачно у основания
+  vGrad.addColorStop(0,    'rgba(0,0,0,1.00)');
+  vGrad.addColorStop(0.60, 'rgba(0,0,0,0.00)'); // было 0.40 — теперь 0.60
+  vGrad.addColorStop(0.82, 'rgba(0,0,0,0.00)');
+  vGrad.addColorStop(1,    'rgba(0,0,0,1.00)');
+  rctx.globalCompositeOperation = 'destination-out';
+  rctx.fillStyle = vGrad;
+  rctx.fillRect(0, 0, w, h);
+  var tex = new THREE.CanvasTexture(rc);
+  return tex;
+}
+
+// Текстура шиммера — узкая яркая полоска для скольжения по лучу
+function makeRayShimmerTexture(w, h) {
+  var rc = document.createElement('canvas');
+  rc.width = w; rc.height = h;
+  var rctx = rc.getContext('2d');
+  // Горизонтально — такая же ширина как луч
+  var hGrad = rctx.createLinearGradient(0, 0, w, 0);
+  hGrad.addColorStop(0,   'rgba(255,255,220,0.00)');
+  hGrad.addColorStop(0.5, 'rgba(255,255,220,0.55)');
+  hGrad.addColorStop(1,   'rgba(255,255,220,0.00)');
+  rctx.fillStyle = hGrad;
+  rctx.fillRect(0, 0, w, h);
+  // Вертикально — узкая полоска в середине высоты
+  var vGrad = rctx.createLinearGradient(0, 0, 0, h);
+  vGrad.addColorStop(0,    'rgba(0,0,0,1.00)');
+  vGrad.addColorStop(0.42, 'rgba(0,0,0,1.00)');
+  vGrad.addColorStop(0.48, 'rgba(0,0,0,0.00)');
+  vGrad.addColorStop(0.52, 'rgba(0,0,0,0.00)');
+  vGrad.addColorStop(0.58, 'rgba(0,0,0,1.00)');
+  vGrad.addColorStop(1,    'rgba(0,0,0,1.00)');
   rctx.globalCompositeOperation = 'destination-out';
   rctx.fillStyle = vGrad;
   rctx.fillRect(0, 0, w, h);
@@ -1027,6 +1053,27 @@ function createLightRays() {
     mesh.userData.floatPhase  = Math.random() * Math.PI * 2;
     mesh.userData.baseOpacity = 0.18 + Math.random() * 0.14;
 
+    // Шиммер — узкая полоска скользит вдоль луча
+    var shimGeo = new THREE.PlaneGeometry(rayWidth, rayLength, 1, 1);
+    shimGeo.translate(0, -rayLength / 2, 0);
+    var shimTex = makeRayShimmerTexture(32, 128);
+    var shimMat = new THREE.MeshBasicMaterial({
+      map: shimTex,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    var shimMesh = new THREE.Mesh(shimGeo, shimMat);
+    shimMesh.position.copy(mesh.position);
+    shimMesh.quaternion.copy(mesh.quaternion);
+    shimMesh.userData.shimSpeed = 0.08 + Math.random() * 0.07; // медленно
+    shimMesh.userData.shimPhase = Math.random() * Math.PI * 2;
+    shimMesh.userData.rayLength = rayLength;
+    rayGroup.add(shimMesh);
+    mesh.userData.shimMesh = shimMesh;
+
     rayGroup.add(mesh);
   }
   mainScene.add(rayGroup);
@@ -1036,10 +1083,28 @@ var lightRays = createLightRays();
 
 function updateLightRays(t) {
   lightRays.children.forEach(function(ray) {
-    // Нелинейная асинхронная пульсация — сумма двух синусов с иррациональным соотношением частот
+    if(ray.userData.shimSpeed !== undefined) {
+      // Это шиммер-меш — скользит вдоль луча
+      var sp = ray.userData.shimSpeed;
+      var ph = ray.userData.shimPhase;
+      var rl = ray.userData.rayLength;
+      // Позиция вдоль луча: 0..1 с циклом
+      var pos = (t * sp + ph / (Math.PI * 2)) % 1.0;
+      // Сдвигаем UV offset через положение геометрии вдоль оси Y
+      // Шиммер-текстура имеет полоску посередине — сдвигаем меш вдоль оси луча
+      var localY = (pos - 0.5) * rl;
+      // Применяем смещение в локальном пространстве луча
+      ray.position.y += localY - (ray.userData._lastLocalY || 0);
+      ray.userData._lastLocalY = localY;
+      // Пульсация прозрачности шиммера
+      var pulse = Math.sin(t * sp * 3.0 + ph) * 0.5 + 0.5;
+      ray.material.opacity = 0.25 + pulse * 0.35;
+      return;
+    }
+    // Основной луч — пульсация
     var s1 = Math.sin(t * ray.userData.floatSpeed + ray.userData.floatPhase);
     var s2 = Math.sin(t * ray.userData.floatSpeed * 0.37 + ray.userData.floatPhase * 1.7);
-    var pulse = (s1 * 0.7 + s2 * 0.3) * 0.5 + 0.5; // 0..1, непериодически
+    var pulse = (s1 * 0.7 + s2 * 0.3) * 0.5 + 0.5;
     ray.material.opacity = ray.userData.baseOpacity * (0.2 + 0.8 * pulse);
   });
 }
