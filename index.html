@@ -249,7 +249,26 @@ loader.load(
     tex.encoding = THREE.LinearEncoding;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
-    skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    var mat = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    skyMesh.material = mat;
+
+    // Фоном грузим анимированный фон
+    var vid = document.createElement('video');
+    vid.src = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Anim.mp4';
+    vid.muted = true;
+    vid.loop  = true;
+    vid.playsInline = true;
+    vid.crossOrigin = 'anonymous';
+    vid.addEventListener('canplaythrough', function(){
+      vid.play();
+      var vidTex = new THREE.VideoTexture(vid);
+      vidTex.encoding = THREE.LinearEncoding;
+      vidTex.wrapS = THREE.RepeatWrapping;
+      vidTex.wrapT = THREE.ClampToEdgeWrapping;
+      mat.map = vidTex;
+      mat.needsUpdate = true;
+    }, {once: true});
+    vid.load();
   }
 );
 
