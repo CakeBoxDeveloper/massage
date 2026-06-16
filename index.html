@@ -1189,5 +1189,38 @@ animate(performance.now());
 
 })();
 </script>
+
+<script>
+/* ── Background music ── */
+(function(){
+  var audio = new Audio('https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Loop.mp3');
+  audio.loop   = true;
+  audio.volume = 0;
+
+  function startMusic(){
+    audio.play().then(function(){
+      // Fade-in за 3 секунды
+      var target = 0.35;
+      var step   = target / (3000 / 50);
+      var iv = setInterval(function(){
+        audio.volume = Math.min(target, audio.volume + step);
+        if(audio.volume >= target) clearInterval(iv);
+      }, 50);
+    }).catch(function(){});
+  }
+
+  // Пробуем сразу (работает если autoplay разрешён)
+  startMusic();
+  // Fallback — по первому взаимодействию
+  ['click','touchstart','keydown'].forEach(function(ev){
+    document.addEventListener(ev, function onFirst(){
+      startMusic();
+      ['click','touchstart','keydown'].forEach(function(e){
+        document.removeEventListener(e, onFirst);
+      });
+    }, {once: true});
+  });
+})();
+</script>
 </body>
 </html>
