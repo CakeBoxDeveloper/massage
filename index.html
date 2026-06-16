@@ -14,6 +14,9 @@
     background:rgba(0,0,0,0.3); padding:5px 16px; border-radius:20px;
     transition:opacity 1.2s; font-family:sans-serif;
   }
+  @media (hover: none) {
+    #hint { display: none; }
+  }
 
   /* ── iPhone welcome overlay ── */
   #iphone-overlay {
@@ -150,8 +153,8 @@ var postMat3d = new THREE.ShaderMaterial({
   uniforms: {
     tDiffuse: { value: rt.texture },
     uRes:     { value: new THREE.Vector2(W * dpr, H * dpr) },
-    uCA:      { value: 0.0011 },
-    uVigBlur: { value: 0.21  },
+    uCA:      { value: 0.0045 },
+    uVigBlur: { value: 0.42  },
     uMotion:  { value: new THREE.Vector2(0, 0) },
   },
   vertexShader: `
@@ -167,6 +170,7 @@ var postMat3d = new THREE.ShaderMaterial({
     varying vec2 vUv;
 
     vec4 blurSample(sampler2D tex, vec2 uv, float radius) {
+      // Радиальный блюр — сэмплы вдоль вектора от края к центру (как в room.html)
       vec2 toCenter = (vec2(0.5) - uv) * radius;
       vec4 c = vec4(0.0);
       c += texture2D(tex, clamp(uv,                   0.001, 0.999));
@@ -207,7 +211,7 @@ var postMat3d = new THREE.ShaderMaterial({
 
       // Виньетка-блюр по краям
       float sideBlur = abs(fc.x) * 2.0;
-      float blurR    = uVigBlur * (dist*dist*dist*0.09 + sideBlur*sideBlur*sideBlur*0.11);
+      float blurR    = uVigBlur * (dist*dist*dist*0.045 + sideBlur*sideBlur*sideBlur*0.055);
       vec4 blurred   = blurSample(tDiffuse, vUv, blurR);
       float blend    = smoothstep(0.6, 0.95, dist);
       vec4 col       = mix(sharp, blurred, blend);
@@ -238,80 +242,47 @@ skyScene.add(skyMesh);
 
 var isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-// Грузим статику и видео параллельно
-var staticTexReady = false;
-var staticMat = null;
+/* ── Sky / Video ── */
+(function(){
+  // Сначала показываем статичный webp
+  loader.load(
+    'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/garden.webp',
+    function(tex){
+      tex.encoding = THREE.LinearEncoding;
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      skyMesh.material = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
+    }
+  );
 
-loader.load(
-  'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/garden.webp',
-  function(tex){
-    tex.encoding = THREE.LinearEncoding;
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.ClampToEdgeWrapping;
-    staticMat = new THREE.MeshBasicMaterial({map:tex, side:THREE.FrontSide});
-    staticTexReady = true;
-    // Показываем webp сразу
-    skyMesh.material = staticMat;
+  var vid = document.createElement('video');
+  vid.src = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Anim.mp4';
+  vid.muted = true;
+  vid.loop  = true;
+  vid.playsInline = true;
+  vid.crossOrigin = 'anonymous';
 
-    // Вторая сфера поверх — плавно появится с видео
-    var vidSphereGeo = new THREE.SphereGeometry(499, 64, 32);
-    vidSphereGeo.scale(-1, 1, 1);
-    var vidMat = new THREE.MeshBasicMaterial({
-      side: THREE.FrontSide,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-    });
-    var vidSphere = new THREE.Mesh(vidSphereGeo, vidMat);
-    skyScene.add(vidSphere);
+  var frameCount = 0;
+  vid.addEventListener('timeupdate', function onFrames(){
+    frameCount++;
+    if(frameCount < 3) return;
+    vid.removeEventListener('timeupdate', onFrames);
 
-    var vid = document.createElement('video');
-    vid.src = 'https://raw.githubusercontent.com/CakeBoxDeveloper/massage/main/Anim.mp4';
-    vid.muted = true;
-    vid.loop  = true;
-    vid.playsInline = true;
-    vid.crossOrigin = 'anonymous';
+    var vidTex = new THREE.VideoTexture(vid);
+    vidTex.encoding = THREE.LinearEncoding;
+    vidTex.wrapS = THREE.RepeatWrapping;
+    vidTex.wrapT = THREE.ClampToEdgeWrapping;
+    // Просто меняем текстуру на существующем материале — без fade, без лишних сфер
+    skyMesh.material.map = vidTex;
+    skyMesh.material.needsUpdate = true;
+  });
 
-    // Ждём несколько кадров чтобы буфер заполнился
-    var frameCount = 0;
-    vid.addEventListener('timeupdate', function onFrames(){
-      frameCount++;
-      if(frameCount < 3) return; // ждём минимум 3 кадра
-      vid.removeEventListener('timeupdate', onFrames);
-
-      var vidTex = new THREE.VideoTexture(vid);
-      vidTex.encoding = THREE.LinearEncoding;
-      vidTex.wrapS = THREE.RepeatWrapping;
-      vidTex.wrapT = THREE.ClampToEdgeWrapping;
-      vidMat.map = vidTex;
-      vidMat.needsUpdate = true;
-
-      // Fade-in видео поверх статики
-      var start = null;
-      var FADE_MS = 1200;
-      function fadeIn(ts){
-        if(!start) start = ts;
-        var p = Math.min((ts - start) / FADE_MS, 1);
-        vidMat.opacity = p;
-        if(p < 1){
-          requestAnimationFrame(fadeIn);
-        } else {
-          skyMesh.material = vidMat;
-          skyScene.remove(vidSphere);
-          vidMat.transparent = false;
-          vidMat.opacity = 1;
-        }
-      }
-      requestAnimationFrame(fadeIn);
-    });
-
-    vid.load();
-    vid.play().catch(function(){
-      document.addEventListener('touchstart', function(){ vid.play(); }, {once:true});
-      document.addEventListener('click',      function(){ vid.play(); }, {once:true});
-    });
-  }
-);
+  vid.load();
+  vid.play().catch(function(){
+    document.addEventListener('touchstart', function(){ vid.play(); }, {once:true});
+    document.addEventListener('click',      function(){ vid.play(); }, {once:true});
+  });
+})();
 
 /* ── Cards ── */
 var CARD_RADIUS = 5.5;
